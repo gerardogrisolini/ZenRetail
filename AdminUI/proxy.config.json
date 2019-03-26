@@ -1,0 +1,12 @@
+{
+    "/media/**": {
+        "target": "http://webretail.herokuapp.com",
+        "secure": false,
+        "logLevel": "debug"
+    },
+    "/thumb/**": {
+        "target": "http://webretail.herokuapp.com",
+        "secure": false,
+        "logLevel": "debug"
+    }
+}

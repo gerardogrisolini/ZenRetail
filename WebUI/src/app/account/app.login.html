@@ -1,0 +1,26 @@
+<mat-card>
+    <mat-card-content>
+        <form [formGroup]="dataform">
+            <mat-form-field style="width: 100%">
+                <input matInput [(ngModel)]="user.email" type="email" formControlName="email" placeholder="{{ 'Email' | translate }}"/>
+                <div *ngIf="!dataform.controls['email'].valid&&dataform.controls['email'].dirty">
+                    <i class="alert alert-danger"></i>
+                    <mat-error *ngIf="dataform.controls['email'].errors['required']" [innerHTML]="'Email is required' | translate"></mat-error>
+                    <mat-error *ngIf="dataform.controls['email'].errors['email']" [innerHTML]="'Must be a valid email address' | translate"></mat-error>
+                </div>
+            </mat-form-field>
+            
+            <mat-form-field style="width: 100%">
+                <input matInput [(ngModel)]="user.password" type="password" formControlName="password" placeholder="{{ 'Password' | translate }}"/>
+                <div *ngIf="!dataform.controls['password'].valid&&dataform.controls['password'].dirty">
+                    <i class="alert alert-danger"></i>
+                    <mat-error *ngIf="dataform.controls['password'].errors['required']" [innerHTML]="'Password is required' | translate"></mat-error>
+                </div>
+            </mat-form-field>
+
+            <button mat-raised-button color="primary" (click)="login()" [disabled]="!dataform.valid"><mat-icon>playlist_add_check</mat-icon> {{ 'Login' | translate }}</button>
+            
+            <a mat-raised-button routerLink="/register" style="float: right"><mat-icon>playlist_add</mat-icon> {{ 'Register' | translate }}</a>
+        </form>
+    </mat-card-content>
+</mat-card>

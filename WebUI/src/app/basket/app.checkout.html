@@ -1,0 +1,57 @@
+<mat-horizontal-stepper>
+    <mat-step>
+        <ng-template matStepLabel>{{ 'Your information' | translate }}</ng-template>
+        <app-account [isCheckout]="true" #account></app-account>
+        <div>
+            <br/>
+            <button mat-button matStepperNext [innerHTML]="'Next' | translate"></button>
+        </div>
+    </mat-step>
+    <mat-step>
+        <ng-template matStepLabel>{{ 'Shipping' | translate }}  {{ 'and' | translate }} {{ 'Payment' | translate }}</ng-template>
+        <mat-card>
+            <mat-card-content>
+                <p>{{ 'Items' | translate }}: <b>{{count}}</b></p>
+                <p>{{ 'Amount' | translate }}: <b>{{amount | currencyFormat}}</b></p>
+                <p>{{ 'Shipping cost' | translate }}: <b>{{shippingCost | currencyFormat}}</b></p>
+                <h3>{{ 'Total' | translate }}: {{(shippingCost + amount) | currencyFormat}}</h3>
+                <br/>
+                <p><span [innerHTML]="'Select the shipping method:' | translate"></span></p>
+                <mat-radio-group [(ngModel)]="shippingMethod" (change)="shippingClick($event)">
+                    <p *ngFor="let shipping of shippings"><mat-radio-button value="{{shipping.id}}"><b>{{shipping.value | translate}}</b></mat-radio-button></p>
+                </mat-radio-group>
+                <br/>
+                <p><span [innerHTML]="'Select the payment method:' | translate"></span></p>
+                <mat-radio-group [(ngModel)]="paymentMethod" (change)="paymentClick($event)">
+                    <p *ngFor="let paymant of payments"><mat-radio-button value="{{paymant.id}}"><b>{{paymant.value | translate}}</b></mat-radio-button></p>
+                </mat-radio-group>
+            </mat-card-content>
+        </mat-card>
+        <div>
+            <br/>
+            <button mat-button matStepperPrevious [innerHTML]="'Back' | translate"></button>
+            <button mat-button matStepperNext [innerHTML]="'Next' | translate"></button>
+        </div>
+    </mat-step>
+    <mat-step>
+        <ng-template matStepLabel>{{ 'Done' | translate }}</ng-template>
+        <mat-card>
+            <mat-card-content>
+                <h3 [innerHTML]="'If the information is complete you can proceed with the order.' | translate"></h3>
+                <p>{{ 'Account' | translate }}: <i class="material-icons">verified_user</i> <b>{{customer}}</b></p>
+                <p>{{ 'Shipping' | translate }}: <i class="material-icons">{{isValidShipping ? 'verified_user' : 'error'}}</i> <b>{{shipping}}</b></p>
+                <p>{{ 'Payment' | translate }}: <i class="material-icons">{{isValidPayment ? 'verified_user' : 'error'}}</i> <b>{{payment}}</b></p>
+                <br/>
+                <h3>{{ 'Total' | translate }}: {{(shippingCost + amount) | currencyFormat}}</h3>
+                <br/>
+                <button *ngIf="paymentMethod!=='PayPal'" mat-raised-button color="accent" [disabled]="!isValidAccount||!isValidPayment" (click)="confirmClick()"><mat-icon>check_circle</mat-icon> {{ 'Checkout' | translate }}</button>
+                <br/>
+                <div id="paypal-container"></div>
+            </mat-card-content>
+        </mat-card>
+        <div>
+            <br/>
+            <button mat-button matStepperPrevious>{{ 'Back' | translate }}</button>
+        </div>
+    </mat-step>
+</mat-horizontal-stepper>

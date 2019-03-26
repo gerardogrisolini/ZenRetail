@@ -1,0 +1,42 @@
+<mat-card>
+    <h3 style="display:inline;">{{ 'Total' | translate }}: {{amount | currencyFormat}}</h3>
+    <button mat-raised-button color="accent" style="float: right; margin-top: -10px;" [disabled]="amount===0" routerLink="/checkout"><mat-icon>check_circle</mat-icon> {{ 'Checkout' | translate }}</button>
+</mat-card>
+
+<mat-card *ngIf="amount===0">
+    <span style="margin-left: 20px">{{ 'The basket is empty' | translate }}</span>
+</mat-card>
+
+<mat-card>
+    <mat-card-content>
+        <mat-selection-list #items>
+        <mat-list-option *ngFor="let item of basket" [value]="item">
+            <table cellspacing="10" style="width: 100%">
+                <tr>
+                    <td rowspan="2" style="width: 100px">
+                        <img height="100px" title="{{item.basketBarcode}}" [alt]="item.basketProduct.productName" [src]="item.basketProduct.medias | parseUrl:'thumb'">
+                    </td>
+                    <td colspan="2">
+                        <span> {{item.basketProduct | articleInfo:item.basketBarcode}} </span>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <mat-form-field>
+                            <input matInput placeholder="{{ 'Quantity' | translate }}" [(ngModel)]="item.basketQuantity" (change)="updateClick(item)" type="number" min="1">
+                        </mat-form-field>
+                    </td>
+                    <td>
+                        <span>{{item.basketPrice | currencyFormat}}</span>
+                    </td>
+                </tr>
+            </table>
+        </mat-list-option>
+        </mat-selection-list>
+    </mat-card-content>
+</mat-card>
+
+<mat-card>
+    <strong>{{count}} {{ 'Items' | translate }}</strong>
+    <button mat-raised-button (click)="deleteClick(items)" [disabled]="items.selectedOptions.selected.length===0" style="float: right; margin-top: -10px;"><mat-icon>delete_forever</mat-icon> {{ 'Delete' | translate }}</button>
+</mat-card>

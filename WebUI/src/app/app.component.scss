@@ -1,0 +1,133 @@
+body {
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+
+  // Helps fonts on OSX looks more consistent with other systems
+  // Isn't currently in button styles due to performance concerns
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -ms-overflow-style: -ms-autohiding-scrollbar;
+  }
+
+  .mat-sidenav {
+    border-top: thin ridge #ececec;
+    border-left: thin ridge #ececec;
+    width: 50vw;
+    max-width: 300px;
+    padding: 1vw;
+    z-index: 102;
+    
+    img {
+      margin-left: 10px;
+      margin-top: 10px;
+      height: 75px;
+    }
+    .mat-button {
+      width: 100%;
+      position: relative;
+      bottom: 0;
+      margin: 24px 0;
+    }
+    .mat-list-item {
+      border-bottom: thin dotted silver;
+    }
+  }
+
+  .app-root {
+    background-color: white;
+  }
+
+  .app-content {
+    margin-top: 70px;
+    padding: 5px;
+  }
+  
+  .app-grid-list {
+    margin: 0;
+    padding: 0;
+    
+    img {
+      object-fit: cover;
+      height: 100%;
+      width: 100%;
+    }
+  }
+
+  .mat-grid-list.mat-grid-list {
+    width: 100% !important;
+  }
+
+  .mat-toolbar-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 65px;
+  }
+
+  .mat-toolbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 65px;
+    z-index: 101;
+    background-color: white;
+    
+    .mat-icon {
+      cursor: pointer;
+    }
+
+    .app-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+    }
+  }
+
+  #home {
+    color: silver;
+    padding-bottom: 125px;
+  }
+  
+  .brand { 
+    cursor: pointer;
+    float: left;
+    padding: 10px;
+    text-align: center;
+  
+    img {
+      height: 60px;      
+    }
+  }
+
+  .badge {
+    height: 10px;
+    margin-left: -5px;
+    padding: 2px 5px !important;
+    color: green;
+    background-color: #f5f5f5;
+    border: 1px solid;
+    border-radius: 30px;
+    font-size: x-small;
+  }
+
+  .done {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    color: white;
+  }
+
+  ::-webkit-scrollbar { 
+    display: none; 
+  }
+}
+
+// stretch to screen size in fullscreen mode
+.app-content {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}

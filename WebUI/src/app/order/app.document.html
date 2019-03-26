@@ -1,0 +1,86 @@
+﻿<div style="background: white; padding: 20px;">
+
+    <div class="noprint">
+        <button mat-raised-button color="primary" (click)="pdfClick()" [disabled]="isBusy"><mat-icon>picture_as_pdf</mat-icon> Save as pdf </button>
+        <button mat-raised-button color="primary" (click)="sendMailClick()" [disabled]="isBusy"><mat-icon>email</mat-icon> Send by mail</button>
+    </div>
+    
+    <div *ngIf="movement" #doc>
+        <div *ngFor="let items of groups" class="pdfDocument">          
+            <table class="table" style="width: 100%">    
+                <thead>
+                    <tr> 
+                        <td colspan="5"><img title="Header" height="100" width="100%" src="{{header}}" style="margin: 10px 0"></td> 
+                    </tr> 
+                    <tr> 
+                        <td><strong>Number</strong></td> 
+                        <td align="right">{{movement.movementNumber}}</td>
+                        <td style="width: 20%">&nbsp;</td>
+                        <td><strong>Store</strong></td> 
+                        <td align="right">{{movement.movementStore.storeName}}</td> 
+                    </tr> 
+                    <tr> 
+                        <td><strong>Date</strong></td> 
+                        <td align="right">{{movement.movementDate | date: 'yyyy-MM-dd'}}</td>
+                        <td style="width: 20%">&nbsp;</td>
+                        <td><strong>Causal</strong></td> 
+                        <td align="right">{{movement.movementCausal.causalName}}</td> 
+                    </tr> 
+                    <tr> 
+                        <td><strong>Status</strong></td> 
+                        <td align="right">{{movement.movementStatus}}</td>
+                        <td style="width: 20%">&nbsp;</td>
+                        <td><strong>Customer</strong></td> 
+                        <td rowspan="3" align="right">
+                            {{movement.movementCustomer.customerName}}
+                            <br/>{{movement.movementCustomer.customerAddress}}
+                            <br/>{{movement.movementCustomer.customerCity}}
+                        </td> 
+                    </tr> 
+                    <tr> 
+                        <td colspan="4"><strong>Note</strong></td> 
+                    </tr> 
+                    <tr> 
+                        <td colspan="4">{{movement.movementNote}}</td>
+                    </tr>
+                </thead>
+            </table>
+
+            <table class="table" cellpadding="2" cellspacing="2" style="width: 100%">    
+                <thead>
+                    <tr style="background-color: whitesmoke"> 
+                        <td><strong>Barcode</strong></td> 
+                        <td><strong>Product</strong></td> 
+                        <td align="center"><strong>Quantity</strong></td> 
+                        <td align="right"><strong>Price</strong></td> 
+                        <td align="right"><strong>Amount</strong></td> 
+                    </tr> 
+                </thead>
+                <tfoot style="background-color: whitesmoke">
+                    <tr>
+                        <td colspan="2">Amount</td>
+                        <td colspan="3" align="right">{{amount | currency: 'EUR' : true}}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">Tax 22%</td>
+                        <td colspan="3" align="right">{{total - amount | currency: 'EUR' : true}}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><strong>Totals</strong></td>
+                        <td align="center"><strong>{{totalItems}}</strong></td>
+                        <td colspan="2" align="right"><strong>{{total | currency: 'EUR' : true}}</strong></td>
+                    </tr>
+                </tfoot>
+                <tbody> 
+                    <tr *ngFor="let item of items" style="height: 39px"> 
+                        <td><span>{{item.movementArticleBarcode}}</span></td> 
+                        <td><span>{{item.movementArticleProduct | articleInfo:item.movementArticleBarcode}}</span></td> 
+                        <td align="center"><span>{{item.movementArticleBarcode ? item.movementArticleQuantity : ''}}</span></td> 
+                        <td align="right"><span>{{!item.movementArticleBarcode ? '' : item.movementArticlePrice | currency: 'EUR' : true}}</span></td> 
+                        <td align="right"><span>{{!item.movementArticleBarcode ? '' : item.movementArticleAmount | currency: 'EUR' : true}}</span></td> 
+                    </tr> 
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

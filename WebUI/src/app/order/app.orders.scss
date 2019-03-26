@@ -1,0 +1,15 @@
+.flex75 {
+    flex: 0 0 75px;
+}
+.flex100Right {
+    flex: 0 0 100px;
+    text-align: right;
+}
+.flex100Center {
+    flex: 0 0 100px;
+    text-align: center;
+}
+.fix100Center {
+    max-width: 100px;
+    text-align: center;
+}

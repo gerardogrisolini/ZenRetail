@@ -1,0 +1,27 @@
+<div class="app-grid-list">
+
+  <mat-form-field *ngIf="filtering" style="width: 96%; padding: 0 2%;">
+    <input matInput mode="search" (ngModelChange)="onFilterChange($event)" [(ngModel)]="filter" placeholder="{{ 'Search' | translate }}">
+    <mat-icon matSuffix (click)="toggleSearch()">search</mat-icon>
+  </mat-form-field>
+
+  <mat-grid-list [cols]="fixedCols" [rowHeight]="fitListHeight" [style.height]="fitListHeight" [style.width]="fitListWidth">
+    <mat-grid-tile *ngFor="let product of filtered" style="cursor: pointer">
+      <img routerLink="/product/{{product.seo.permalink}}" [alt]="product.productName" [src]="product.medias | parseUrl:'thumb'">
+      <mat-grid-tile-footer>
+        <h3 mat-line><strong>{{product.productName}}</strong></h3>
+        <span mat-line>{{product.brand.brandName}}</span>
+        <div *ngIf="product.discount.dicountId>0;then discount_content else price_content"></div>
+        <ng-template #discount_content>
+          <p><span class="percentage">-{{product.discount.percentage}}%</span>
+          <del>{{product.price.selling | currencyFormat}}</del>
+          <b>{{product.discount.price | currencyFormat}}</b>
+          </p>
+        </ng-template>
+        <ng-template #price_content>
+          <p><span mat-line><strong>{{product.price.selling | currencyFormat}}</strong></span></p>
+        </ng-template>
+      </mat-grid-tile-footer>
+    </mat-grid-tile>
+  </mat-grid-list>
+</div>

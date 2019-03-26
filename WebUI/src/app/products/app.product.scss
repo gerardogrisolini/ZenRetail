@@ -1,0 +1,17 @@
+.mat-card-content {
+    font-size: medium;
+    img {
+        width: 100%;
+    }
+}
+
+.back-button {
+    position: absolute;
+    top: 70px;
+    left: 15px;
+    z-index: 1000;
+}
+
+.mat-expansion-panel {
+    background-color: whitesmoke;
+}

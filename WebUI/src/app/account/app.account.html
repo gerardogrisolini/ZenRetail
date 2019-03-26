@@ -1,0 +1,112 @@
+﻿<div *ngIf="account&&dataform">
+<form [formGroup]="dataform">
+    <mat-card>
+        <mat-card-content>
+            <mat-form-field style="width: 100%">
+                <input matInput [(ngModel)]="account.registryName" formControlName="name" placeholder="{{ 'Full Name' | translate }}"/>
+                <div *ngIf="!dataform.controls['name'].valid&&dataform.controls['name'].dirty">
+                    <i class="material-icons">warning</i>
+                    <mat-error *ngIf="dataform.controls['name'].errors['required']" [innerHTML]="'Full Name is required' | translate"></mat-error>
+                </div>
+            </mat-form-field>
+            <mat-form-field style="width: 100%">
+                <input matInput [(ngModel)]="account.registryEmail" type="email" formControlName="email" placeholder="{{ 'Email' | translate }}"/>
+                <div *ngIf="!dataform.controls['email'].valid&&dataform.controls['email'].dirty">
+                    <i class="material-icons">warning</i>
+                    <mat-error *ngIf="dataform.controls['email'].errors['required']" [innerHTML]="'Email is required' | translate"></mat-error>
+                    <mat-error *ngIf="dataform.controls['email'].errors['email']" [innerHTML]="'Must be a valid email address' | translate"></mat-error>
+                </div>
+            </mat-form-field>
+            <mat-form-field style="width: 100%">
+                <input matInput [(ngModel)]="account.registryPhone" formControlName="phone" placeholder="{{ 'Phone' | translate }}"/>
+                <div *ngIf="!dataform.controls['phone'].valid&&dataform.controls['phone'].dirty">
+                    <i class="material-icons">warning</i>
+                    <mat-error *ngIf="dataform.controls['phone'].errors['required']" [innerHTML]="'Phone is required' | translate"></mat-error>
+                </div>
+            </mat-form-field>
+            <mat-form-field style="width: 100%">
+                <input matInput [(ngModel)]="account.registryAddress" formControlName="address" placeholder="{{ 'Address' | translate }}"/>
+                <div *ngIf="!dataform.controls['address'].valid&&dataform.controls['address'].dirty">
+                    <i class="material-icons">warning</i>
+                    <mat-error *ngIf="dataform.controls['address'].errors['required']" [innerHTML]="'Address is required' | translate"></mat-error>
+                </div>
+            </mat-form-field>
+            <mat-form-field style="width: 100%">
+                <input matInput [(ngModel)]="account.registryCity" formControlName="city" placeholder="{{ 'City' | translate }}"/>
+                <div *ngIf="!dataform.controls['city'].valid&&dataform.controls['city'].dirty">
+                    <i class="material-icons">warning</i>
+                    <mat-error *ngIf="dataform.controls['city'].errors['required']" [innerHTML]="'City is required' | translate"></mat-error>
+                </div>
+            </mat-form-field>
+            <mat-form-field style="width: 100%">
+                <input matInput [(ngModel)]="account.registryZip" formControlName="zip" placeholder="{{ 'Zip' | translate }}"/>
+                <div *ngIf="!dataform.controls['zip'].valid&&dataform.controls['zip'].dirty">
+                    <i class="material-icons">warning</i>
+                    <mat-error *ngIf="dataform.controls['zip'].errors['required']" [innerHTML]="'Zip is required' | translate"></mat-error>
+                    <mat-error *ngIf="dataform.controls['zip'].errors['minlength']||dataform.controls['zip'].errors['maxlength']" [innerHTML]="'Must be equals than 5 characters' | translate"></mat-error>
+                </div>
+            </mat-form-field>
+            <mat-form-field style="width: 100%">
+                <input matInput [(ngModel)]="account.registryProvince" formControlName="province" placeholder="{{ 'Province' | translate }}"/>
+                <div *ngIf="!dataform.controls['province'].valid&&dataform.controls['province'].dirty">
+                    <i class="material-icons">warning</i>
+                    <mat-error *ngIf="dataform.controls['province'].errors['required']" [innerHTML]="'Province is required' | translate"></mat-error>
+                    <mat-error *ngIf="dataform.controls['province'].errors['minlength']||dataform.controls['province'].errors['maxlength']" [innerHTML]="'Must be equals than 2 characters' | translate"></mat-error>
+                </div>
+            </mat-form-field>
+            <mat-form-field style="width: 100%">
+                <input matInput [(ngModel)]="account.registryCountry" formControlName="country" placeholder="{{ 'Country' | translate }}"/>
+                <div *ngIf="!dataform.controls['country'].valid&&dataform.controls['country'].dirty">
+                    <i class="material-icons">warning</i>
+                    <mat-error *ngIf="dataform.controls['country'].errors['required']" [innerHTML]="'Country is required' | translate"></mat-error>
+                    <mat-error *ngIf="dataform.controls['country'].errors['minlength']||dataform.controls['country'].errors['maxlength']" [innerHTML]="'Must be equals than 3 characters' | translate"></mat-error>
+                </div>
+            </mat-form-field>
+            <mat-form-field style="width: 100%">
+                <input matInput [(ngModel)]="account.registryFiscalCode" formControlName="fiscalCode" placeholder="{{ 'Fiscal Code' | translate }}"/>
+                <div *ngIf="!dataform.controls['fiscalCode'].valid&&dataform.controls['fiscalCode'].dirty">
+                    <i class="material-icons">warning</i>
+                    <mat-error *ngIf="dataform.controls['fiscalCode'].errors['required']" [innerHTML]="'Fiscal Code is required' | translate"></mat-error>
+                    <mat-error *ngIf="dataform.controls['fiscalCode'].errors['minlength']||dataform.controls['fiscalCode'].errors['maxlength']" [innerHTML]="'Must be equals than 16 characters' | translate"></mat-error>
+                </div>
+            </mat-form-field>
+            <mat-form-field style="width: 100%">
+                <input matInput [(ngModel)]="account.registryVatNumber" formControlName="vatNumber" placeholder="{{ 'VAT Number (optional)' | translate }}"/>
+                <div *ngIf="!dataform.controls['vatNumber'].valid&&dataform.controls['vatNumber'].dirty">
+                    <i class="material-icons">warning</i>
+                    <mat-error *ngIf="dataform.controls['vatNumber'].errors['minlength']||dataform.controls['vatNumber'].errors['maxlength']" [innerHTML]="'Must be equals than 11 characters' | translate"></mat-error>
+                </div>
+            </mat-form-field>
+            <button mat-raised-button olor="primary" (click)="saveClick()" [disabled]="!dataform.valid"><mat-icon>save</mat-icon> {{ 'Save' | translate }}</button>
+        </mat-card-content>
+    </mat-card>
+    <mat-card *ngIf="!isCheckout">
+        <mat-card-content>
+            <mat-form-field style="width: 100%">
+                <input matInput [(ngModel)]="account.registryPassword" type="password" formControlName="password" placeholder="{{ 'New password' | translate }}"/>
+                <div *ngIf="!dataform.controls['password'].valid&&dataform.controls['password'].dirty">
+                    <i class="material-icons">warning</i>
+                    <mat-error *ngIf="dataform.controls['password'].errors['required']" [innerHTML]="'Password is required' | translate"></mat-error>
+                    <mat-error *ngIf="dataform.controls['password'].errors['minlength']" [innerHTML]="'Must be longer than 8 characters' | translate"></mat-error>
+                    <mat-error *ngIf="dataform.controls['password'].errors['maxlength']" [innerHTML]="'Must be at most 20 characters' | translate"></mat-error>
+                </div>
+            </mat-form-field>
+            <mat-form-field style="width: 100%">
+                <input matInput type="password" formControlName="confirmPassword" placeholder="{{ 'Confirm new password' | translate }}"/>
+                <div *ngIf="!dataform.controls['confirmPassword'].valid&&dataform.controls['confirmPassword'].dirty">
+                    <i class="material-icons">warning</i>
+                    <mat-error *ngIf="dataform.controls['confirmPassword'].errors['required']" [innerHTML]="'Confirm Password is required' | translate"></mat-error>
+                    <mat-error *ngIf="dataform.controls['confirmPassword'].errors['matchPassword']" [innerHTML]="'Password not match' | translate"></mat-error>
+                </div>
+            </mat-form-field>
+            <button mat-raised-button olor="primary" (click)="updateClick()" [disabled]="!dataform.controls['confirmPassword'].valid"><mat-icon>save</mat-icon> {{ 'Update' | translate }}</button>
+        </mat-card-content>
+    </mat-card>
+</form>
+<mat-card *ngIf="!isCheckout">
+    <mat-card-content>
+        <button mat-raised-button color="primary" (click)="logoutClick()"><mat-icon>exit_to_app</mat-icon> {{ 'Logout' | translate }}</button>
+        <button *ngIf="account.registryId>0" mat-raised-button (click)="deleteClick()" style="float: right"><mat-icon>delete_forever</mat-icon> {{ 'Delete' | translate }}</button>
+    </mat-card-content>
+</mat-card>
+</div>

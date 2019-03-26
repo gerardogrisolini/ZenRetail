@@ -1,0 +1,21 @@
+.app-grid-list {
+  width: 100%;
+  padding: 0px;
+  
+  p {
+    margin: 16px;
+  }
+
+  .app-basic-list .mat-grid-tile {
+    background: rgba(0, 0, 0, 0.32);
+  }
+
+  .mat-grid-tile-footer {
+    font-size: large;
+    height: 80px;
+  }
+
+  img {
+    width: 100%;
+  }
+}
