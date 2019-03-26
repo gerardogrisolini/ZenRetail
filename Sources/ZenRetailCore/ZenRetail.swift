@@ -10,6 +10,7 @@ import ZenNIO
 import ZenSMTP
 import ZenPostgres
 
+
 public class ZenRetail {
     var configuration: Configuration!
     static var zenNIO: ZenNIO!
@@ -35,14 +36,15 @@ public class ZenRetail {
         if let portString = ProcessInfo.processInfo.environment["PORT"] {
             configuration.serverPort = Int(portString)!
         }
-        let databaseUrl = ProcessInfo.processInfo.environment["DATABASE_URL"]
+        if let databaseUrl = ProcessInfo.processInfo.environment["DATABASE_URL"] {
+            parseConnectionString(databaseUrl: databaseUrl)
+        }
         
-        try setupDatabase(databaseUrl: databaseUrl)
+        try setupDatabase()
         try setupSmtp()
         
         addIoC()
         routesAndHandlers()
-        addFilters()
 
         ZenRetail.zenNIO = ZenNIO(host: configuration.serverName, port: configuration.serverPort, router: router)
         ZenRetail.zenNIO.addCORS()
@@ -50,7 +52,7 @@ public class ZenRetail {
         ZenRetail.zenNIO.addAuthentication(handler: { (email, password) -> (Bool) in
             return email == password
         })
-
+        addFilters()
     }
     
     private func setupSmtp() throws {
@@ -59,7 +61,7 @@ public class ZenRetail {
         
         let config = ServerConfiguration(
             hostname: company.smtpHost,
-            port: company.smtpSsl ? 546 : 25,
+            port: company.smtpSsl ? 587 : 25,
             username: company.smtpUsername,
             password: company.smtpPassword,
             cert: nil,
@@ -68,25 +70,31 @@ public class ZenRetail {
         zenSMTP = ZenSMTP(config: config)
     }
     
-    private func setupDatabase(databaseUrl: String?) throws {
+    private func parseConnectionString(databaseUrl: String) {
+        var url = databaseUrl.replacingOccurrences(of: "postgres://", with: "")
+        var index = url.index(before: url.firstIndex(of: ":")!)
+        configuration.postgresUsername = url[url.startIndex...index].description
         
-//    if let databaseUrl = databaseUrl {
-//        var url = databaseUrl.replacingOccurrences(of: "postgres://", with: "")
-//        let index1 = url.firstIndex(of: ":")!
-//        configuration.postgresUsername = url[url.startIndex...index1].description
-//
-//        let index2 = url.firstIndex(of: "@")!
-//        configuration.postgresPassword = url.substring(index1 + 1, length: index2 - index1 - 1)
-//        url = url.substring(index2 + 1, length: url.length - index2 - 1)
-//
-//        let index3 = url.firstIndex(of: ":")!
-//        configuration.postgresHost = url.substring(0, length: index3)
-//
-//        let index4 = url.firstIndex(of: "/")!
-//        configuration.postgresPort = Int(url.substring(index3 + 1, length: index4 - index3 - 1))!
-//        configuration.postgresDatabase = url.substring(index4 + 1, length: url.length - index4 - 1)
-//    }
-
+        index = url.index(index, offsetBy: 2)
+        var index2 = url.index(before: url.firstIndex(of: "@")!)
+        configuration.postgresPassword = url[index...index2].description
+        
+        index = url.index(index2, offsetBy: 2)
+        url = url[index...].description
+        
+        index2 = url.index(before: url.firstIndex(of: ":")!)
+        configuration.postgresHost = url[url.startIndex...index2].description
+        
+        index = url.index(index2, offsetBy: 2)
+        index2 = url.index(before: url.firstIndex(of: "/")!)
+        configuration.postgresPort = Int(url[index...index2].description)!
+        
+        index = url.index(index2, offsetBy: 2)
+        configuration.postgresDatabase = url[index...].description
+    }
+    
+    private func setupDatabase() throws {
+        
         let config = PostgresConfig(
             host: configuration.postgresHost,
             port: configuration.postgresPort,
@@ -192,15 +200,10 @@ public class ZenRetail {
     }
     
     private func addFilters() {
-        ZenRetail.zenNIO.addFilter(method: .POST, url: "/api/*")
-//        authenticationConfig.exclude("/api/login")
-//        authenticationConfig.exclude("/api/logout")
-//        authenticationConfig.exclude("/api/register")
-//        authenticationConfig.exclude("/api/ecommerce/*")
-//        authenticationConfig.exclude("/api/ecommerce/category/*")
-//        authenticationConfig.exclude("/api/ecommerce/brand/*")
-//        authenticationConfig.exclude("/api/ecommerce/product/*")
-        
+        ZenRetail.zenNIO.setFilter(true, methods: [.GET, .POST, .PUT, .DELETE], url: "/api/*")
+        ZenRetail.zenNIO.setFilter(false, methods: [.POST], url: "/api/login")
+        ZenRetail.zenNIO.setFilter(false, methods: [.POST], url: "/api/logout")
+        ZenRetail.zenNIO.setFilter(false, methods: [.GET], url: "/api/ecommerce/*")
     }
     
     private func loadConfiguration() -> Configuration {
@@ -230,86 +233,6 @@ public class ZenRetail {
         } catch {
             print(error)
         }
-    }
-    
-    private func makeSetupdHandlers(router: Router) {
-        router.get("/setup", handler: setupHandlerGET)
-        router.post("/setup", handler: setupHandlerPOST)
-    }
-    
-    private let header = "<html>" +
-        "<head>" +
-        "<title>Webretail - PostgreSql configuration</title>" +
-        "<meta charset=\"UTF-8\">" +
-        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">" +
-        "<style>" +
-        "body { font-family: arial; } " +
-        "h3 { width: 100%; text-align: center; }" +
-        ".logo { height: 100px; } " +
-        "header { text-align: center; } " +
-        "input { width: 100%; font-size: large; } " +
-        "fieldset { margin-bottom: 20px; } " +
-        "button { width: 100%; height: 50px; font-size: large; margin: 10px 0; } " +
-    "</style></head><body>"
-    
-    private let footer = "</body></html>"
-    
-    private func setupHandlerPOST(request: HttpRequest, _ response: HttpResponse) {
-        if let host = request.getParam(String.self, key: "host"),
-            let port = request.getParam(Int.self, key: "port"),
-            let name = request.getParam(String.self, key: "name"),
-            let usr = request.getParam(String.self, key: "usr"),
-            let pwd = request.getParam(String.self, key: "pwd") {
-            
-            configuration.postgresHost = host
-            configuration.postgresPort = port
-            configuration.postgresDatabase = name
-            configuration.postgresUsername = usr
-            configuration.postgresPassword = pwd
-            saveConfiguration(cfg: configuration)
-            
-            let hml = """
-            \(header)
-            <h2>PostgreSql configuration: success</h2>
-            <a href=\"/admin/login\">Login</a>
-            \(footer)
-            """
-            response.send(html: hml)
-            response.completed()
-        } else {
-            response.badRequest(error: "invalid parameters")
-        }
-    }
-    
-    private func setupHandlerGET(request: HttpRequest, _ response: HttpResponse) {
-        
-        let form = "<form method=\"POST\" action=\"/setup\">" +
-            "<h3>PostgreSql configuration</h3>" +
-            "<fieldset>" +
-            "   <legend>HOST</legend>" +
-            "   <input name=\"host\" type=\"text\" value=\"\(configuration.postgresHost)\" placeholder=\"Type ip address or domain\"/>" +
-            "</fieldset>" +
-            "<fieldset>" +
-            "   <legend>PORT</legend>" +
-            "   <input name=\"port\" type=\"text\" value=\"\(configuration.postgresPort)\" placeholder=\"Type port number\"/>" +
-            "</fieldset>" +
-            "<fieldset>" +
-            "   <legend>NAME</legend>" +
-            "   <input name=\"name\" type=\"text\" value=\"\(configuration.postgresDatabase)\" placeholder=\"Type database name\"/>" +
-            "</fieldset>" +
-            "<fieldset>" +
-            "   <legend>USER</legend>" +
-            "   <input name=\"usr\" type=\"text\" value=\"\(configuration.postgresUsername)\" placeholder=\"Type username\"/>" +
-            "</fieldset>" +
-            "<fieldset>" +
-            "   <legend>PASSWORD</legend>" +
-            "   <input name=\"pwd\" type=\"password\" value=\"\(configuration.postgresPassword)\" placeholder=\"Type password\"/>" +
-            "</fieldset>" +
-            "<button type=\"submit\" style=\"background-color: lightgreen\">Save</button>" +
-        "</form>"
-        
-        response.send(html: header + form + footer)
-        response.completed()
     }
 
     static func angularHandler(webapi: Bool = true) -> HttpHandler {
