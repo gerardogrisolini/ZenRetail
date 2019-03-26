@@ -22,6 +22,7 @@ public class ZenRetail {
     }
 
     public func start() throws {
+        defer { zenPostgres.close() }
         try ZenRetail.zenNIO.start()
     }
 
