@@ -36,18 +36,20 @@ public class ZenRetail {
         }
         let databaseUrl = ProcessInfo.processInfo.environment["DATABASE_URL"]
         
+        try setupDatabase(databaseUrl: databaseUrl)
+        try setupSmtp()
+        
+        addIoC()
+        routesAndHandlers()
+        addFilters()
+
         ZenRetail.zenNIO = ZenNIO(host: configuration.serverName, port: configuration.serverPort, router: router)
         ZenRetail.zenNIO.addCORS()
         ZenRetail.zenNIO.addWebroot(path: configuration.documentRoot)
         ZenRetail.zenNIO.addAuthentication(handler: { (email, password) -> (Bool) in
             return email == password
         })
-        try setupDatabase(databaseUrl: databaseUrl)
-        try setupSmtp()
 
-        addIoC()
-        routesAndHandlers()
-        addFilters()
     }
     
     private func setupSmtp() throws {
@@ -62,7 +64,7 @@ public class ZenRetail {
             cert: nil,
             key: nil
         )
-        zenSMTP = ZenSMTP(config: config, eventLoopGroup: ZenRetail.zenNIO.eventLoopGroup)
+        zenSMTP = ZenSMTP(config: config)
     }
     
     private func setupDatabase(databaseUrl: String?) throws {
@@ -92,7 +94,7 @@ public class ZenRetail {
             password: configuration.postgresPassword,
             database: configuration.postgresDatabase
         )
-        zenPostgres = try ZenPostgres(config: config, eventLoopGroup: ZenRetail.zenNIO.eventLoopGroup)
+        zenPostgres = try ZenPostgres(config: config)
         
         try Settings().create()
         let file = File()

@@ -6,6 +6,9 @@ import PackageDescription
 let package = Package(
     name: "ZenRetail",
     products: [
+        .library(
+            name: "ZenRetailCore",
+            targets: ["ZenRetailCore"]),
         .executable(
             name: "ZenRetail",
             targets: ["ZenRetail"]),
@@ -20,10 +23,13 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "ZenRetail",
+            name: "ZenRetailCore",
             dependencies: ["ZenNIO", "ZenPostgres", "ZenSMTP", "ZenMWS", "ZenEBAY", "SwiftGD"]),
+        .target(
+            name: "ZenRetail",
+            dependencies: ["ZenRetailCore"]),
         .testTarget(
             name: "ZenRetailTests",
-            dependencies: ["ZenRetail"]),
+            dependencies: ["ZenRetailCore"]),
     ]
 )

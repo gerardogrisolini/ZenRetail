@@ -114,7 +114,7 @@
         "repositoryURL": "https://github.com/gerardogrisolini/ZenNIO.git",
         "state": {
           "branch": "swift-5.0",
-          "revision": "ccf83d6d2af9bee0e8833180742cc06649ca00a7",
+          "revision": "4319aceaf818c9804266deeb8c7fa007a042ab7f",
           "version": null
         }
       },
@@ -123,7 +123,7 @@
         "repositoryURL": "https://github.com/gerardogrisolini/ZenPostgres.git",
         "state": {
           "branch": "master",
-          "revision": "2b9d607fda4f872f19f783aac2a0939b21b99818",
+          "revision": "f1b900eef0acc202931ae1a4742978343ba7f69d",
           "version": null
         }
       },
@@ -132,7 +132,7 @@
         "repositoryURL": "https://github.com/gerardogrisolini/ZenSMTP.git",
         "state": {
           "branch": "master",
-          "revision": "c5c2fbf28c818f5431084edf491f1ab64c171b1d",
+          "revision": "166331104b0d2e97fc02e2a7ce8359703df23aaa",
           "version": null
         }
       }
