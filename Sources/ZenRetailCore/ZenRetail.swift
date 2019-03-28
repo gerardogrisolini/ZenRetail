@@ -22,8 +22,12 @@ public class ZenRetail {
         try setup()
     }
 
+    deinit {
+        try! zenSMTP.close()
+        try! zenPostgres.close()
+    }
+
     public func start() throws {
-        defer { zenPostgres.close() }
         try ZenRetail.zenNIO.start()
     }
 
@@ -40,18 +44,18 @@ public class ZenRetail {
             parseConnectionString(databaseUrl: databaseUrl)
         }
         
-        try setupDatabase()
-        try setupSmtp()
-        
-        addIoC()
-        routesAndHandlers()
-
         ZenRetail.zenNIO = ZenNIO(host: configuration.serverName, port: configuration.serverPort, router: router)
         ZenRetail.zenNIO.addCORS()
         ZenRetail.zenNIO.addWebroot(path: configuration.documentRoot)
         ZenRetail.zenNIO.addAuthentication(handler: { (email, password) -> (Bool) in
             return email == password
         })
+
+        try setupDatabase()
+        try setupSmtp()
+
+        addIoC()
+        routesAndHandlers()        
         addFilters()
     }
     
@@ -67,7 +71,7 @@ public class ZenRetail {
             cert: nil,
             key: nil
         )
-        zenSMTP = ZenSMTP(config: config)
+        zenSMTP = try ZenSMTP(config: config)
     }
     
     private func parseConnectionString(databaseUrl: String) {
@@ -236,19 +240,16 @@ public class ZenRetail {
     }
 
     static func angularHandler(webapi: Bool = true) -> HttpHandler {
-        return {
-            req, resp in
-            resp.addHeader(.contentType, value: "text/html")
-            
-            let data = FileManager.default.contents(atPath: webapi ? "./webroot/admin/index.html" : "./webroot/web/index.html")
-            
-            guard let content = data else {
-                resp.completed( .notFound)
-                return
-            }
-            
-            resp.send(text: String(data: content, encoding: .utf8)!)
-            resp.completed()
+        return { req, resp in
+            resp.addHeader(.location, value: webapi ? "/admin/index.html" : "/web/index.html")
+//            let data = FileManager.default.contents(atPath: webapi ? "./webroot/admin/index.html" : "./webroot/web/index.html")
+//            guard let content = data else {
+//                resp.completed( .notFound)
+//                return
+//            }
+//
+//            resp.send(html: String(data: content, encoding: .utf8)!)
+            resp.completed(.found)
         }
     }
 }

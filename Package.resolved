@@ -6,7 +6,7 @@
         "repositoryURL": "https://github.com/tadija/AEXML.git",
         "state": {
           "branch": "master",
-          "revision": "54bb8ea6fb693dd3f92a89e5fcc19e199fdeedd0",
+          "revision": "e4d517844dd03dac557e35d77a8e9ab438de91a6",
           "version": null
         }
       },
@@ -33,7 +33,7 @@
         "repositoryURL": "https://github.com/vapor/nio-postgres.git",
         "state": {
           "branch": "master",
-          "revision": "e8e10ef69be3f4b91c741eb8b3b54fef49b163ff",
+          "revision": "cd694bbde80a48c5fd81bc2f60d78c3d9a83118d",
           "version": null
         }
       },
@@ -60,7 +60,7 @@
         "repositoryURL": "https://github.com/apple/swift-nio.git",
         "state": {
           "branch": "master",
-          "revision": "8d5994be5f6dbfc85c98666ca779999f28534716",
+          "revision": "2b0d2e4b30a5ec483573de8d12b8aa7b861a4234",
           "version": null
         }
       },
@@ -69,7 +69,7 @@
         "repositoryURL": "https://github.com/apple/swift-nio-http2.git",
         "state": {
           "branch": "master",
-          "revision": "a4a1d9c7278fecce6a80f025622de4e47d855fcb",
+          "revision": "a92923bcb7d884e6977b7cb131705703936af956",
           "version": null
         }
       },
@@ -78,7 +78,7 @@
         "repositoryURL": "https://github.com/apple/swift-nio-ssl.git",
         "state": {
           "branch": "master",
-          "revision": "769e8cbcfc37d8a814b702d0dce95f6da08daa8a",
+          "revision": "47d971e1367f6df8ddf06c284ad266df39c31024",
           "version": null
         }
       },
@@ -114,7 +114,7 @@
         "repositoryURL": "https://github.com/gerardogrisolini/ZenNIO.git",
         "state": {
           "branch": "swift-5.0",
-          "revision": "d831e0425b3effa21813e7405389cb4a037a595c",
+          "revision": "ac0b989a638c7acdadb309d8d6c2c4ce854b3c2c",
           "version": null
         }
       },
@@ -123,7 +123,7 @@
         "repositoryURL": "https://github.com/gerardogrisolini/ZenPostgres.git",
         "state": {
           "branch": "master",
-          "revision": "f1b900eef0acc202931ae1a4742978343ba7f69d",
+          "revision": "d004413c4be556268069e997214db37d53dd103c",
           "version": null
         }
       },
@@ -132,7 +132,7 @@
         "repositoryURL": "https://github.com/gerardogrisolini/ZenSMTP.git",
         "state": {
           "branch": "master",
-          "revision": "166331104b0d2e97fc02e2a7ce8359703df23aaa",
+          "revision": "2bc52aa09eb74ae9aad597c9a6c430e58cb7f24f",
           "version": null
         }
       }

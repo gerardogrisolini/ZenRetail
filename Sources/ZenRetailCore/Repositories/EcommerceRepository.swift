@@ -30,7 +30,7 @@ struct EcommerceRepository : EcommerceProtocol {
         
         return try Category().query(
             columns: ["DISTINCT Category.*"],
-            whereclause: "Publication.publicationStartAt <= $1 AND Publication.publicationFinishAt >= $1 AND Category.categoryIsPrimary = $2 AND Publication.productIsActive = $2",
+            whereclause: "Publication.publicationStartAt <= $1 AND Publication.publicationFinishAt >= $1 AND Category.categoryIsPrimary = $2 AND Product.productIsActive = $2",
             params: [Int.now(), true],
             orderby: ["Category.categoryName"],
             joins:  [category, product, publication]

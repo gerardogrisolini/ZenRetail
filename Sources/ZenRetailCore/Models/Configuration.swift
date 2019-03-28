@@ -26,7 +26,7 @@ class Configuration: Codable {
         self.serverName = "localhost"
         self.serverPort = 8080
         self.serverSSLPort = 0
-        self.documentRoot = "./webroot"
+        self.documentRoot = "webroot"
         self.sslCert = "" //certificate.crt
         self.sslKey = "" //private.pem
 

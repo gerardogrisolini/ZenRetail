@@ -11,8 +11,7 @@ import ZenPostgres
 struct CategoryRepository : CategoryProtocol {
 
     func getAll() throws -> [Category] {
-        let items = Category()
-        return try items.query(orderby: ["categoryId"])
+        return try Category().query(orderby: ["categoryId"])
     }
     
     func get(id: Int) throws -> Category? {
