@@ -23,12 +23,16 @@ public class ZenRetail {
     }
 
     deinit {
-        try! zenSMTP.close()
-        try! zenPostgres.close()
+        try! stop()
     }
 
     public func start() throws {
         try ZenRetail.zenNIO.start()
+    }
+
+    public func stop() throws {
+        try zenSMTP.close()
+        try zenPostgres.close()
     }
 
     private func setup() throws {
