@@ -9,7 +9,6 @@ import Foundation
 import NIOPostgres
 import ZenPostgres
 
-
 class Amazon: Codable {
     
     public var endpoint: String = "mws-eu.amazonservices.com"
@@ -20,12 +19,13 @@ class Amazon: Codable {
     public var authToken: String = ""
     public var userAgent: String = "Webretail/1.0 (Language=Swift/5.0)"
     
-    func create() throws {
-        let rows: [Settings] = try Settings().query()
+    func create(db: PostgresConnection) throws {
+        let settings = Settings(db: db)
+        let rows: [Settings] = try settings.query()
         if rows.count == 30 {
             let mirror = Mirror(reflecting: self)
             for case let (label?, value) in mirror.children {
-                let setting = Settings()
+                let setting = Settings(db: db)
                 setting.key = label
                 setting.value = "\(value)"
                 try setting.save()
@@ -42,7 +42,8 @@ class Amazon: Codable {
     }
     
     func select() throws {
-        let rows: [Settings] = try Settings().query()
+        let settings = Settings()
+        let rows: [Settings] = try settings.query()
         let data = rows.reduce(into: [String: String]()) {
             $0[$1.key] = $1.value
         }

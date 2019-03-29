@@ -27,6 +27,20 @@ public class ZenRetail {
     }
 
     public func start() throws {
+        ZenRetail.zenNIO = ZenNIO(host: configuration.serverName, port: configuration.serverPort, router: router)
+        ZenRetail.zenNIO.addCORS()
+        ZenRetail.zenNIO.addWebroot(path: configuration.documentRoot)
+        ZenRetail.zenNIO.addAuthentication(handler: { (email, password) -> (Bool) in
+            return email == password
+        })
+        
+        try createTables()
+        try setupSmtp()
+        
+        addIoC()
+        routesAndHandlers()
+        addFilters()
+        
         try ZenRetail.zenNIO.start()
     }
 
@@ -47,20 +61,7 @@ public class ZenRetail {
         if let databaseUrl = ProcessInfo.processInfo.environment["DATABASE_URL"] {
             parseConnectionString(databaseUrl: databaseUrl)
         }
-        
-        ZenRetail.zenNIO = ZenNIO(host: configuration.serverName, port: configuration.serverPort, router: router)
-        ZenRetail.zenNIO.addCORS()
-        ZenRetail.zenNIO.addWebroot(path: configuration.documentRoot)
-        ZenRetail.zenNIO.addAuthentication(handler: { (email, password) -> (Bool) in
-            return email == password
-        })
-
         try setupDatabase()
-        try setupSmtp()
-
-        addIoC()
-        routesAndHandlers()        
-        addFilters()
     }
     
     private func setupSmtp() throws {
@@ -112,48 +113,77 @@ public class ZenRetail {
             database: configuration.postgresDatabase
         )
         zenPostgres = try ZenPostgres(config: config)
+    }
+ 
+    private func createTables() throws {
+        let db = try ZenPostgres.shared.connect()
         
-        try Settings().create()
-        let file = File()
+        let company = Company()
+        try company.create(db: db)
+        let settings = Settings(db: db)
+        try settings.create()
+        let file = File(db: db)
         try file.create()
         try file.setupShippingCost()
-        try Company().create()
-        try AccessTokenStore().create()
-        let user = User()
+        let ats = AccessTokenStore(db: db)
+        try ats.create()
+        let user = User(db: db)
         try user.create()
         try user.setAdmin()
-        let causal = Causal()
+        let causal = Causal(db: db)
         try causal.create()
         try causal.setupDefaults()
-        try Store().create()
-        try Brand().create()
-        let category = Category()
+        let store = Store(db: db)
+        try store.create()
+        let brand = Brand(db: db)
+        try brand.create()
+        let category = Category(db: db)
         try category.create()
         try category.setupMarketplace()
-        let attribute = Attribute()
+        let attribute = Attribute(db: db)
         try attribute.create()
-        try AttributeValue().create()
+        let attributeValue = AttributeValue(db: db)
+        try attributeValue.create()
         try attribute.setupMarketplace()
-        let tagGroup = TagGroup()
+        let tagGroup = TagGroup(db: db)
         try tagGroup.create()
-        try TagValue().create()
+        let tagValue = TagValue(db: db)
+        try tagValue.create()
         try tagGroup.setupMarketplace()
-        try Product().create()
-        try ProductCategory().create()
-        try ProductAttribute().create()
-        try ProductAttributeValue().create()
-        try Article().create()
-        try ArticleAttributeValue().create()
-        try Stock().create()
-        try Device().create()
-        try Registry().create()
-        try Invoice().create()
-        try Movement().create()
-        try MovementArticle().create()
-        try Publication().create()
-        try Basket().create()
-        try Amazon().create()
-        try MwsRequest().create()
+        let product = Product(db: db)
+        try product.create()
+        let productCategeory = ProductCategory(db: db)
+        try productCategeory.create()
+        let productAttribute = ProductAttribute(db: db)
+        try productAttribute.create()
+        let productAttributeValue = ProductAttributeValue(db: db)
+        try productAttributeValue.create()
+        let article = Article(db: db)
+        try article.create()
+        let articleAttributeValue = ArticleAttributeValue(db: db)
+        try articleAttributeValue.create()
+        let stock = Stock(db: db)
+        try stock.create()
+        let device = Device(db: db)
+        try device.create()
+        let registry = Registry(db: db)
+        try registry.create()
+        let invoice = Invoice(db: db)
+        try invoice.create()
+        let movement = Movement(db: db)
+        try movement.create()
+        let movementArticle = MovementArticle(db: db)
+        try movementArticle.create()
+        let publication = Publication(db: db)
+        try publication.create()
+        let basket = Basket(db: db)
+        try basket.create()
+        let amazon = Amazon()
+        try amazon.create(db: db)
+        let mwsRequest = MwsRequest(db: db)
+        try mwsRequest.create()
+        
+        db.disconnect()
     }
     
     private func addIoC() {

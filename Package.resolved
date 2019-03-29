@@ -24,7 +24,7 @@
         "repositoryURL": "https://github.com/krzyzanowskim/CryptoSwift.git",
         "state": {
           "branch": "master",
-          "revision": "94a1971569063a188b04a2d5deb990f187ab003d",
+          "revision": "3a2acbb32ab68215ee1596ee6004da8e90c3721b",
           "version": null
         }
       },
@@ -42,7 +42,7 @@
         "repositoryURL": "https://github.com/kylef/PathKit.git",
         "state": {
           "branch": "master",
-          "revision": "4151a7e82293369f08f5cae62031e83adeda5f3a",
+          "revision": "73f8e9dca9b7a3078cb79128217dc8f2e585a511",
           "version": null
         }
       },
@@ -60,7 +60,7 @@
         "repositoryURL": "https://github.com/apple/swift-nio.git",
         "state": {
           "branch": "master",
-          "revision": "2b0d2e4b30a5ec483573de8d12b8aa7b861a4234",
+          "revision": "bba988ece00f8faa06d9521fdf2591a90aa03b41",
           "version": null
         }
       },
@@ -69,7 +69,7 @@
         "repositoryURL": "https://github.com/apple/swift-nio-http2.git",
         "state": {
           "branch": "master",
-          "revision": "a92923bcb7d884e6977b7cb131705703936af956",
+          "revision": "1a5c69c7f99e3636a8983fe41bffc18542ec9c1c",
           "version": null
         }
       },
@@ -78,7 +78,7 @@
         "repositoryURL": "https://github.com/apple/swift-nio-ssl.git",
         "state": {
           "branch": "master",
-          "revision": "47d971e1367f6df8ddf06c284ad266df39c31024",
+          "revision": "735f857807ee4ab4608c90214beb55d70e00e271",
           "version": null
         }
       },
@@ -123,7 +123,7 @@
         "repositoryURL": "https://github.com/gerardogrisolini/ZenPostgres.git",
         "state": {
           "branch": "master",
-          "revision": "d004413c4be556268069e997214db37d53dd103c",
+          "revision": "cff893ac9935be1d9970d922ed98d88e8f67c22f",
           "version": null
         }
       },

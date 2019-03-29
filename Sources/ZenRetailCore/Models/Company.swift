@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import NIOPostgres
 
 class Company: Codable {
     
@@ -49,14 +50,14 @@ class Company: Codable {
     public var shippingExpress : Bool = false
 
 
-    func create() throws {
+    func create(db: PostgresConnection) throws {
         let encoder = JSONEncoder()
-        let settings = Settings()
+        let settings = Settings(db: db)
         let rows: [Settings] = try settings.query()
         if rows.count == 0 {
             let mirror = Mirror(reflecting: self)
             for case let (label?, value) in mirror.children {
-                let setting = Settings()
+                let setting = Settings(db: db)
                 setting.key = label
                 if value is [Translation] {
                     let jsonData = try encoder.encode(value as! [Translation])

@@ -32,9 +32,9 @@ struct ProductRepository : ProductProtocol {
 
     internal func getJoin() -> DataSourceJoin {
 		return DataSourceJoin(
-			table: "brands",
-			onCondition: "products.brandId = brands.brandId",
-			direction: JoinType.INNER
+			table: "Brand",
+			onCondition: "Product.brandId = Brand.brandId",
+			direction: .INNER
 		)
 	}
 		
@@ -42,7 +42,7 @@ struct ProductRepository : ProductProtocol {
         let obj = Product()
         let sql = obj.querySQL(
 			whereclause: "productUpdated > $1", params: [date],
-			orderby: ["products.productId"],
+			orderby: ["Product.productId"],
 			joins: [self.getJoin()]
 		)
 
@@ -53,12 +53,12 @@ struct ProductRepository : ProductProtocol {
         let publication = DataSourceJoin(
             table: "Publication",
             onCondition: "Product.productId = Publication.productId",
-            direction: JoinType.INNER
+            direction: .INNER
         )
         let brand = DataSourceJoin(
             table: "Brand",
             onCondition: "Product.brandId = Brand.brandId",
-            direction: JoinType.INNER
+            direction: .INNER
         )
         
         let obj = Product()
