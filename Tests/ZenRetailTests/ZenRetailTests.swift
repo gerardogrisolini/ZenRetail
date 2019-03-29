@@ -22,15 +22,11 @@ final class ZenRetailTests: XCTestCase {
     func testQueryCategory() {
         do {
             let p = try ZenPostgres(config: config)
-            let db = try p.connect()
-            let c = Category(db: db)
+            let c = Category()
             for _ in 0...100 {
-                let sql = c.querySQL(orderby: ["categoryId"])
-                print(sql)
-                let rows: [ZenRetailCore.Category] = try c.query(sql: sql)
+                let rows = try c.query(orderby: ["categoryId"])
                 XCTAssertTrue(rows.count > 0)
             }
-            db.disconnect()
             try p.close()
         } catch {
             XCTFail(error.localizedDescription)
