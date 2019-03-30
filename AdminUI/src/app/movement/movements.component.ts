@@ -12,7 +12,6 @@ import { MovementService } from './../services/movement.service';
 import { TagService } from './../services/tag.service';
 import { Movement, Device, TagGroup, Tag, TagValue } from './../shared/models';
 import { Helpers } from './../shared/helpers';
-import { retry } from 'rxjs/operator/retry';
 
 @Component({
     selector: 'app-movements-component',
@@ -83,15 +82,15 @@ export class MovementsComponent implements OnInit {
 
         this.buttons = []
         this.translate.get('Details').subscribe((res: string) =>
-            this.buttons.push({ label: res, icon: 'fa-bars', command: (event) => this.openClick() }));
+            this.buttons.push({ label: res, icon: 'pi pi-bars', command: (event) => this.openClick() }));
         this.translate.get('Edit').subscribe((res: string) =>
-            this.buttons.push({ label: res, icon: 'fa-edit', command: (event) => this.editClick() }));
+            this.buttons.push({ label: res, icon: 'pi pi-pencil', command: (event) => this.editClick() }));
         this.translate.get('Document').subscribe((res: string) =>
-            this.buttons.push({ label: res, icon: 'fa-print', command: (event) => this.openClick('document/') }));
+            this.buttons.push({ label: res, icon: 'pi pi-print', command: (event) => this.openClick('document/') }));
         this.translate.get('Barcode').subscribe((res: string) =>
-            this.buttons.push({ label: res, icon: 'fa-barcode', command: (event) => this.openClick('barcode/') }));
+            this.buttons.push({ label: res, icon: 'pi pi-money-bill', command: (event) => this.openClick('barcode/') }));
         this.translate.get('Create copy').subscribe((res: string) =>
-            this.buttons.push({ label: res, icon: 'fa-clone', command: (event) => this.cloneClick() }));
+            this.buttons.push({ label: res, icon: 'pi pi-clone', command: (event) => this.cloneClick() }));
 
         if (this.items == null) {
             this.refreshClick();
@@ -138,7 +137,7 @@ export class MovementsComponent implements OnInit {
             .getAll()
             .subscribe(result => {
                 this.causals = result.map(p => Helpers.newSelectItem(p, p.causalName));
-                if (localStorage.getItem('webretailDevice') === null) {
+                if (localStorage.getItem('zenretailDevice') === null) {
                     this.causals = this.causals.filter(p => p.value.causalIsPos === false);
                 }
             }
@@ -153,7 +152,7 @@ export class MovementsComponent implements OnInit {
             }
         );
 
-        const jsonObj: any = JSON.parse(localStorage.getItem('webretailDevice'));
+        const jsonObj: any = JSON.parse(localStorage.getItem('zenretailDevice'));
         this.device = jsonObj !== null ? <Device>jsonObj : null;
     }
 

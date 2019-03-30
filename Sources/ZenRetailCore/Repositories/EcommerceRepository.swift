@@ -424,9 +424,9 @@ struct EcommerceRepository : EcommerceProtocol {
             onCondition: "MovementArticle.movementId = Movement.movementId",
             direction: .RIGHT
         )
-        return try items.query(whereclause: "Movement.movementRegistry ->> 'registryId' = $1 AND MovementArticle.movementId = $2",
-                        params: [registryId, id],
-                        orderby: ["MovementArticle.movementarticleId"],
+        return try items.query(whereclause: "Movement.movementRegistry ->> $1 = $2 AND MovementArticle.movementId = $3",
+                        params: ["registryId", registryId, id],
+                        orderby: ["MovementArticle.movementArticleId"],
                         joins: [join]
         )
     }

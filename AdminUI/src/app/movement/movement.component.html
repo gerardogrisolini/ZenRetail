@@ -8,7 +8,7 @@
 
 <p-toolbar *ngIf="item">
     <div class="ui-toolbar-group-left">
-        <button pButton type="button" label="{{ 'Back' | translate }}" (click)="cancelClick()" class="ui-button-secondary" icon="fa-reply"></button>
+        <button pButton type="button" label="{{ 'Back' | translate }}" (click)="cancelClick()" class="ui-button-secondary" icon="pi pi-reply"></button>
         <p>N°{{item.movementNumber}}</p>
         <p>{{ 'Date' | translate }}: {{item.movementDate | date: 'yyyy-MM-dd'}}</p>
     </div>
@@ -18,7 +18,7 @@
             <tr><td>{{ 'Store' | translate }}:</td><td>{{item.movementStore.storeName}}</td></tr>
             <tr><td>{{ 'Status' | translate }}:</td><td>{{item.movementStatus}}</td></tr>
             <tr><td colspan="2">
-                <button *ngIf="item.movementStatus!=='Completed'" type="button" pButton icon="fa-save" class="ui-button-primary" (click)="completedClick()" label="{{ 'Completed' | translate }}" style="margin-top: 10px"></button>
+                <button *ngIf="item.movementStatus!=='Completed'" type="button" pButton icon="pi pi-save" class="ui-button-primary" (click)="completedClick()" label="{{ 'Completed' | translate }}" style="margin-top: 10px"></button>
             </td></tr>
         </table>
     </div>
@@ -26,9 +26,9 @@
 
 <p-dataTable [rows]="15" [responsive]="true" [editable]="true" [totalRecords]="totalRecords" [value]="items | priceFilter:priceValue:'movement':amountValue | articleFilter:articleValue" #dt>
     <p-header *ngIf="!committed">
-        <button pButton style="position: absolute;left: 10px; top: 4px;" type="button" title="{{ 'Search' | translate }}" (click)="articlePickerClick()" class="ui-button-primary" icon="fa-search-plus"></button>
+        <button pButton style="position: absolute;left: 10px; top: 4px;" type="button" title="{{ 'Search' | translate }}" (click)="articlePickerClick()" class="ui-button-primary" icon="pi pi-search-plus"></button>
         <p-chips [(ngModel)]="barcodes" placeholder="barcode reading" (onAdd)="addBarcode()"></p-chips>
-        <button pButton style="position: absolute;right: 10px; top: 4px;" type="button" title="{{ 'Scanner' | translate }}" (click)="barcodePickerClick()" class="ui-button-primary" icon="fa-barcode"></button>
+        <button pButton style="position: absolute;right: 10px; top: 4px;" type="button" title="{{ 'Scanner' | translate }}" (click)="barcodePickerClick()" class="ui-button-primary" icon="pi pi-money-bill"></button>
     </p-header>
     <p-footer>
         <span style="float: left"><b>{{totalRecords}}</b> {{ 'rows' | translate }}</span>

@@ -114,17 +114,17 @@ ORDER BY name, oper
 
     func getSales(period: Period) throws -> [MovementArticle] {
         let items = MovementArticle()
-        let join = DataSourceJoin(
-            table: "Movement",
-            onCondition: "MovementArticle.movementId = Movement.movementId",
-            direction: .INNER
-        )
-        return try items.query(
-            whereclause: "Movement.movementDate >= $1 AND Movement.movementDate <= $2 AND (Movement.invoiceId > $3 OR Movement.movementCausal ->> $4 = $5) AND Movement.movementStatus = $6",
-            params: [period.start, period.finish, 0, "causalIsPos", true, "Completed"],
-            orderby: ["MovementArticle.movementarticleId"],
-            joins: [join]
-        )
+        let sql = """
+SELECT "MovementArticle".*, "Movement".*
+FROM "MovementArticle"
+INNER JOIN "Movement" ON "MovementArticle"."movementId" = "Movement"."movementId"
+WHERE "Movement"."movementDate" >= \(period.start)
+AND "Movement"."movementDate" <= \(period.finish)
+AND ("Movement"."invoiceId" > '0' OR "Movement"."movementCausal" ->> 'causalIsPos' = 'true')
+AND "Movement"."movementStatus" = 'Completed'
+ORDER BY "MovementArticle"."movementArticleId"
+"""
+        return try items.query(sql: sql)
     }
     
     func getReceipted(period: Period) throws -> [Movement] {

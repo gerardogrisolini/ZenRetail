@@ -63,7 +63,7 @@ export class SmtpComponent implements OnInit {
         const model = new PdfDocument()
         model.address = this.emailTest;
         model.subject = 'Test message';
-        model.content = '<h1>Webretail SMTP server message</h1>';
+        model.content = '<h1>ZenRetail SMTP server message</h1>';
 
         this.companyService.sendHtmlMail(model)
             .subscribe(

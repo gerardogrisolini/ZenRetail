@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "webretail": {
+    "zenretail": {
       "root": "",
       "sourceRoot": "src",
       "projectType": "application",
@@ -23,6 +23,7 @@
             "styles": [
               "src/styles.css",
               "node_modules/primeng/resources/primeng.css",
+              "node_modules/primeicons/primeicons.css",
               "node_modules/primeng/resources/themes/pepper-grinder/theme.css",
               "node_modules/font-awesome/css/font-awesome.min.css"
             ],
@@ -53,18 +54,18 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "webretail:build"
+            "browserTarget": "zenretail:build"
           },
           "configurations": {
             "production": {
-              "browserTarget": "webretail:build:production"
+              "browserTarget": "zenretail:build:production"
             }
           }
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "webretail:build"
+            "browserTarget": "zenretail:build"
           }
         },
         "test": {
@@ -99,7 +100,7 @@
         }
       }
     },
-    "webretail-e2e": {
+    "zenretail-e2e": {
       "root": "",
       "sourceRoot": "",
       "projectType": "application",
@@ -108,7 +109,7 @@
           "builder": "@angular-devkit/build-angular:protractor",
           "options": {
             "protractorConfig": "./protractor.conf.js",
-            "devServerTarget": "webretail:serve"
+            "devServerTarget": "zenretail:serve"
           }
         },
         "lint": {
@@ -123,7 +124,7 @@
       }
     }
   },
-  "defaultProject": "webretail",
+  "defaultProject": "zenretail",
   "schematics": {
     "@schematics/angular:component": {
       "prefix": "app",

@@ -4,7 +4,7 @@
             <td style="width: 20%"><label>{{ 'Attribute' | translate }}</label></td> 
             <td><label>{{ 'Values' | translate }}</label></td>
             <td style="width: 60px">
-                <button pButton type="button" (click)="openAttributesClick()" class="ui-button-secondary" icon="fa-folder-open-o"></button>
+                <button pButton type="button" (click)="openAttributesClick()" class="ui-button-secondary" icon="pi pi-folder-open"></button>
             </td>
         </tr>
     </thead>
@@ -12,7 +12,7 @@
         <tr>
             <td colspan="2"><strong>{{totalRecords}}</strong> {{ 'articles' | translate }}</td>
             <td>
-                <button pButton type="button" (click)="addClick()" class="ui-button-primary" icon="fa-plus"></button>                    
+                <button pButton type="button" (click)="addClick()" class="ui-button-primary" icon="pi pi-plus"></button>                    
             </td>
         </tr>
     </tfoot>
@@ -29,7 +29,7 @@
                 </p-autoComplete>
             </td>
             <td>
-                <button pButton type="button" (click)="removeClick()" class="ui-button-primary" icon="fa-times"></button>                    
+                <button pButton type="button" (click)="removeClick()" class="ui-button-primary" icon="pi pi-times"></button>                    
             </td>
         </tr>
     </tbody>
@@ -46,7 +46,7 @@
         <ng-template let-tag pTemplate="selectedItem">{{tag.label}}</ng-template>
         <ng-template let-tag pTemplate="item">{{tag.label}}</ng-template>
     </p-dropdown>
-    <button *ngIf="articleForm" pButton type="button" label="{{ 'Save barcodes' | translate }}" (click)="saveClick()" icon="fa-barcode" style="width:300px;float:right;"></button>
+    <button *ngIf="articleForm" pButton type="button" label="{{ 'Save barcodes' | translate }}" (click)="saveClick()" class="fa fa-barcode" style="width:300px;float:right;"></button>
     <table *ngIf="articleForm" class="inputtext" style="margin: 10px 0" cellpadding="2" cellspacing="2">
         <thead>
             <tr style="background-color: whitesmoke"> 

@@ -33,13 +33,13 @@
             <div class="ui-grid-col-4"><label for="emailTest">{{ 'Test mail' | translate }}</label></div>
             <div class="ui-grid-col-8">
                 <input pInputText formControlName="emailTest" placeholder="{{ 'Email' | translate }}" [(ngModel)]="emailTest"/>
-                <button type="button" pButton icon="fa-send" label="{{ 'Send mail' | translate }}" (click)="sendMailClick()" class="ui-button-secondary"></button>
+                <button type="button" pButton icon="pi pi-comment" label="{{ 'Send mail' | translate }}" (click)="sendMailClick()" class="ui-button-secondary"></button>
             </div>
         </div>                
         <br/>
         <div class="ui-grid-row">
             <div class="ui-grid-col-12">
-                <button type="button" pButton icon="fa-save" (click)="saveClick()" class="ui-button-primary" label="{{ 'Save' | translate }}" [disabled]="!dataform.valid"></button>
+                <button type="button" pButton icon="pi pi-save" (click)="saveClick()" class="ui-button-primary" label="{{ 'Save' | translate }}" [disabled]="!dataform.valid"></button>
             </div>
         </div>
     </div>

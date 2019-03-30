@@ -1,12 +1,12 @@
 <!-- <img id="background" src="/admin/assets/background.png"/> -->
 <div id="layout-topbar">
     <a href="#" class="menu-button" (click)="onMenuButtonClick($event)">
-        <i class="fa fa-bars"></i>
+        <i icon="pi pi-bars"></i>
     </a>
     <a href="#" class="logo" [routerLink]="['/']">
         <img alt="logo" src="{{sessionService.logo}}" />
     </a>
-    <span class="titlepage"><span class="appname">Webretail</span><br/>{{sessionService.title}}</span>
+    <span class="titlepage"><span class="appname">ZenRetail</span><br/>{{sessionService.title}}</span>
 </div>
 
 <div id="layout-sidebar" [ngClass]="{'active': menuActive}">

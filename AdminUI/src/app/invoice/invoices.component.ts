@@ -85,7 +85,7 @@ export class InvoicesComponent implements OnInit {
 
         this.translate.get('Document').subscribe((res: string) => {
             this.buttons = [
-                { label: res, icon: 'fa-print', command: (event) => this.openClick('document/') }
+                { label: res, icon: 'pi pi-print', command: (event) => this.openClick('document/') }
             ];
         });
     }

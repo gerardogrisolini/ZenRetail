@@ -4,7 +4,7 @@
 
     <p-toolbar>
         <div class="ui-toolbar-group-left">
-            <button pButton type="button" label="{{ 'Back' | translate }}" (click)="cancelClick()" class="ui-button-secondary" icon="fa-reply"></button>
+            <button pButton type="button" label="{{ 'Back' | translate }}" (click)="cancelClick()" class="ui-button-secondary" icon="pi pi-reply"></button>
         </div>
         <div class="ui-toolbar-group-right">
             <p-multiSelect [options]="stores" defaultLabel="{{ 'All' | translate }} {{ 'Stores' | translate }}" (onChange)="onStoreChanged($event)"></p-multiSelect>

@@ -39,9 +39,9 @@ export class ProductsComponent implements OnInit {
 
         this.buttons = [];
         this.translate.get('Edit').subscribe((res: string) =>
-            this.buttons.push({ label: res, icon: 'fa-edit', command: (event) => this.openClick() }));
+            this.buttons.push({ label: res, icon: 'pi pi-pencil', command: (event) => this.openClick() }));
         this.translate.get('Stock').subscribe((res: string) =>
-            this.buttons.push({ label: res, icon: 'fa-list-ol', command: (event) => this.stockClick() }));
+            this.buttons.push({ label: res, icon: 'pi pi-list-ol', command: (event) => this.stockClick() }));
 
         if (this.products == null) {
             this.refreshClick();

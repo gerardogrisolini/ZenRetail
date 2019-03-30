@@ -4,7 +4,7 @@
 
     <p-toolbar>
         <div class="ui-toolbar-group-left">
-            <button pButton type="button" title="Refresh" (click)="refreshClick()" class="ui-button-primary" icon="fa-refresh"></button>
+            <button pButton type="button" title="Refresh" (click)="refreshClick()" class="ui-button-primary" icon="pi pi-refresh"></button>
             {{totalRecords}} {{ 'pending requests' | translate }}
         </div>
         <div class="ui-toolbar-group-right">
@@ -21,7 +21,7 @@
         [globalFilter]="gb" #dt>
         <p-column header="XML" [sortable]="false" [style]="{'text-align':'center'}">
             <ng-template let-col let-data="rowData" pTemplate="body">
-                <button type="button" pButton icon="fa-search" (click)="selectXml($event,data.requestXml,xmlContent);"></button>
+                <button type="button" pButton icon="pi pi-search" (click)="selectXml($event,data.requestXml,xmlContent);"></button>
             </ng-template>
         </p-column>
         <p-column field="requestSku" header="Sku" [sortable]="true" [style]="{'width':'120px', 'text-align':'center'}"></p-column>
@@ -49,7 +49,7 @@
         <p-column field="messagesWithError" header="{{ 'Error' | translate }}" [sortable]="true" [style]="{'text-align':'center'}"></p-column>
         <p-column header="{{ 'Info' | translate }}" [sortable]="false" [style]="{'text-align':'center'}">
             <ng-template let-col let-data="rowData" pTemplate="body">
-                <button type="button" pButton icon="fa-question-circle" (click)="selectXml($event,data.errorDescription,xmlContent);"></button>
+                <button type="button" pButton icon="pi pi-question-circle" (click)="selectXml($event,data.errorDescription,xmlContent);"></button>
             </ng-template>
         </p-column>
     </p-dataTable>

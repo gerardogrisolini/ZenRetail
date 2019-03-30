@@ -6,7 +6,7 @@
         <div class="ui-toolbar-group-left">
             <p-calendar [locale]="helpers.locale" [(ngModel)]="dateStartValue" [inputStyle]="{'width':'120px'}" dateFormat="yy-mm-dd" placeholder="{{ 'Start' | translate }}" [showIcon]="true"></p-calendar>
             <p-calendar [locale]="helpers.locale" [(ngModel)]="dateFinishValue" [inputStyle]="{'width':'120px','margin-left':'30px'}" dateFormat="yy-mm-dd" placeholder="{{ 'Finish' | translate }}" [showIcon]="true"></p-calendar>
-            <button pButton type="button" label="{{ 'Refresh' | translate }}" (click)="getData()" style="margin-left: 50px" class="ui-button-primary" icon="fa-refresh"></button>
+            <button pButton type="button" label="{{ 'Refresh' | translate }}" (click)="getData()" style="margin-left: 50px" class="ui-button-primary" icon="pi pi-refresh"></button>
         </div>
     </p-toolbar>
 

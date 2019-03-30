@@ -4,11 +4,11 @@
 
     <p-toolbar>
         <div class="ui-toolbar-group-left">
-            <button pButton type="button" title="{{ 'Add' | translate }}" label="{{totalRecords}}" (click)="addClick()" class="ui-button-primary" icon="fa-plus"></button>
-            <button pButton type="button" title="{{ 'Edit' | translate }}" (click)="editClick()" [disabled]="!selected" class="ui-button-primary" icon="fa-edit"></button>
+            <button pButton type="button" title="{{ 'Add' | translate }}" label="{{totalRecords}}" (click)="addClick()" class="ui-button-primary" icon="pi pi-plus"></button>
+            <button pButton type="button" title="{{ 'Edit' | translate }}" (click)="editClick()" [disabled]="!selected" class="ui-button-primary" icon="pi pi-pencil"></button>
         </div>
         <div class="ui-toolbar-group-right">
-            <p-splitButton title="{{ 'Details' | translate }}" icon="fa-bars" (onClick)="openClick()" [model]="buttons" [disabled]="!selected"></p-splitButton>
+            <p-splitButton title="{{ 'Details' | translate }}" icon="pi pi-bars" (onClick)="openClick()" [model]="buttons" [disabled]="!selected"></p-splitButton>
        </div>
     </p-toolbar>
 
@@ -48,7 +48,7 @@
         <p-header>
             <div class="ui-helper-clearfix">
                 <span class="ui-panel-title" style="font-size:20px;display:inline-block;margin-top:4px"><b>{{ 'Invoice' | translate }}</b></span>
-                <button pButton type="button" label="{{ 'Close' | translate }}" (click)="closeClick()" style="float: right" class="ui-button-secondary" icon="fa-close"></button>
+                <button pButton type="button" label="{{ 'Close' | translate }}" (click)="closeClick()" style="float: right" class="ui-button-secondary" icon="pi pi-times"></button>
             </div>
         </p-header>
         <form [formGroup]="dataform">
@@ -96,11 +96,11 @@
                 </div>
                 <div class="ui-grid-row">
                     <div class="ui-grid-col-4">
-                        <button *ngIf="selected.invoiceId>0" type="button" pButton icon="fa-trash-o" class="ui-button-secondary" (click)="deleteClick()" label="{{ 'Delete' | translate }}"></button>
+                        <button *ngIf="selected.invoiceId>0" type="button" pButton icon="pi pi-trash" class="ui-button-secondary" (click)="deleteClick()" label="{{ 'Delete' | translate }}"></button>
                     </div>
                     <div class="ui-grid-col-4"></div>
                     <div class="ui-grid-col-4">
-                        <button type="button" pButton icon="fa-save" class="ui-button-primary" (click)="saveClick()" label="{{ 'Save' | translate }}" [disabled]="!dataform.valid"></button>
+                        <button type="button" pButton icon="pi pi-save" class="ui-button-primary" (click)="saveClick()" label="{{ 'Save' | translate }}" [disabled]="!dataform.valid"></button>
                     </div>
                 </div>
             </div>

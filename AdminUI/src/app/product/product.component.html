@@ -8,11 +8,11 @@
 <div *ngIf="selected">
     <p-toolbar>
         <div class="ui-toolbar-group-left">
-            <button pButton type="button" label="{{ 'Back' | translate }}" (click)="closeClick()" class="ui-button-secondary" icon="fa-reply"></button>
+            <button pButton type="button" label="{{ 'Back' | translate }}" (click)="closeClick()" class="ui-button-secondary" icon="pi pi-reply"></button>
         </div>
         <div class="ui-toolbar-group-right">
-            <button *ngIf="selected.productId>0" type="button" pButton icon="fa-trash-o" class="ui-button-secondary" (click)="deleteClick()" label="{{ 'Delete' | translate }}"></button>
-            <button type="button" pButton icon="fa-save" class="ui-button-primary" (click)="saveClick()" label="{{ 'Save' | translate }}" [disabled]="!dataform.valid"></button>
+            <button *ngIf="selected.productId>0" type="button" pButton icon="pi pi-trash" class="ui-button-secondary" (click)="deleteClick()" label="{{ 'Delete' | translate }}"></button>
+            <button type="button" pButton icon="pi pi-save" class="ui-button-primary" (click)="saveClick()" label="{{ 'Save' | translate }}" [disabled]="!dataform.valid"></button>
         </div>
     </p-toolbar>
 
@@ -58,7 +58,7 @@
                         </div>
                     </div>
                     <div class="ui-grid-col-1">
-                        <button type="button" pButton icon="fa-folder-open-o" style="height: 30px" class="ui-button-secondary" (click)="openSidebarClick('Brands')"></button>
+                        <button type="button" pButton icon="pi pi-folder-open" style="height: 30px" class="ui-button-secondary" (click)="openSidebarClick('Brands')"></button>
                     </div>
                 </div>
                 <div class="ui-grid-row">
@@ -74,7 +74,7 @@
                         </p-autoComplete>
                     </div>
                     <div class="ui-grid-col-1">
-                        <button type="button" pButton icon="fa-folder-open-o" style="height: 30px" class="ui-button-secondary" (click)="openSidebarClick('Categories')"></button>
+                        <button type="button" pButton icon="pi pi-folder-open" style="height: 30px" class="ui-button-secondary" (click)="openSidebarClick('Categories')"></button>
                     </div>
                 </div> 
                 <div class="ui-grid-row">
@@ -208,7 +208,7 @@
                                 <br/>
                                 <p-inputSwitch [(ngModel)]="publication.publicationNew"></p-inputSwitch>
                             </p>
-                            <button type="button" pButton icon="fa-refresh" class="ui-button-warning" (click)="resetClick()" label="{{ 'Reset data on Amazon' | translate }}"></button>
+                            <button type="button" pButton icon="pi pi-refresh" class="ui-button-warning" (click)="resetClick()" label="{{ 'Reset data on Amazon' | translate }}"></button>
                         </td>
                         <td>
                             <p>

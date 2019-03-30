@@ -30,12 +30,9 @@ export class LoginComponent implements OnInit {
     login() {
         this.sessionService.login(this.user)
             .subscribe(result => {
-                alert(result);
-                // if (result) {
-                    this.sessionService.grantCredentials(this.user.username, result);
-                // } else {
-                //     this.messageService.add({ severity: 'warn', summary: '', detail: result.error });
-                // }
-            }, error => this.messageService.add({ severity: 'error', summary: '', detail: error }));
+                this.sessionService.grantCredentials(this.user.username, result);
+            }, 
+            error => this.messageService.add({ severity: 'error', summary: '', detail: JSON.stringify(error) })
+        );
     }
 }

@@ -4,7 +4,7 @@
 
     <p-toolbar>
         <div class="ui-toolbar-group-left">
-            <button pButton type="button" title="{{ 'Add' | translate }}" label="{{totalRecords}}" (click)="addClick()" class="ui-button-primary" icon="fa-plus"></button>
+            <button pButton type="button" title="{{ 'Add' | translate }}" label="{{totalRecords}}" (click)="addClick()" class="ui-button-primary" icon="pi pi-plus"></button>
         </div>
         <div class="ui-toolbar-group-right">
             <i class="fa fa-search" style="margin:4px 4px 0 0"></i>
@@ -26,7 +26,7 @@
         <p-header>
             <div class="ui-helper-clearfix">
                 <span class="ui-panel-title" style="font-size:20px;display:inline-block;margin-top:6px"><b>{{ 'Registry' | translate }}</b></span>
-                <button pButton type="button" label="{{ 'Close' | translate }}" (click)="closeClick()" style="float: right" icon="fa-close"></button>
+                <button pButton type="button" label="{{ 'Close' | translate }}" (click)="closeClick()" style="float: right" icon="pi pi-times"></button>
             </div>
         </p-header>
         <form [formGroup]="dataform">
@@ -138,11 +138,11 @@
                 </div>
                 <div class="ui-grid-row">
                     <div class="ui-grid-col-4">
-                        <button *ngIf="selected.registryId>0" type="button" pButton icon="fa-trash-o" class="ui-button-secondary" (click)="deleteClick()" label="{{ 'Delete' | translate }}"></button>
+                        <button *ngIf="selected.registryId>0" type="button" pButton icon="pi pi-trash" class="ui-button-secondary" (click)="deleteClick()" label="{{ 'Delete' | translate }}"></button>
                     </div>
                     <div class="ui-grid-col-4"></div>
                     <div class="ui-grid-col-4">
-                        <button type="button" pButton icon="fa-save" (click)="saveClick()" class="ui-button-primary" label="{{ 'Save' | translate }}" [disabled]="!dataform.valid"></button>
+                        <button type="button" pButton icon="pi pi-save" (click)="saveClick()" class="ui-button-primary" label="{{ 'Save' | translate }}" [disabled]="!dataform.valid"></button>
                     </div>
                 </div>
             </div>

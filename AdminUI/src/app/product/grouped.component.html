@@ -12,7 +12,7 @@
         <tr>
             <td colspan="2"><strong>{{totalRecords}}</strong> items</td>
             <td>
-                <button pButton type="button" (click)="addClick()" class="ui-button-primary" icon="fa-plus"></button>                    
+                <button pButton type="button" (click)="addClick()" class="ui-button-primary" icon="pi pi-plus"></button>                    
             </td>
         </tr>
     </tfoot>
@@ -23,7 +23,7 @@
                 {{ data.product | articleInfo:data.barcode}}
             </span></td> 
             <td align="center">
-                <button pButton type="button" (click)="removeClick(data.barcode)" class="ui-button-secondary" icon="fa-times"></button>
+                <button pButton type="button" (click)="removeClick(data.barcode)" class="ui-button-secondary" icon="pi pi-times"></button>
             </td> 
         </tr> 
     </tbody>

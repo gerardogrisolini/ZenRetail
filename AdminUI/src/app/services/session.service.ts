@@ -3,7 +3,6 @@ import { Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs/Rx';
 import { Login, Token, Company } from '../shared/models';
-import { Helpers } from '../shared/helpers';
 import { TranslateService } from '@ngx-translate/core';
 
 @Injectable()
@@ -38,8 +37,8 @@ export class SessionService {
         }
     }
 
-    login(user: Login): Observable<any> {
-        return this.http.post<any>('/api/login', user);
+    login(user: Login): Observable<Token> {
+        return this.http.post<Token>('/api/login', user);
     }
 
     logout() {
@@ -49,7 +48,7 @@ export class SessionService {
         this.removeCredentials();
     }
 
-    grantCredentials(username: string, data: any) {
+    grantCredentials(username: string, data: Token) {
         this.username = username;
         localStorage.setItem('username', username);
         // localStorage.setItem('uniqueID', data.uniqueID);
@@ -60,7 +59,7 @@ export class SessionService {
 
     removeCredentials() {
         localStorage.removeItem('username');
-        localStorage.removeItem('uniqueID');
+        //localStorage.removeItem('uniqueID');
         localStorage.removeItem('token');
         localStorage.removeItem('role');
         this.router.navigate(['home']);

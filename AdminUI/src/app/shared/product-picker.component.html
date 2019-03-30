@@ -4,11 +4,11 @@
     <p-header>
         <div class="ui-helper-clearfix" style="text-align: left">
             <span style="font-size:20px;display:inline-block;margin-top:3px"><b>{{ 'Product picker' | translate }}</b></span>
-            <button pButton type="button" label="{{ 'Close' | translate }}" (click)="hidePickerClick()" style="float: right" class="ui-button-warning" icon="fa-close"></button>
+            <button pButton type="button" label="{{ 'Close' | translate }}" (click)="hidePickerClick()" style="float: right" class="ui-button-warning" class="fa fa-close"></button>
         </div>
     </p-header>
     <p-footer>
-        <button pButton type="button" label="{{ 'Pickup' | translate }}" (click)="pickerClick()" class="ui-button-success" icon="fa-reply-all"></button>
+        <button pButton type="button" label="{{ 'Pickup' | translate }}" (click)="pickerClick()" class="ui-button-success" class="fa fa-reply-all"></button>
     </p-footer>
     <p-column [style]="{'width':'50px'}" selectionMode="multiple"></p-column>
     <p-column field="productCode" header="{{ 'Code' | translate }}" [sortable]="true" [filter]="true" filterPlaceholder="{{ 'Search' | translate }}"></p-column>

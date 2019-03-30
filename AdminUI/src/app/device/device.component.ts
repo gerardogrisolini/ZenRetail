@@ -72,7 +72,7 @@ export class DeviceComponent implements OnInit {
 
     onRowSelect(event: any) {
         this.dataform.controls.join.setValue(false);
-        const json = localStorage.getItem('webretailDevice');
+        const json = localStorage.getItem('zenretailDevice');
         if (json != null) {
             const device: Device = JSON.parse(json)
             if (device.deviceId === this.selected.deviceId) {
@@ -87,9 +87,9 @@ export class DeviceComponent implements OnInit {
 
     closeClick() {
         if (this.dataform.controls.join.value === true) {
-            localStorage.setItem('webretailDevice', JSON.stringify(this.selected));
+            localStorage.setItem('zenretailDevice', JSON.stringify(this.selected));
         } else {
-            localStorage.removeItem('webretailDevice');
+            localStorage.removeItem('zenretailDevice');
         }
         this.displayPanel = false;
         this.selected = null;

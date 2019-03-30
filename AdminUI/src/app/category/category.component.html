@@ -4,16 +4,16 @@
 
     <p-toolbar>
         <div class="ui-toolbar-group-left">
-            <button *ngIf="!selected" pButton type="button" title="{{ 'Add' | translate }}" label="{{totalRecords}}" (click)="addClick()" class="ui-button-primary" icon="fa-plus"></button>
-            <button *ngIf="selected" pButton type="button" label="{{ 'Close' | translate }}" (click)="closeClick()" class="ui-button-secondary" icon="fa-close"></button>
+            <button *ngIf="!selected" pButton type="button" title="{{ 'Add' | translate }}" label="{{totalRecords}}" (click)="addClick()" class="ui-button-primary" icon="pi pi-plus"></button>
+            <button *ngIf="selected" pButton type="button" label="{{ 'Close' | translate }}" (click)="closeClick()" class="ui-button-secondary" icon="pi pi-times"></button>
         </div>
         <div *ngIf="!selected" class="ui-toolbar-group-right">
             <i class="fa fa-search" style="margin:4px 4px 0 0"></i>
             <input #gb type="text" pInputText placeholder="{{ 'Search' | translate }}">
         </div>
         <div *ngIf="selected" class="ui-toolbar-group-right">
-            <button *ngIf="selected.categoryId>0" type="button" pButton icon="fa-trash-o" class="ui-button-secondary" (click)="deleteClick()" label="{{ 'Delete' | translate }}"></button>
-            <button type="button" pButton icon="fa-save" (click)="saveClick()" label="{{ 'Save' | translate }}" class="ui-button-primary" [disabled]="!dataform.valid"></button>
+            <button *ngIf="selected.categoryId>0" type="button" pButton icon="pi pi-trash" class="ui-button-secondary" (click)="deleteClick()" label="{{ 'Delete' | translate }}"></button>
+            <button type="button" pButton icon="pi pi-save" (click)="saveClick()" label="{{ 'Save' | translate }}" class="ui-button-primary" [disabled]="!dataform.valid"></button>
         </div>
     </p-toolbar>
 

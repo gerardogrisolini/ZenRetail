@@ -29,7 +29,7 @@
                 <input pInputText formControlName="localeName" [(ngModel)]="translation.value" placeholder="{{ 'Name' | translate }}"/>
             </div>
             <div class="ui-grid-col-2">
-                <button type="button" pButton icon="fa-plus" (click)="addClick()" class="ui-button-secondary"></button>
+                <button type="button" pButton icon="pi pi-plus" (click)="addClick()" class="ui-button-secondary"></button>
             </div>
         </div>
         <div *ngFor="let locale of company.companyLocales" class="ui-grid-row ui-panel">
@@ -37,13 +37,13 @@
             <div class="ui-grid-col-2">{{ locale.country }}</div>
             <div class="ui-grid-col-4">{{ locale.value }}</div>
             <div class="ui-grid-col-2">
-                <button type="button" pButton icon="fa-minus" title="{{ 'Delete' | translate }}" (click)="removeClick()" class="ui-button-secondary"></button>
+                <button type="button" pButton icon="pi pi-minus" title="{{ 'Delete' | translate }}" (click)="removeClick()" class="ui-button-secondary"></button>
             </div>
         </div>
         <br/>
         <div class="ui-grid-row">
             <div class="ui-grid-col-12">
-                <button type="button" pButton icon="fa-save" (click)="saveClick()" class="ui-button-primary" label="{{ 'Save' | translate }}" [disabled]="!dataform.valid"></button>
+                <button type="button" pButton icon="pi pi-save" (click)="saveClick()" class="ui-button-primary" label="{{ 'Save' | translate }}" [disabled]="!dataform.valid"></button>
             </div>
         </div>
     </div>

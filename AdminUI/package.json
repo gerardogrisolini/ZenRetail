@@ -1,11 +1,11 @@
 {
-  "name": "webretail-admin",
+  "name": "zenretail-admin",
   "version": "1.0.0",
   "license": "MIT",
   "angular-cli": {},
   "scripts": {
     "ng": "ng",
-    "start": "ng serve --aot --base-href '/admin/' --proxy-config proxy.config.json",
+    "start": "ng serve --aot --base-href '/admin/'",
     "build": "ng build --aot --prod --deploy-url /admin/ --base-href '/admin/'",
     "deploy": "rm -rf ../webroot/admin/*; mv ./dist/* ../webroot/admin/;"
   },
@@ -29,6 +29,7 @@
     "font-awesome": "*",
     "ngx-barcode": "*",
     "npm": "*",
+    "primeicons": "^1.0.0",
     "primeng": "*",
     "quagga": "*",
     "rxjs": "*",

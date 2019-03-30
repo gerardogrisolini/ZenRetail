@@ -3,11 +3,11 @@
 <div class="container-fluid">
     <p-toolbar>
         <div class="ui-toolbar-group-left">
-            <button pButton type="button" label="{{totalRecords}}" title="{{ 'Add' | translate }}" (click)="addClick()" class="ui-button-primary" icon="fa-plus"></button>
-            <button pButton type="button" title="{{ 'Refresh' | translate }}" (click)="refreshClick()" class="ui-button-secondary" icon="fa-refresh"></button>
+            <button pButton type="button" label="{{totalRecords}}" title="{{ 'Add' | translate }}" (click)="addClick()" class="ui-button-primary" icon="pi pi-plus"></button>
+            <button pButton type="button" title="{{ 'Refresh' | translate }}" (click)="refreshClick()" class="ui-button-secondary" icon="pi pi-refresh"></button>
         </div>
         <div class="ui-toolbar-group-right">
-            <p-splitButton title="{{ 'Edit' | translate }}" icon="fa-edit" (onClick)="openClick()" [model]="buttons" [disabled]="!selected"></p-splitButton>
+            <p-splitButton title="{{ 'Edit' | translate }}" class="fa fa-edit" (onClick)="openClick()" [model]="buttons" [disabled]="!selected"></p-splitButton>
         </div>
     </p-toolbar>
     <p-dataTable [responsive]="true" [value]="products | priceFilter:sliderValue:'price' | categoryFilter:categoryValue" 
