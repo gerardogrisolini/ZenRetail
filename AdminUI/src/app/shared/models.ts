@@ -572,11 +572,16 @@ export class Basket {
 
 // Interfaces
 
+// export interface Token {
+//   error: string;
+//   login: string;
+//   token: string;
+//   role: string;
+// }
+
 export interface Token {
-    error: string;
-    login: string;
-    token: string;
-    role: string;
+  basic: string;
+  bearer: string;
 }
 
 export interface ProductCategory {

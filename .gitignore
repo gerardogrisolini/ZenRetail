@@ -5,3 +5,7 @@
 .vscode
 .editorconfig
 zenretail.json
+node_modules
+dist
+package-lock.json
+Package.resolved

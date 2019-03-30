@@ -26,7 +26,7 @@ struct RegistryRepository : RegistryProtocol {
 	func add(item: Registry) throws {
         if (item.registryPassword.isEmpty) {
             let password = UUID().uuidString
-            item.registryPassword = password //BCrypt.hash(password: password)
+            item.registryPassword = password.encrypted
         }
 		item.registryCreated = Int.now()
 		item.registryUpdated = Int.now()
@@ -41,7 +41,7 @@ struct RegistryRepository : RegistryProtocol {
 			throw ZenError.noRecordFound
 		}
         if (item.registryPassword.count >= 8 && item.registryPassword.count <= 20) {
-            current.registryPassword = item.registryPassword //BCrypt.hash(password: item.registryPassword)
+            current.registryPassword = item.registryPassword.encrypted
         }
 
 		current.registryName = item.registryName

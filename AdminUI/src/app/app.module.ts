@@ -1,4 +1,4 @@
-import { NgModule, ModuleWithProviders } from '@angular/core';
+import { NgModule, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { HttpClient, HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
@@ -134,6 +134,7 @@ export function HttpLoaderFactory(http: HttpClient) {
             }
           })
     ],
+    schemas: [ CUSTOM_ELEMENTS_SCHEMA ],
     declarations: [
         CategoryFilterPipe,
         PriceFilterPipe,

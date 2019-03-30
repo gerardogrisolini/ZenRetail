@@ -120,8 +120,8 @@ ORDER BY name, oper
             direction: .INNER
         )
         return try items.query(
-            whereclause: "Movement.movementDate >= $1 AND Movement.movementDate <= $2 AND (Movement.invoiceId > $3 OR Movement.movementCausal ->> 'causalIsPos' = $4) AND Movement.movementStatus = $5",
-            params: [period.start, period.finish, 0, true, "Completed"],
+            whereclause: "Movement.movementDate >= $1 AND Movement.movementDate <= $2 AND (Movement.invoiceId > $3 OR Movement.movementCausal ->> $4 = $5) AND Movement.movementStatus = $6",
+            params: [period.start, period.finish, 0, "causalIsPos", true, "Completed"],
             orderby: ["MovementArticle.movementarticleId"],
             joins: [join]
         )
@@ -130,9 +130,9 @@ ORDER BY name, oper
     func getReceipted(period: Period) throws -> [Movement] {
         let items = Movement()
         return try items.query(
-            whereclause: "movementDate >= $1 AND movementDate <= $2 AND movementCausal ->> 'causalIsPos' = $3 AND movementStatus = $4",
-            params: [period.start, period.finish, true, "Completed"],
-            orderby: ["movementDevice, movementDate, movementNumber"])
+            whereclause: "movementDate >= $1 AND movementDate <= $2 AND movementCausal ->> $3 = $4 AND movementStatus = $5",
+            params: [period.start, period.finish, "causalIsPos", true, "Completed"],
+            orderby: ["movementDevice", "movementDate", "movementNumber"])
     }
     
     func get(id: Int) throws -> Movement? {
@@ -144,8 +144,8 @@ ORDER BY name, oper
     
     func get(registryId: Int) throws -> [Movement] {
         let items = Movement()
-        return try items.query(whereclause: "movementRegistry ->> 'registryId' = $1 AND invoiceId = $2 AND movementStatus = $3",
-                        params: [registryId, 0, "Completed"],
+        return try items.query(whereclause: "movementRegistry ->> $1 = $2 AND invoiceId = $3 AND movementStatus = $4",
+                        params: ["registryId", registryId, 0, "Completed"],
                         orderby: ["movementId"])
     }
     

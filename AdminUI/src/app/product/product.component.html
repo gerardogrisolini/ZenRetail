@@ -23,7 +23,7 @@
                 <div class="ui-grid-row">
                     <div class="ui-grid-col-4"><label>{{ 'Enabled' | translate }}</label></div>
                     <div class="ui-grid-col-2">
-                        <p-inputSwitch onLabel="{{ 'Yes' | translate }}" offLabel="{{ 'No' | translate }}" formControlName="isActive" [(ngModel)]="selected.productIsActive"></p-inputSwitch>
+                        <p-inputSwitch formControlName="isActive" [(ngModel)]="selected.productIsActive"></p-inputSwitch>
                     </div>
                     <div class="ui-grid-col-6" style="text-align: right; margin-top: -5px;">
                         <label>{{ 'UpdatedAt' | translate }}</label><br/><span>{{selected.updatedAt | dateFormat}}</span>
@@ -201,12 +201,12 @@
                             <p>
                                 <strong>{{ 'Featured' | translate }}</strong>
                                 <br/>
-                                <p-inputSwitch [(ngModel)]="publication.publicationFeatured" onLabel="{{ 'Yes' | translate }}" offLabel="{{ 'No' | translate }}"></p-inputSwitch>
+                                <p-inputSwitch [(ngModel)]="publication.publicationFeatured"></p-inputSwitch>
                             </p>
                             <p>
                                 <strong>{{ 'New' | translate }}</strong>
                                 <br/>
-                                <p-inputSwitch [(ngModel)]="publication.publicationNew" onLabel="{{ 'Yes' | translate }}" offLabel="{{ 'No' | translate }}"></p-inputSwitch>
+                                <p-inputSwitch [(ngModel)]="publication.publicationNew"></p-inputSwitch>
                             </p>
                             <button type="button" pButton icon="fa-refresh" class="ui-button-warning" (click)="resetClick()" label="{{ 'Reset data on Amazon' | translate }}"></button>
                         </td>

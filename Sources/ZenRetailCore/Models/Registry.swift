@@ -88,8 +88,7 @@ class Registry: PostgresTable, Codable {
     open func get(_ email: String, _ pwd: String) throws -> Registry {
         try get(email: email)
         
-        //if try BCrypt.verify(password: pwd, matchesHash: registryPassword) {
-        if pwd == registryPassword {
+        if pwd.encrypted == registryPassword {
             return self
         } else {
             throw ZenError.noRecordFound

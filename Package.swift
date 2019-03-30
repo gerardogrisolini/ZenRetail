@@ -20,11 +20,12 @@ let package = Package(
         .package(url: "https://github.com/gerardogrisolini/ZenMWS.git", .branch("master")),
         .package(url: "https://github.com/gerardogrisolini/ZenEBAY.git", .branch("master")),
         .package(url: "https://github.com/twostraws/SwiftGD.git", .branch("master")),
+        .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .branch("master")),
     ],
     targets: [
         .target(
             name: "ZenRetailCore",
-            dependencies: ["ZenNIO", "ZenPostgres", "ZenSMTP", "ZenMWS", "ZenEBAY", "SwiftGD"]),
+            dependencies: ["ZenNIO", "ZenPostgres", "ZenSMTP", "ZenMWS", "ZenEBAY", "SwiftGD", "CryptoSwift"]),
         .target(
             name: "ZenRetail",
             dependencies: ["ZenRetailCore"]),

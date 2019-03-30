@@ -8,7 +8,7 @@
         </div>
         <div class="ui-grid-row">
             <div class="ui-grid-col-4">
-                <p-inputSwitch onLabel="{{ 'Yes' | translate }}" offLabel="{{ 'No' | translate }}" formControlName="shippingStandard" [(ngModel)]="company.shippingStandard"></p-inputSwitch>
+                <p-inputSwitch formControlName="shippingStandard" [(ngModel)]="company.shippingStandard"></p-inputSwitch>
             </div>
             <div class="ui-grid-col-4">
                 <p-fileUpload #form1 mode="basic" name="shippingcost" accept="text/csv" maxFileSize="1000000" customUpload="true" (uploadHandler)="myUploader($event, form1)"
@@ -27,7 +27,7 @@
         </div>
         <div class="ui-grid-row">
             <div class="ui-grid-col-4">
-                <p-inputSwitch onLabel="{{ 'Yes' | translate }}" offLabel="{{ 'No' | translate }}" formControlName="shippingExpress" [(ngModel)]="company.shippingExpress"></p-inputSwitch>
+                <p-inputSwitch formControlName="shippingExpress" [(ngModel)]="company.shippingExpress"></p-inputSwitch>
             </div>
             <div class="ui-grid-col-4">
                 <p-fileUpload #form2 mode="basic" name="shippingcost_express" accept="text/csv" maxFileSize="1000000" customUpload="true" (uploadHandler)="myUploader($event, form2)"

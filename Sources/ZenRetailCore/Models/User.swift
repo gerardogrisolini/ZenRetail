@@ -10,7 +10,6 @@ import Foundation
 import NIOPostgres
 import ZenPostgres
 
-
 /// Provides the Account structure for Perfect Turnstile
 class User : PostgresTable, Codable {
     
@@ -67,7 +66,6 @@ class User : PostgresTable, Codable {
 
     /// Forces a create with a hashed password
     func make() throws {
-        //password = BCrypt.hash(password: password)
         let sql = """
         INSERT INTO "User" ("uniqueID", "username", "password", "firstname", "lastname", "email", "isAdmin")
         VALUES ('\(uniqueID)','\(username)','\(password)','\(firstname)','\(lastname)','\(email)',true)
@@ -87,8 +85,7 @@ class User : PostgresTable, Codable {
             throw ZenError.noRecordFound
         }
 
-        //if try BCrypt.verify(password: pw, matchesHash: password) {
-        if pwd != password {
+        if pwd.encrypted != password {
             throw ZenError.passwordDoesNotMatch
         }
     }
@@ -120,7 +117,7 @@ class User : PostgresTable, Codable {
                 uniqueID = UUID().uuidString
                 firstname = "Administrator"
                 username = "admin"
-                password = "admin"
+                password = "admin".encrypted
                 isAdmin = true
                 try make()
             }

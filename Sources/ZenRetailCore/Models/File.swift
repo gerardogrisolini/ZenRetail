@@ -65,7 +65,7 @@ class File: PostgresTable, Codable {
                 cursor: Cursor(limit: 1, offset: 0)
             )
             if files.count == 0 {
-                if let data = FileManager.default.contents(atPath: "./webroot/media/\(fileName)") {
+                if let data = FileManager.default.contents(atPath: "./Assets/\(fileName)") {
                     let file = File()
                     _ = try file.getData(filename: fileName, size: .big)
                     file.fileName = fileName

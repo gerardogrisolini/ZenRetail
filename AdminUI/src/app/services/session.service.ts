@@ -38,8 +38,8 @@ export class SessionService {
         }
     }
 
-    login(user: Login): Observable<Token> {
-        return this.http.post<Token>('/api/login', user);
+    login(user: Login): Observable<any> {
+        return this.http.post<any>('/api/login', user);
     }
 
     logout() {
@@ -52,9 +52,9 @@ export class SessionService {
     grantCredentials(username: string, data: any) {
         this.username = username;
         localStorage.setItem('username', username);
-        localStorage.setItem('uniqueID', data.uniqueID);
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('role', data.role);
+        // localStorage.setItem('uniqueID', data.uniqueID);
+        localStorage.setItem('token', data.bearer);
+        localStorage.setItem('role', "Admin");
         this.router.navigate(['home']);
     }
 

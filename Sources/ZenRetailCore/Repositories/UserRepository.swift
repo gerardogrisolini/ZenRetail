@@ -23,7 +23,7 @@ struct UserRepository : UserProtocol {
     
     func add(item: User) throws {
         item.uniqueID = UUID().uuidString
-        //item.password = BCrypt.hash(password: item.password)
+        item.password = item.password.encrypted
         try item.create()
     }
     
@@ -37,7 +37,7 @@ struct UserRepository : UserProtocol {
         current.lastname = item.lastname
         current.username = item.username
         if (item.password.count < 20) {
-            current.password = item.password //BCrypt.hash(password: item.password)
+            current.password = item.password.encrypted
         }
         current.email = item.email
         

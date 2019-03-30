@@ -47,6 +47,6 @@
     "codelyzer": "*",
     "ts-node": "*",
     "tslint": "*",
-    "typescript": "2.7.2"
+    "typescript": "3.1.1"
   }
 }

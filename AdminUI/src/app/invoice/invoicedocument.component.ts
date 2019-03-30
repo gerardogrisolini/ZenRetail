@@ -119,7 +119,7 @@ export class InvoiceDocumentComponent implements OnInit, OnDestroy {
                     const reader = new FileReader();
                     reader.addEventListener('loadend', (e) => {
                         console.log(reader.result);
-                        this.messageService.add({severity: 'error', summary: '', detail: reader.result});
+                        this.messageService.add({severity: 'error', summary: '', detail: reader.result.toString()});
                     });
                 },
                 () => this.isBusy = false

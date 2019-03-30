@@ -8,6 +8,7 @@
 import Foundation
 import ZenNIO
 import ZenMWS
+import CryptoSwift
 
 extension Int {
     static func now() -> Int {
@@ -119,6 +120,13 @@ extension String {
     //        return nil
     //    }
     //    #endif
+    
+    var encrypted: String {
+        let password: Array<UInt8> = Array(self.utf8)
+        let salt: Array<UInt8> = Array("ZenRetail".utf8)
+        let key = try! PKCS5.PBKDF2(password: password, salt: salt, iterations: 4096, variant: .sha256).calculate()
+        return key.toBase64()!
+    }
 }
 
 extension Sequence {

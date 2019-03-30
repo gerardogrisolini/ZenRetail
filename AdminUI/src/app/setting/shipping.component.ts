@@ -73,7 +73,7 @@ export class ShippingComponent implements OnInit {
                 err => {
                     const reader = new FileReader();
                     reader.addEventListener('loadend', (e) =>
-                        this.messageService.add({severity: 'error', summary: '', detail: reader.result}));
+                        this.messageService.add({severity: 'error', summary: '', detail: reader.result.toString()}));
                     reader.readAsText(err._body);
                 }
             );

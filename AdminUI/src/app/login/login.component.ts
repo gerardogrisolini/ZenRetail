@@ -30,11 +30,12 @@ export class LoginComponent implements OnInit {
     login() {
         this.sessionService.login(this.user)
             .subscribe(result => {
-                if (result.login === 'ok') {
+                alert(result);
+                // if (result) {
                     this.sessionService.grantCredentials(this.user.username, result);
-                } else {
-                    this.messageService.add({ severity: 'warn', summary: '', detail: result.error });
-                }
+                // } else {
+                //     this.messageService.add({ severity: 'warn', summary: '', detail: result.error });
+                // }
             }, error => this.messageService.add({ severity: 'error', summary: '', detail: error }));
     }
 }

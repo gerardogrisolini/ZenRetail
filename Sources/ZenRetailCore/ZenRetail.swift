@@ -30,10 +30,10 @@ public class ZenRetail {
         ZenRetail.zenNIO = ZenNIO(host: configuration.serverName, port: configuration.serverPort, router: router)
         ZenRetail.zenNIO.addCORS()
         ZenRetail.zenNIO.addWebroot(path: configuration.documentRoot)
-        ZenRetail.zenNIO.addAuthentication(handler: { (email, password) -> (Bool) in
+        ZenRetail.zenNIO.addAuthentication(handler: { (username, password) -> (Bool) in
             let user = User()
             do {
-                try user.get(usr: email, pwd: password)
+                try user.get(usr: username, pwd: password)
                 return true
             } catch {
                 return false
@@ -122,10 +122,10 @@ public class ZenRetail {
     }
  
     private func createTables() throws {
-        let company = Company()
-        try company.create()
         let settings = Settings()
         try settings.create()
+        let company = Company()
+        try company.create()
         let file = File()
         try file.create()
         try file.setupShippingCost()
@@ -272,20 +272,6 @@ public class ZenRetail {
             try str.write(to: fileUrl, options: Data.WritingOptions.atomic)
         } catch {
             print(error)
-        }
-    }
-
-    static func angularHandler(webapi: Bool = true) -> HttpHandler {
-        return { req, resp in
-            resp.addHeader(.location, value: webapi ? "/admin/index.html" : "/web/index.html")
-//            let data = FileManager.default.contents(atPath: webapi ? "./webroot/admin/index.html" : "./webroot/web/index.html")
-//            guard let content = data else {
-//                resp.completed( .notFound)
-//                return
-//            }
-//
-//            resp.send(html: String(data: content, encoding: .utf8)!)
-            resp.completed(.found)
         }
     }
 }
