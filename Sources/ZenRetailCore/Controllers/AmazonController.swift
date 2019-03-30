@@ -26,7 +26,7 @@ public class AmazonController: NSObject {
         router.get("/api/mws/config", handler: mwsConfigHandlerGET)
         router.put("/api/mws/config", handler: mwsConfigHandlerPUT)
         router.get("/api/mws", handler: mwsHandlerGET)
-        router.get("/api/mws/{start}/{finish}", handler: mwsHandlerGET)
+        router.get("/api/mws/:start/:finish", handler: mwsHandlerGET)
     }
     
     func mwsConfigHandlerGET(request: HttpRequest, response: HttpResponse) {

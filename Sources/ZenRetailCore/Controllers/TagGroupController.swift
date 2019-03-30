@@ -16,11 +16,11 @@ class TagGroupController {
         self.repository = ZenIoC.shared.resolve() as TagGroupProtocol
 
         router.get("/api/tag", handler: tagsHandlerGET)
-        router.get("/api/tag/{id}", handler: tagHandlerGET)
-        router.get("/api/tag/{id}/value", handler: tagValueHandlerGET)
+        router.get("/api/tag/:id", handler: tagHandlerGET)
+        router.get("/api/tag/:id/value", handler: tagValueHandlerGET)
         router.post("/api/tag", handler: tagHandlerPOST)
-        router.put("/api/tag/{id}", handler: tagHandlerPUT)
-        router.delete("/api/tag/{id}", handler: tagHandlerDELETE)
+        router.put("/api/tag/:id", handler: tagHandlerPUT)
+        router.delete("/api/tag/:id", handler: tagHandlerDELETE)
     }
     
     func tagsHandlerGET(request: HttpRequest, response: HttpResponse) {

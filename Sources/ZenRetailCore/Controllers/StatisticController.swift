@@ -16,10 +16,10 @@ class StatisticController {
         self.repository = ZenIoC.shared.resolve() as StatisticProtocol
 
         router.get("/api/statistic/device", handler: statisticDeviceHandlerGET)
-        router.get("/api/statistic/category/{year}", handler: statisticCategoryHandlerGET)
-        router.get("/api/statistic/categoryformonth/{year}", handler: statisticCategoryformonthHandlerGET)
-        router.get("/api/statistic/product/{year}", handler: statisticProductHandlerGET)
-        router.get("/api/statistic/productformonth/{year}", handler: statisticProductformonthHandlerGET)
+        router.get("/api/statistic/category/:year", handler: statisticCategoryHandlerGET)
+        router.get("/api/statistic/categoryformonth/:year", handler: statisticCategoryformonthHandlerGET)
+        router.get("/api/statistic/product/:year", handler: statisticProductHandlerGET)
+        router.get("/api/statistic/productformonth/:year", handler: statisticProductformonthHandlerGET)
     }
 
     func statisticDeviceHandlerGET(request: HttpRequest, response: HttpResponse) {

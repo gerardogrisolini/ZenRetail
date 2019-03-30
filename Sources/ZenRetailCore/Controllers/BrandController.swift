@@ -17,10 +17,10 @@ class BrandController {
         self.repository = ZenIoC.shared.resolve() as BrandProtocol
 
         router.get("/api/brand", handler: brandsHandlerGET)
-        router.get("/api/brand/{id}", handler: brandHandlerGET)
+        router.get("/api/brand/:id", handler: brandHandlerGET)
         router.post("/api/brand", handler: brandHandlerPOST)
-        router.put("/api/brand/{id}", handler: brandHandlerPUT)
-        router.delete("/api/brand/{id}", handler: brandHandlerDELETE)
+        router.put("/api/brand/:id", handler: brandHandlerPUT)
+        router.delete("/api/brand/:id", handler: brandHandlerDELETE)
     }
 
     func brandsHandlerGET(request: HttpRequest, response: HttpResponse) {

@@ -17,11 +17,11 @@ class PublicationController {
         self.repository = ZenIoC.shared.resolve() as PublicationProtocol
         
         router.get("/api/publication", handler: publicationsHandlerGET)
-        router.get("/api/publication/{id}", handler: publicationHandlerGET)
-        router.get("/api/product/{id}/publication", handler: publicationProductHandlerGET)
+        router.get("/api/publication/:id", handler: publicationHandlerGET)
+        router.get("/api/product/:id/publication", handler: publicationProductHandlerGET)
         router.post("/api/publication", handler: publicationHandlerPOST)
-        router.put("/api/publication/{id}", handler: publicationHandlerPUT)
-        router.delete("/api/publication/{id}", handler: publicationHandlerDELETE)
+        router.put("/api/publication/:id", handler: publicationHandlerPUT)
+        router.delete("/api/publication/:id", handler: publicationHandlerDELETE)
     }
 
     func publicationsHandlerGET(request: HttpRequest, response: HttpResponse) {

@@ -17,11 +17,11 @@ class CausalController {
         self.repository = ZenIoC.shared.resolve() as CausalProtocol
 
         router.get("/api/causal", handler: causalsHandlerGET)
-		router.get("/api/causalfrom/{date}", handler: causalsHandlerGET)
-        router.get("/api/causal/{id}", handler: causalHandlerGET)
+        router.get("/api/causalfrom/:date", handler: causalsHandlerGET)
+        router.get("/api/causal/:id", handler: causalHandlerGET)
         router.post("/api/causal", handler: causalHandlerPOST)
-        router.put("/api/causal/{id}", handler: causalHandlerPUT)
-        router.delete("/api/causal/{id}", handler: causalHandlerDELETE)
+        router.put("/api/causal/:id", handler: causalHandlerPUT)
+        router.delete("/api/causal/:id", handler: causalHandlerDELETE)
     }
     
     func causalsHandlerGET(request: HttpRequest, response: HttpResponse) {

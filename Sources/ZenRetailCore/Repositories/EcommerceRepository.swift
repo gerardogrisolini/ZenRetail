@@ -232,8 +232,8 @@ struct EcommerceRepository : EcommerceProtocol {
 
     func getBaskets() throws -> [Basket] {
         let registry = DataSourceJoin(
-            table: "registries",
-            onCondition: "baskets.registryId = registries.registryId",
+            table: "Registry",
+            onCondition: "Basket.registryId = Registry.registryId",
             direction: .LEFT
         )
         

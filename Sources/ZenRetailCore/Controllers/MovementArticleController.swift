@@ -18,10 +18,10 @@ class MovementArticleController {
         self.movementRepository = ZenIoC.shared.resolve() as MovementArticleProtocol
         self.productRepository = ZenIoC.shared.resolve() as ProductProtocol
 
-        router.get("/api/movementarticle/{id}", handler: movementArticlesHandlerGET)
-        router.post("/api/movementarticle/{price}", handler: movementArticleHandlerPOST)
-        router.put("/api/movementarticle/{id}", handler: movementArticleHandlerPUT)
-        router.delete("/api/movementarticle/{id}", handler: movementArticleHandlerDELETE)
+        router.get("/api/movementarticle/:id", handler: movementArticlesHandlerGET)
+        router.post("/api/movementarticle/:price", handler: movementArticleHandlerPOST)
+        router.put("/api/movementarticle/:id", handler: movementArticleHandlerPUT)
+        router.delete("/api/movementarticle/:id", handler: movementArticleHandlerDELETE)
     }
     
     func movementArticlesHandlerGET(request: HttpRequest, response: HttpResponse) {

@@ -17,11 +17,11 @@ class DeviceController {
         self.repository = ZenIoC.shared.resolve() as DeviceProtocol
 
         router.get("/api/device", handler: devicesHandlerGET)
-		router.get("/api/devicefrom/{date}", handler: devicesHandlerGET)
-		router.get("/api/device/{id}", handler: deviceHandlerGET)
+        router.get("/api/devicefrom/:date", handler: devicesHandlerGET)
+		router.get("/api/device/:id", handler: deviceHandlerGET)
 		router.post("/api/device", handler: deviceHandlerPOST)
-		router.put("/api/device/{id}", handler: deviceHandlerPUT)
-		router.delete("/api/device/{id}", handler: deviceHandlerDELETE)
+		router.put("/api/device/:id", handler: deviceHandlerPUT)
+		router.delete("/api/device/:id", handler: deviceHandlerDELETE)
 	}
 	
 	func devicesHandlerGET(request: HttpRequest, response: HttpResponse) {

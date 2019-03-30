@@ -25,9 +25,7 @@ struct AttributeRepository : AttributeProtocol {
     
     func getValues(id: Int) throws -> [AttributeValue] {
         let items = AttributeValue()
-        return try items.query(whereclause: "attributeId = $1",
-                               params: [id],
-                               cursor: Cursor(limit: 10000, offset: 0))
+        return try items.query(whereclause: "attributeId = $1", params: [id])
     }
     
     func add(item: Attribute) throws {

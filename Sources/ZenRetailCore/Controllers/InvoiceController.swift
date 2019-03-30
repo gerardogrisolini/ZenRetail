@@ -18,14 +18,14 @@ class InvoiceController {
 
         router.get("/api/invoicepayment", handler: invoicePaymentsHandlerGET)
 		router.get("/api/invoice", handler: invoicesHandlerGET)
-		router.get("/api/invoice/{id}", handler: invoiceHandlerGET)
+        router.get("/api/invoice/:id", handler: invoiceHandlerGET)
 		router.post("/api/invoice", handler: invoiceHandlerPOST)
-		router.put("/api/invoice/{id}", handler: invoiceHandlerPUT)
-		router.delete("/api/invoice/{id}", handler: invoiceHandlerDELETE)
-		router.get("/api/invoicemovement/{id}", handler: invoiceMovementHandlerGET)
-		router.get("/api/invoicemovementarticle/{id}", handler: invoiceMovementArticleHandlerGET)
-		router.post("/api/invoicemovement/{id}", handler: invoiceMovementHandlerPOST)
-		router.delete("/api/invoicemovement/{id}", handler: invoiceMovementHandlerDELETE)
+        router.put("/api/invoice/:id", handler: invoiceHandlerPUT)
+        router.delete("/api/invoice/:id", handler: invoiceHandlerDELETE)
+        router.get("/api/invoicemovement/:id", handler: invoiceMovementHandlerGET)
+        router.get("/api/invoicemovementarticle/:id", handler: invoiceMovementArticleHandlerGET)
+        router.post("/api/invoicemovement/:id", handler: invoiceMovementHandlerPOST)
+        router.delete("/api/invoicemovement/:id", handler: invoiceMovementHandlerDELETE)
 	}
 	
 	func invoicePaymentsHandlerGET(request: HttpRequest, response: HttpResponse) {

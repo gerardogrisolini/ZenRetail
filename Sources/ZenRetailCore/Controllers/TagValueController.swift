@@ -16,10 +16,10 @@ class TagValueController {
         self.repository = ZenIoC.shared.resolve() as TagValueProtocol
 
         router.get("/api/tagvalue", handler: tagvaluesHandlerGET)
-        router.get("/api/tagvalue/{id}", handler: tagvalueHandlerGET)
+        router.get("/api/tagvalue/:id", handler: tagvalueHandlerGET)
         router.post("/api/tagvalue", handler: tagvalueHandlerPOST)
-        router.put("/api/tagvalue/{id}", handler: tagvalueHandlerPUT)
-        router.delete("/api/tagvalue/{id}", handler: tagvalueHandlerDELETE)
+        router.put("/api/tagvalue/:id", handler: tagvalueHandlerPUT)
+        router.delete("/api/tagvalue/:id", handler: tagvalueHandlerDELETE)
     }
     
     func tagvaluesHandlerGET(request: HttpRequest, response: HttpResponse) {

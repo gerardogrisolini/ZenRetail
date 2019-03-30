@@ -20,15 +20,15 @@ class CompanyController {
         router.post("/api/medias", handler: uploadMediasHandlerPOST)
         router.post("/api/email", handler: emailHandlerPOST)
         
-        router.get("/media/{filename}", handler: {
+        router.get("/media/:filename", handler: {
             request, response in
             self.getFile(request, response, .big)
         })
-        router.get("/thumb/{filename}", handler: {
+        router.get("/thumb/:filename", handler: {
             request, response in
             self.getFile(request, response, .small)
         })
-        router.get("/csv/{filename}", handler: {
+        router.get("/csv/:filename", handler: {
             request, response in
             self.getFile(request, response, .big)
         })

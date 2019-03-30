@@ -17,11 +17,11 @@ class AttributeController {
         self.repository = ZenIoC.shared.resolve() as AttributeProtocol
 
         router.get("/api/attribute", handler: attributesHandlerGET)
-        router.get("/api/attribute/{id}", handler: attributeHandlerGET)
-        router.get("/api/attribute/{id}/value", handler: attributevalueHandlerGET)
+        router.get("/api/attribute/:id", handler: attributeHandlerGET)
+        router.get("/api/attribute/:id/value", handler: attributevalueHandlerGET)
         router.post("/api/attribute", handler: attributeHandlerPOST)
-        router.put("/api/attribute/{id}", handler: attributeHandlerPUT)
-        router.delete("/api/attribute/{id}", handler: attributeHandlerDELETE)
+        router.put("/api/attribute/:id", handler: attributeHandlerPUT)
+        router.delete("/api/attribute/:id", handler: attributeHandlerDELETE)
     }
 
     func attributesHandlerGET(request: HttpRequest, response: HttpResponse) {

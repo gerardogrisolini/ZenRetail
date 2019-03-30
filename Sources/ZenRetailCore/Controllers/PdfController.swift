@@ -20,7 +20,7 @@ class PdfController {
 
         router.post("/api/pdf", handler: pdfHandlerPOST)
         router.post("/api/pdf/email", handler: emailHandlerPOST)
-//        router.get("/api/pdf/barcode/{id}", handler: barcodeHandlerGET)
+//        router.get("/api/pdf/barcode/:id", handler: barcodeHandlerGET)
     }
     
     func pdfHandlerPOST(request: HttpRequest, response: HttpResponse) {

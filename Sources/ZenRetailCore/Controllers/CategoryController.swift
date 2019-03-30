@@ -17,10 +17,10 @@ class CategoryController {
         self.repository = ZenIoC.shared.resolve() as CategoryProtocol
 
         router.get("/api/category", handler: categoriesHandlerGET)
-        router.get("/api/category/{id}", handler: categoryHandlerGET)
+        router.get("/api/category/:id", handler: categoryHandlerGET)
         router.post("/api/category", handler: categoryHandlerPOST)
-        router.put("/api/category/{id}", handler: categoryHandlerPUT)
-        router.delete("/api/category/{id}", handler: categoryHandlerDELETE)
+        router.put("/api/category/:id", handler: categoryHandlerPUT)
+        router.delete("/api/category/:id", handler: categoryHandlerDELETE)
     }
 
     func categoriesHandlerGET(request: HttpRequest, response: HttpResponse) {

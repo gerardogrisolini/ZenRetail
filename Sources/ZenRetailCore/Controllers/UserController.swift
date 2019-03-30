@@ -17,10 +17,10 @@ class UserController {
         self.repository = ZenIoC.shared.resolve() as UserProtocol
         
         router.get("/api/account", handler: accountsHandlerGET)
-        router.get("/api/account/{id}", handler: accountHandlerGET)
+        router.get("/api/account/:id", handler: accountHandlerGET)
         router.post("/api/account", handler: accountHandlerPOST)
-        router.put("/api/account/{id}", handler: accountHandlerPUT)
-        router.delete("/api/account/{id}", handler: accountHandlerDELETE)
+        router.put("/api/account/:id", handler: accountHandlerPUT)
+        router.delete("/api/account/:id", handler: accountHandlerDELETE)
     }
 
    func accountsHandlerGET(request: HttpRequest, response: HttpResponse) {

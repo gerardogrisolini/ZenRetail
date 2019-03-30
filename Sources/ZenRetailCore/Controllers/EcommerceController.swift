@@ -24,10 +24,10 @@ class EcommerceController {
         router.get("/api/ecommerce/new", handler: ecommerceNewsHandlerGET)
         router.get("/api/ecommerce/sale", handler: ecommerceSaleHandlerGET)
         router.get("/api/ecommerce/featured", handler: ecommerceFeaturedHandlerGET)
-        router.get("/api/ecommerce/category/{name}", handler: ecommerceCategoryHandlerGET)
-        router.get("/api/ecommerce/brand/{name}", handler: ecommerceBrandHandlerGET)
-        router.get("/api/ecommerce/product/{name}", handler: ecommerceProductHandlerGET)
-        router.get("/api/ecommerce/search/{text}", handler: ecommerceSearchHandlerGET)
+        router.get("/api/ecommerce/category/:name", handler: ecommerceCategoryHandlerGET)
+        router.get("/api/ecommerce/brand/:name", handler: ecommerceBrandHandlerGET)
+        router.get("/api/ecommerce/product/:name", handler: ecommerceProductHandlerGET)
+        router.get("/api/ecommerce/search/:text", handler: ecommerceSearchHandlerGET)
 
         /// Registry Api
         router.get("/api/ecommerce/registry", handler: ecommerceRegistryHandlerGET)
@@ -39,16 +39,16 @@ class EcommerceController {
         
         router.get("/api/ecommerce/basket", handler: ecommerceBasketHandlerGET)
         router.post("/api/ecommerce/basket", handler: ecommerceBasketHandlerPOST)
-        router.put("/api/ecommerce/basket/{id}", handler: ecommerceBasketHandlerPUT)
-        router.delete("/api/ecommerce/basket/{id}", handler: ecommerceBasketHandlerDELETE)
+        router.put("/api/ecommerce/basket/:id", handler: ecommerceBasketHandlerPUT)
+        router.delete("/api/ecommerce/basket/:id", handler: ecommerceBasketHandlerDELETE)
 
         router.get("/api/ecommerce/payment", handler: ecommercePaymentsHandlerGET)
         router.get("/api/ecommerce/shipping", handler: ecommerceShippingsHandlerGET)
-        router.get("/api/ecommerce/shipping/{id}/cost", handler: ecommerceShippingCostHandlerGET)
+        router.get("/api/ecommerce/shipping/:id/cost", handler: ecommerceShippingCostHandlerGET)
 
         router.get("/api/ecommerce/order", handler: ecommerceOrdersHandlerGET)
-        router.get("/api/ecommerce/order/{id}", handler: ecommerceOrderHandlerGET)
-        router.get("/api/ecommerce/order/{id}/items", handler: ecommerceOrderItemsHandlerGET)
+        router.get("/api/ecommerce/order/:id", handler: ecommerceOrderHandlerGET)
+        router.get("/api/ecommerce/order/:id/items", handler: ecommerceOrderItemsHandlerGET)
         router.post("/api/ecommerce/order", handler: ecommerceOrderHandlerPOST)
     }
 

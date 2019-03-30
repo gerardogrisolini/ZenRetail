@@ -39,9 +39,7 @@ struct InvoiceRepository : InvoiceProtocol {
 	}
 	
 	func getMovements(invoiceId: Int) throws -> [Movement] {
-		return try Movement().query(whereclause: "invoiceId = $1",
-		                params: [invoiceId],
-		                cursor: Cursor(limit: 1000, offset: 0))
+		return try Movement().query(whereclause: "invoiceId = $1", params: [invoiceId])
 	}
 	
 	func getMovementArticles(invoiceId: Int) throws -> [MovementArticle] {

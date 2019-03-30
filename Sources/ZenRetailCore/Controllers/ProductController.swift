@@ -19,14 +19,14 @@ class ProductController {
         router.get("/api/producttype", handler: productTypesHandlerGET)
         router.get("/api/producttax", handler: productTaxesHandlerGET)
         router.get("/api/product", handler: productsHandlerGET)
-		router.get("/api/productfrom/{date}", handler: productsHandlerGET)
-        router.get("/api/product/{id}", handler: productHandlerGET)
-        router.get("/api/product/barcode/{id}", handler: productBarcodeHandlerGET)
+        router.get("/api/productfrom/:date", handler: productsHandlerGET)
+        router.get("/api/product/:id", handler: productHandlerGET)
+        router.get("/api/product/barcode/:id", handler: productBarcodeHandlerGET)
 		router.post("/api/product", handler: productHandlerPOST)
         router.post("/api/product/import", handler: productImportHandlerPOST)
-        router.put("/api/product/{id}", handler: productHandlerPUT)
-        router.delete("/api/product/{id}", handler: productHandlerDELETE)
-        router.get("/api/product/{id}/reset", handler: productResetHandlerGET)
+        router.put("/api/product/:id", handler: productHandlerPUT)
+        router.delete("/api/product/:id", handler: productHandlerDELETE)
+        router.get("/api/product/:id/reset", handler: productResetHandlerGET)
     }
     
     func productTypesHandlerGET(request: HttpRequest, response: HttpResponse) {

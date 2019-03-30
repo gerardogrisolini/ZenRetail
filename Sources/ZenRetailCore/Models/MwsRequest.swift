@@ -53,7 +53,7 @@ class MwsRequest : PostgresTable, Codable {
     }
     
     public func currentRequests() throws -> [MwsRequest] {
-        return try self.query(orderby: ["requestCreatedAt DESC", "requestId"])
+        return try self.query(orderby: ["requestCreatedAt DESC", "request"])
      }
     
     public func rangeRequests(startDate: Int, finishDate: Int) throws -> [MwsRequest] {

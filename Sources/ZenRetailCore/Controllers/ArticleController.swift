@@ -16,18 +16,18 @@ class ArticleController {
     init(router: Router) {
         self.repository = ZenIoC.shared.resolve() as ArticleProtocol
 
-        router.get("/api/product/{id}/build", handler: articleBuildHandlerGET)
-        router.get("/api/product/{id}/article", handler: productArticleHandlerGET)
-        router.get("/api/product/{id}/group", handler: articleGroupHandlerGET)
-        router.get("/api/product/{id}/store/{storeids}", handler: articleStockHandlerGET)
-        router.get("/api/product/{id}/store/{storeids}/{tagid}", handler: articleStockHandlerGET)
+        router.get("/api/product/:id/build", handler: articleBuildHandlerGET)
+        router.get("/api/product/:id/article", handler: productArticleHandlerGET)
+        router.get("/api/product/:id/group", handler: articleGroupHandlerGET)
+        router.get("/api/product/:id/store/:storeids", handler: articleStockHandlerGET)
+        router.get("/api/product/:id/store/:storeids/:tagid", handler: articleStockHandlerGET)
 
         router.post("/api/article", handler: articleHandlerPOST)
-        router.get("/api/article/{id}", handler: articleHandlerGET)
-        router.put("/api/article/{id}", handler: articleHandlerPUT)
-        router.delete("/api/article/{id}", handler: articleHandlerDELETE)
+        router.get("/api/article/:id", handler: articleHandlerGET)
+        router.put("/api/article/:id", handler: articleHandlerPUT)
+        router.delete("/api/article/:id", handler: articleHandlerDELETE)
         router.post("/api/articleattributevalue", handler: articleAttributeValueHandlerPOST)
-        router.delete("/api/articleattributevalue/{id}", handler: articleAttributeValueHandlerDELETE)
+        router.delete("/api/articleattributevalue/:id", handler: articleAttributeValueHandlerDELETE)
     }
     
     func articleBuildHandlerGET(request: HttpRequest, response: HttpResponse) {

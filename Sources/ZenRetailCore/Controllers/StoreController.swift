@@ -17,10 +17,10 @@ class StoreController {
         self.repository = ZenIoC.shared.resolve() as StoreProtocol
 
         router.get("/api/store", handler: storesHandlerGET)
-        router.get("/api/store/{id}", handler: storeHandlerGET)
+        router.get("/api/store/:id", handler: storeHandlerGET)
         router.post("/api/store", handler: storeHandlerPOST)
-        router.put("/api/store/{id}", handler: storeHandlerPUT)
-        router.delete("/api/store/{id}", handler: storeHandlerDELETE)
+        router.put("/api/store/:id", handler: storeHandlerPUT)
+        router.delete("/api/store/:id", handler: storeHandlerDELETE)
     }
     
     func storesHandlerGET(request: HttpRequest, response: HttpResponse) {

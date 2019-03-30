@@ -17,11 +17,11 @@ class RegistryController {
         self.repository = ZenIoC.shared.resolve() as RegistryProtocol
 
         router.get("/api/registry", handler: registriesHandlerGET)
-		router.get("/api/registryfrom/{date}", handler: registriesHandlerGET)
-		router.get("/api/registry/{id}", handler: registryHandlerGET)
+        router.get("/api/registryfrom/:date", handler: registriesHandlerGET)
+		router.get("/api/registry/:id", handler: registryHandlerGET)
 		router.post("/api/registry", handler: registryHandlerPOST)
-		router.put("/api/registry/{id}", handler: registryHandlerPUT)
-		router.delete("/api/registry/{id}", handler: registryHandlerDELETE)
+		router.put("/api/registry/:id", handler: registryHandlerPUT)
+		router.delete("/api/registry/:id", handler: registryHandlerDELETE)
 	}
 	
 	func registriesHandlerGET(request: HttpRequest, response: HttpResponse) {
