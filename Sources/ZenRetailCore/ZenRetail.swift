@@ -30,6 +30,15 @@ public class ZenRetail {
         ZenRetail.zenNIO = ZenNIO(host: configuration.serverName, port: configuration.serverPort, router: router)
         ZenRetail.zenNIO.addCORS()
         ZenRetail.zenNIO.addWebroot(path: configuration.documentRoot)
+        ZenRetail.zenNIO.addAuthentication(handler: { (email, password) -> (Bool) in
+            let user = User()
+            do {
+                try user.get(usr: email, pwd: password)
+                return true
+            } catch {
+                return false
+            }
+        })
         
         try createTables()
         try setupSmtp()

@@ -67,9 +67,13 @@ class User : PostgresTable, Codable {
 
     /// Forces a create with a hashed password
     func make() throws {
+        //password = BCrypt.hash(password: password)
+        let sql = """
+        INSERT INTO "User" ("uniqueID", "username", "password", "firstname", "lastname", "email", "isAdmin")
+        VALUES ('\(uniqueID)','\(username)','\(password)','\(firstname)','\(lastname)','\(email)',true)
+        """
         do {
-            //password = BCrypt.hash(password: password)
-            try save() // can't use save as the id is populated
+            _ = try self.sqlRows(sql)
         } catch {
             print(error)
         }
@@ -77,16 +81,14 @@ class User : PostgresTable, Codable {
     
     
     /// Performs a find on supplied username, and matches hashed password
-    open func get(usr: String, pwd: String) throws -> User {
+    open func get(usr: String, pwd: String) throws {
         try self.get("username", usr)
         if uniqueID.isEmpty {
             throw ZenError.noRecordFound
         }
 
         //if try BCrypt.verify(password: pw, matchesHash: password) {
-        if pwd == password {
-            return self
-        } else {
+        if pwd != password {
             throw ZenError.passwordDoesNotMatch
         }
     }
@@ -109,7 +111,7 @@ class User : PostgresTable, Codable {
     }
 
 	func setAdmin() throws {
-        let rows: [User] = try query(whereclause: "isAdmin = $1", params: [true], orderby: [], cursor: Cursor(limit: 1, offset: 0))
+        let rows: [User] = try query(whereclause: "isAdmin = $1", params: [true], cursor: Cursor(limit: 1, offset: 0))
         if rows.count == 0 {
             if exists("admin") {
                 isAdmin = true
