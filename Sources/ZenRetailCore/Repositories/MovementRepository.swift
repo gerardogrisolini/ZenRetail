@@ -120,7 +120,7 @@ FROM "MovementArticle"
 INNER JOIN "Movement" ON "MovementArticle"."movementId" = "Movement"."movementId"
 WHERE "Movement"."movementDate" >= \(period.start)
 AND "Movement"."movementDate" <= \(period.finish)
-AND ("Movement"."invoiceId" > '0' OR "Movement"."movementCausal" ->> 'causalIsPos' = 'true')
+AND ("Movement"."idInvoice" > '0' OR "Movement"."movementCausal" ->> 'causalIsPos' = 'true')
 AND "Movement"."movementStatus" = 'Completed'
 ORDER BY "MovementArticle"."movementArticleId"
 """
@@ -144,7 +144,7 @@ ORDER BY "MovementArticle"."movementArticleId"
     
     func get(registryId: Int) throws -> [Movement] {
         let items = Movement()
-        return try items.query(whereclause: "movementRegistry ->> $1 = $2 AND invoiceId = $3 AND movementStatus = $4",
+        return try items.query(whereclause: "movementRegistry ->> $1 = $2 AND idInvoice = $3 AND movementStatus = $4",
                         params: ["registryId", registryId, 0, "Completed"],
                         orderby: ["movementId"])
     }

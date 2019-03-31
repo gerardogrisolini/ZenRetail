@@ -13,7 +13,7 @@ struct ArticleRepository : ArticleProtocol {
 
     private func newNumber(productId: Int) throws -> Int {
         let article = Article()
-        let sql = "SELECT MAX(\"articleNumber\") AS counter FROM \"\(article.table)\" WHERE \"productid\" = \(productId)";
+        let sql = "SELECT COALESCE(MAX(\"articleNumber\"),0) AS counter FROM \"\(article.table)\" WHERE \"productId\" = \(productId)";
         let getCount = try article.sqlRows(sql)
         return (getCount.first?.column("counter")?.int ?? 0) + 1
     }
@@ -100,7 +100,7 @@ struct ArticleRepository : ArticleProtocol {
             var sql =
                 "SELECT a.* " +
                 "FROM \"Article\" as a " +
-                "LEFT JOIN \"ArticleAttributeValues\" as b ON a.\"articleId\" = b.\"articleId\" " +
+                "LEFT JOIN \"ArticleAttributeValue\" as b ON a.\"articleId\" = b.\"articleId\" " +
                 "WHERE a.\"productId\" = \(productId) AND b.\"attributeValueId\" IN ("
             for i in 0...lastIndex {
                 if i > 0 {

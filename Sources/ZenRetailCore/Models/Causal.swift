@@ -10,7 +10,7 @@ import NIOPostgres
 import ZenPostgres
 
 
-class Causal: PostgresTable, Codable {
+class Causal: PostgresTable, PostgresJson {
     
     public var causalId : Int = 0
     public var causalName : String = ""

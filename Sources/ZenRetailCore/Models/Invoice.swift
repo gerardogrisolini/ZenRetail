@@ -103,7 +103,7 @@ class Invoice: PostgresTable, Codable {
 		let date = calendar.date(from: dateComponents)!
 		
 		self.invoiceNumber = 1
-		let sql = "SELECT MAX(\"invoiceNumber\") AS counter FROM \"\(table)\" WHERE \"invoiceDate\" > \(date.timeIntervalSinceReferenceDate)"
+		let sql = "SELECT COALESCE(MAX(\"invoiceNumber\"),0) AS counter FROM \"\(table)\" WHERE \"invoiceDate\" > \(date.timeIntervalSinceReferenceDate)"
 		let getCount = try self.sqlRows(sql)
 		self.invoiceNumber += getCount.first?.column("counter")?.int ?? 0
 	}

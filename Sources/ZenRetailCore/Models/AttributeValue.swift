@@ -36,15 +36,15 @@ class AttributeValue: PostgresTable, Codable {
     }
     
     override func decode(row: PostgresRow) {
-        attributeValueId = row.column("attributevalueid")?.int ?? 0
-		attributeId = row.column("attributeid")?.int ?? 0
-        attributeValueCode = row.column("attributevaluecode")?.string ?? ""
-        attributeValueName = row.column("attributevaluename")?.string ?? ""
-        if let translates = row.column("attributevaluetranslates")?.data {
+        attributeValueId = row.column("attributeValueId")?.int ?? 0
+		attributeId = row.column("attributeId")?.int ?? 0
+        attributeValueCode = row.column("attributeValueCode")?.string ?? ""
+        attributeValueName = row.column("attributeValueName")?.string ?? ""
+        if let translates = row.column("attributeValueTranslates")?.data {
             attributeValueTranslates = try! JSONDecoder().decode([Translation].self, from: translates)
         }
-        attributeValueCreated = row.column("attributevaluecreated")?.int ?? 0
-        attributeValueUpdated = row.column("attributevalueupdated")?.int ?? 0
+        attributeValueCreated = row.column("attributeValueCreated")?.int ?? 0
+        attributeValueUpdated = row.column("attributeValueUpdated")?.int ?? 0
     }
 
     required init(from decoder: Decoder) throws {

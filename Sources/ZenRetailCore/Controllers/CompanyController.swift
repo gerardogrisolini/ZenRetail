@@ -113,7 +113,7 @@ class CompanyController {
 
     func uploadMediaHandlerPOST(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let fileName = request.getParam(String.self, key: "file"),
+            guard let fileName = request.getParam(String.self, key: "file[]"),
                 let file = request.getParam(Data.self, key: fileName) else {
                 throw HttpError.badRequest
             }
@@ -129,7 +129,7 @@ class CompanyController {
 
     func uploadMediasHandlerPOST(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let fileNames = request.getParam(String.self, key: "file") else {
+            guard let fileNames = request.getParam(String.self, key: "file[]") else {
                 throw HttpError.badRequest
             }
 

@@ -11,7 +11,7 @@ import NIOPostgres
 import ZenPostgres
 
 
-class Store: PostgresTable, Codable {
+class Store: PostgresTable, PostgresJson {
     
     public var storeId : Int = 0
     public var storeName : String = ""

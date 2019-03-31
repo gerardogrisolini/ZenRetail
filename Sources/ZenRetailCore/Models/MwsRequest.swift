@@ -65,7 +65,7 @@ class MwsRequest : PostgresTable, Codable {
     }
 
     public func lastRequest() throws -> Int {
-        let sql = "SELECT MAX(\"requestCreatedAt\") AS counter FROM \"\(table)\""
+        let sql = "SELECT COALESCE(MAX(\"requestCreatedAt\"),0) AS counter FROM \"\(table)\""
         let getCount = try self.sqlRows(sql)
         return getCount.first?.column("counter")?.int ?? 0
     }

@@ -39,7 +39,7 @@ struct InvoiceRepository : InvoiceProtocol {
 	}
 	
 	func getMovements(invoiceId: Int) throws -> [Movement] {
-		return try Movement().query(whereclause: "invoiceId = $1", params: [invoiceId])
+		return try Movement().query(whereclause: "idInvoice = $1", params: [invoiceId])
 	}
 	
 	func getMovementArticles(invoiceId: Int) throws -> [MovementArticle] {
@@ -48,8 +48,8 @@ struct InvoiceRepository : InvoiceProtocol {
 			onCondition:"MovementArticle.movementId = Movement.movementId",
 			direction: .INNER);
 
-		return try MovementArticle().query(whereclause: "Movement.invoiceId = $1",
-		                params: [String(invoiceId)],
+		return try MovementArticle().query(whereclause: "Movement.idInvoice = $1",
+		                params: [invoiceId],
 		                joins: [join])
 	}
 
@@ -81,7 +81,7 @@ struct InvoiceRepository : InvoiceProtocol {
 	
 	func delete(id: Int) throws {
 		let movement = Movement()
-		_ = try movement.update(cols: ["invoiceId"], params: [0], id: "invoiceId", value: id)
+		_ = try movement.update(cols: ["idInvoice"], params: [0], id: "idInvoice", value: id)
 
 		let item = Invoice()
 		item.invoiceId = id
@@ -90,11 +90,11 @@ struct InvoiceRepository : InvoiceProtocol {
 	
 	func addMovement(invoiceId: Int, id: Int) throws {
 		let movement = Movement()
-        _ = try movement.update(cols: ["invoiceId"], params: [0], id: "movementId", value: id)
+        _ = try movement.update(cols: ["idInvoice"], params: [invoiceId], id: "movementId", value: id)
 	}
 	
 	func removeMovement(id: Int) throws {
 		let movement = Movement()
-        _ = try movement.update(cols: ["invoiceId"], params: [0], id: "movementId", value: id)
+        _ = try movement.update(cols: ["idInvoice"], params: [0], id: "movementId", value: id)
 	}
 }

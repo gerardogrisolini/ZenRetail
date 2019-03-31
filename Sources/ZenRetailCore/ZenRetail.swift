@@ -122,6 +122,7 @@ public class ZenRetail {
     }
  
     private func createTables() throws {
+        //AccessTokenStore().create()
         let settings = Settings()
         try settings.create()
         let company = Company()
@@ -129,8 +130,6 @@ public class ZenRetail {
         let file = File()
         try file.create()
         try file.setupShippingCost()
-        let ats = AccessTokenStore()
-        try ats.create()
         let user = User()
         try user.create()
         try user.setAdmin()

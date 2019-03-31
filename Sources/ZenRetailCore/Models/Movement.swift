@@ -19,7 +19,7 @@ struct ItemValue: Codable {
 class Movement: PostgresTable, Codable {
     
     public var movementId : Int = 0
-    public var invoiceId : Int = 0
+    public var idInvoice : Int = 0
     public var movementNumber : Int = 0
     public var movementDate : Int = Int.now()
     public var movementDesc : String = ""
@@ -107,7 +107,7 @@ class Movement: PostgresTable, Codable {
         movementDesc = try container.decodeIfPresent(String.self, forKey: .movementDesc) ?? ""
         movementNote = try container.decode(String.self, forKey: .movementNote)
         movementStatus = try container.decode(String.self, forKey: .movementStatus)
-        movementUser = try container.decode(String.self, forKey: .movementUser)
+        movementUser = try container.decodeIfPresent(String.self, forKey: .movementUser) ?? ""
         movementDevice = try container.decode(String.self, forKey: .movementDevice)
         movementStore = try container.decode(Store.self, forKey: .movementStore)
         movementCausal = try container.decode(Causal.self, forKey: .movementCausal)
@@ -144,7 +144,7 @@ class Movement: PostgresTable, Codable {
     }
     
     func newNumber() throws {
-        var sql = "SELECT MAX(\"movementNumber\") AS counter FROM \"\(table)\"";
+        var sql = "SELECT COALESCE(MAX(\"movementNumber\"),0) AS counter FROM \"\(table)\"";
         if self.movementCausal.causalIsPos {
             sql += " WHERE \"movementDevice\" = '\(movementDevice)' AND to_char(to_timestamp(\"movementDate\" + extract(epoch from timestamp '2001-01-01 00:00:00')), 'YYYY-MM-DD') = '\(movementDate.formatDate(format: "yyyy-MM-dd"))'"
         }

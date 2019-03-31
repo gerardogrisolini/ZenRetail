@@ -21,7 +21,7 @@ struct StatisticRepository : StatisticProtocol {
 SELECT MAX(a."movementId") AS id, a."movementDevice" AS label, SUM(b."movementArticleQuantity" * b."movementArticlePrice") AS value
 FROM "Movement" AS a
 LEFT JOIN "MovementArticle" AS b ON a."movementId" = b."movementId"
-WHERE a."invoiceId" > 0 OR a."movementCausal" ->> 'causalIsPos' = 'true' AND a."movementStatus" = 'Completed'
+WHERE a."idInvoice" > 0 OR a."movementCausal" ->> 'causalIsPos' = 'true' AND a."movementStatus" = 'Completed'
 GROUP BY a."movementDevice"
 ORDER BY a."movementDevice"
 """
@@ -37,7 +37,7 @@ SELECT b.*
 FROM "Movement" AS a
 LEFT JOIN "MovementArticle" AS b ON a."movementId" = b."movementId"
 WHERE a."movementDate" >= \(start) AND a."movementDate" <= \(finish)
-AND (a."invoiceId" > 0 OR a."movementCausal" ->> 'causalIsPos' = 'true')
+AND (a."idInvoice" > 0 OR a."movementCausal" ->> 'causalIsPos' = 'true')
 AND a."movementStatus" = 'Completed'
 """
         return try MovementArticle().query(sql: sql)

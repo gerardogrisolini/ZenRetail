@@ -38,10 +38,15 @@ class File: PostgresTable, Codable {
     }
     
     func getData(filename: String, size: MediaSize) throws -> Data? {
+        var name = filename
+        if let index = name.firstIndex(of: "?") {
+            name = name[name.startIndex...name.index(before: index)].description
+        }
+
         let order = size == .big ? "DESC" : "ASC"
         let files: [File] = try query(
             whereclause: "fileName = $1",
-            params: [filename],
+            params: [name],
             orderby: ["fileSize \(order)"],
             cursor: Cursor(limit: 1, offset: 0)
         )

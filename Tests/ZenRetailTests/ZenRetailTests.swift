@@ -22,6 +22,10 @@ final class ZenRetailTests: XCTestCase {
     func testQueryCategory() {
         do {
             let p = try ZenPostgres(config: config)
+//            let attributeValue = AttributeValue()
+//            try attributeValue.get("attributeId\" = '1' AND \"attributeValueName", 1)
+//            XCTAssertTrue(attributeValue.attributeId == 1)
+
             let c = Category()
             for _ in 0...100 {
                 let rows = try c.query(orderby: ["categoryId"])

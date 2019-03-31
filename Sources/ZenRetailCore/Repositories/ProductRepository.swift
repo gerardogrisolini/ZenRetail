@@ -9,8 +9,8 @@
 import Foundation
 import NIOPostgres
 import ZenPostgres
-
 import SwiftGD
+
 
 struct ProductRepository : ProductProtocol {
 
@@ -63,10 +63,7 @@ struct ProductRepository : ProductProtocol {
         
         let obj = Product()
         let sql = obj.querySQL(
-            whereclause: "Product.productUpdated > Product.productAmazonUpdated " +
-                "AND Product.productAmazonUpdated > $1" +
-                "AND Publication.publicationStartAt <= $2 " +
-                "AND Publication.publicationFinishAt >= $2",
+            whereclause: "Product.productUpdated > Product.productAmazonUpdated AND Product.productAmazonUpdated > $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2",
             params: [0, Int.now()],
             orderby: ["Product.productUpdated"],
             joins: [publication, brand]
@@ -116,7 +113,7 @@ struct ProductRepository : ProductProtocol {
 
         /// Brand
         let brand = Brand()
-        try brand.get("brandName", item._brand.brandName)
+        try? brand.get("brandName", item._brand.brandName)
         if brand.brandId == 0 {
             brand.brandName = item._brand.brandName
             brand.brandDescription = item._brand.brandDescription
@@ -229,7 +226,7 @@ struct ProductRepository : ProductProtocol {
 
         /// Brand
         let brand = Brand()
-        try brand.get("brandName", item._brand.brandName)
+        try? brand.get("brandName", item._brand.brandName)
         if brand.brandId == 0 {
             brand.brandName = item._brand.brandName
             brand.brandDescription = item._brand.brandDescription
@@ -248,7 +245,7 @@ struct ProductRepository : ProductProtocol {
         for c in item._categories.sorted(by: { $0._category.categoryIsPrimary.hashValue < $1._category.categoryIsPrimary.hashValue }
             ) {
             let category = Category()
-            try category.get("categoryName", c._category.categoryName)
+            try? category.get("categoryName", c._category.categoryName)
             if category.categoryId == 0 {
                 category.categoryName = c._category.categoryName
                 category.categoryIsPrimary = c._category.categoryIsPrimary
@@ -357,7 +354,7 @@ struct ProductRepository : ProductProtocol {
         /// Attributes
         for a in item._attributes {
             let attribute = Attribute()
-            try attribute.get("attributeName", a._attribute.attributeName)
+            try? attribute.get("attributeName", a._attribute.attributeName)
             if attribute.attributeId == 0 {
                 attribute.attributeName = a._attribute.attributeName
                 attribute.attributeTranslates = a._attribute.attributeTranslates
@@ -372,7 +369,7 @@ struct ProductRepository : ProductProtocol {
             /// AttributeValues
             for v in a._attributeValues.sorted(by: { $0._attributeValue.attributeValueCode < $1._attributeValue.attributeValueCode }) {
                 let attributeValue = AttributeValue()
-                try attributeValue.get("attributeId\" = \(a.attributeId) AND \"attributeValueName", v._attributeValue.attributeValueName)
+                try? attributeValue.get("attributeId\" = \(a.attributeId) AND \"attributeValueName", v._attributeValue.attributeValueName)
                 if attributeValue.attributeValueId == 0 {
                     attributeValue.attributeId = a.attributeId
                     attributeValue.attributeValueCode = v._attributeValue.attributeValueCode
@@ -404,7 +401,7 @@ struct ProductRepository : ProductProtocol {
         /// ProductAttributes
         for a in item._attributes {
             let productAttribute = ProductAttribute()
-            try productAttribute.get("productId\" = \(item.productId) AND \"attributeId", a.attributeId)
+            try? productAttribute.get("productId\" = \(item.productId) AND \"attributeId", a.attributeId)
             if productAttribute.productAttributeId == 0 {
                 productAttribute.productId = item.productId
                 productAttribute.attributeId = a.attributeId
@@ -420,7 +417,7 @@ struct ProductRepository : ProductProtocol {
             /// ProductAttributeValues
             for v in a._attributeValues {
                 let productAttributeValue = ProductAttributeValue()
-                try productAttributeValue.get("productAttributeId\" = \(a.productAttributeId) AND \"attributeValueId", v.attributeValueId)
+                try? productAttributeValue.get("productAttributeId\" = \(a.productAttributeId) AND \"attributeValueId", v.attributeValueId)
                 if productAttributeValue.productAttributeValueId == 0 {
                     productAttributeValue.productAttributeId = a.productAttributeId
                     productAttributeValue.attributeValueId = v.attributeValueId

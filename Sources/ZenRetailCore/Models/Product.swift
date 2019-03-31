@@ -49,7 +49,7 @@ class Product: PostgresTable, Codable {
         case productDiscount = "discount"
         case productPackaging = "packaging"
         case productDescription = "translations"
-        case productMedia = "media"
+        case productMedia = "medias"
         case productSeo = "seo"
         case productIsActive
         case _brand = "brand"

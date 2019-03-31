@@ -11,7 +11,7 @@ import NIOPostgres
 import ZenPostgres
 
 
-class Registry: PostgresTable, Codable {
+class Registry: PostgresTable, PostgresJson {
 	
     public var registryId : Int = 0
 	public var registryName	: String = ""
