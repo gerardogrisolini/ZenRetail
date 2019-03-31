@@ -96,14 +96,14 @@ class PdfController {
     
     func htmlToPdf(model: PdfDocument) -> Data? {
         //let header = "http://\(server.serverName)/media/header.png"
-        let header = "http\(ZenRetail.zenNIO.port == 443 ? "s" : "")://\(ZenRetail.zenNIO.host):\(ZenRetail.zenNIO.port)/media/header.png"
+        let header = "http\(ZenRetail.zenNIO.port == 443 ? "s" : "")://localhost:\(ZenRetail.zenNIO.port)/media/header.png"
         model.content = model.content.replacingOccurrences(of: "/media/header.png", with: header)
         model.content = model.content.replacingOccurrences(of: "Header not found. Upload on Settings -> Company -> Document Header", with: header)
         
         let pathOutput = "/tmp/\(model.subject)";
         
         let result = self.execCommand(
-            command: "phantomjs",
+            command: "/usr/local/bin/phantomjs",
             args: [
                 "--output-encoding=utf8",
                 "--script-encoding=utf8",
@@ -111,7 +111,7 @@ class PdfController {
                 "--load-images=yes",
                 "--local-to-remote-url-access=yes",
                 "rasterize.js",
-                model.content,
+                "'\(model.content)'",
                 pathOutput,
                 model.size
             ])
@@ -131,6 +131,7 @@ class PdfController {
             let commandFull = execCommand(command: "/usr/bin/which", args: [command]).trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
             return execCommand(command: commandFull, args: args)
         } else {
+            print("\(command) \(args.joined(separator: " "))")
             let proc = Process()
             proc.launchPath = command
             proc.arguments = args

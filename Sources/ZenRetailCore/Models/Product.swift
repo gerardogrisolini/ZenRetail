@@ -11,7 +11,7 @@ import NIOPostgres
 import ZenPostgres
 
 
-class Product: PostgresTable, Codable {
+class Product: PostgresTable, PostgresJson {
     
     public var productId : Int = 0
     public var brandId : Int = 0
@@ -253,9 +253,9 @@ class Product: PostgresTable, Codable {
         )
 
         let param = """
-[{"barcode": "\(barcode)"}]
+'[{"barcode": "\(barcode)"}]'::jsonb
 """
-        let sql = querySQL(whereclause: "Article.articleBarcodes @> $1::jsonb",
+        let sql = querySQL(whereclause: "Article.articleBarcodes @> $1",
                            params: [param],
                            orderby: ["ArticleAttributeValue.articleAttributeValueId"],
                            joins: [brandJoin, articleJoin, articleAttributeJoin])

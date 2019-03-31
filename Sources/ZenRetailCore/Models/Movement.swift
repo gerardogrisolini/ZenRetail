@@ -153,7 +153,7 @@ class Movement: PostgresTable, Codable {
     }
     
     func getAmount() throws {
-        let sql = "SELECT SUM(\"movementArticleQuantity\" * \"movementArticlePrice\") AS amount FROM \"movementArticles\" WHERE \"movementId\" = \(movementId)"
+        let sql = "SELECT SUM(\"movementArticleQuantity\" * \"movementArticlePrice\") AS amount FROM \"MovementArticle\" WHERE \"movementId\" = \(movementId)"
         let getCount = try self.sqlRows(sql)
         self.movementAmount = getCount.first?.column("amount")?.double ?? 0
     }

@@ -122,7 +122,6 @@ public class ZenRetail {
     }
  
     private func createTables() throws {
-        //AccessTokenStore().create()
         let settings = Settings()
         try settings.create()
         let company = Company()

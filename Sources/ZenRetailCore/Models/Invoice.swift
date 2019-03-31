@@ -51,10 +51,12 @@ class Invoice: PostgresTable, Codable {
 		invoiceNote = row.column("invoiceNote")?.string ?? ""
 		invoiceUpdated = row.column("invoiceUpdated")?.int ?? 0
 
-        let sql = "SELECT SUM(a.movementArticleQuantity * a.movementArticlePrice) AS amount " +
-            "FROM movementArticles AS a " +
-            "INNER JOIN movements AS b ON a.movementId = b.movementId " +
-            "WHERE b.invoiceId = \(invoiceId)"
+        let sql = """
+SELECT SUM(a."movementArticleQuantity" * a."movementArticlePrice") AS amount
+FROM "MovementArticle" AS a
+INNER JOIN "Movement" AS b ON a."movementId" = b."movementId"
+WHERE b."invoiceId" = \(invoiceId)
+"""
         do {
             let getCount = try self.sqlRows(sql)
             _invoiceAmount = getCount.first?.column("amount")?.double ?? 0

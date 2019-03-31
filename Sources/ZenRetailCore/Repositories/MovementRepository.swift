@@ -71,14 +71,15 @@ struct MovementRepository : MovementProtocol {
         
         let store = store > 0 ? "AND a.\"movementStore\" ->> 'storeId' = '\(store)'" : ""
         let sql = """
-SELECT b."movementArticleProduct" ->> 'productId' AS id,
+SELECT CAST (b."movementArticleProduct" ->> 'productId' AS INTEGER) AS id,
 b."movementArticleProduct" ->> 'productCode' AS sku,
 b."movementArticleProduct" ->> 'productName' AS name,
 a."movementCausal" ->> 'causalQuantity' as oper,
 SUM(b."movementArticleQuantity") AS value
 FROM "Movement" AS a
 LEFT JOIN "MovementArticle" AS b ON a."movementId" = b."movementId"
-WHERE a."movementStatus" = 'Completed' AND a."movementDate" <= \(date) AND a."movementCausal" ->> 'causalQuantity' <> 0 \(store)
+WHERE a."movementStatus" = 'Completed' AND a."movementDate" <= \(date)
+AND a."movementCausal" ->> 'causalQuantity' <> '0' \(store)
 GROUP BY id, sku, name, oper
 ORDER BY name, oper
 """
