@@ -175,7 +175,12 @@ class CompanyController {
             )
             
             ZenSMTP.shared.send(email: email) { error in
-                response.completed( .noContent)
+                if let error = error {
+                    print(error)
+                    response.completed(.internalServerError)
+                } else {
+                    response.completed(.noContent)
+                }
             }
         } catch {
             response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
