@@ -1,4 +1,5 @@
 import XCTest
+import ZenNIO
 @testable import ZenPostgres
 @testable import ZenRetailCore
 
@@ -72,8 +73,18 @@ final class ZenRetailTests: XCTestCase {
         }
     }
 
+    func testPhantomjs() {
+        let doc = PdfDocument()
+        doc.content = "<html><body><h1>Hello world!!</h1></body></html>"
+        doc.subject = "Test_1.png"
+        
+        let pdf = Utils.htmlToPdf(model: doc)
+        XCTAssertNotNil(pdf)
+    }
     
     static var allTests = [
+        ("testQueryCategory", testQueryCategory),
         ("testQuery", testQuery),
+        ("testPhantomjs", testPhantomjs),
     ]
 }

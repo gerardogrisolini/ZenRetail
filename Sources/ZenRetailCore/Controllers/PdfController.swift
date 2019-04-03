@@ -30,7 +30,7 @@ class PdfController {
             }
             let item = try JSONDecoder().decode(PdfDocument.self, from: data)
             
-            let pdf = self.htmlToPdf(model: item);
+            let pdf = Utils.htmlToPdf(model: item);
             guard let content = pdf else {
                 throw HttpError.systemError(0, "phantomjs error")
             }
@@ -59,7 +59,7 @@ class PdfController {
                 throw HttpError.systemError(0, "email address from is empty")
             }
             
-            guard let pdf = self.htmlToPdf(model: item) else {
+            guard let pdf = Utils.htmlToPdf(model: item) else {
                 throw HttpError.systemError(0, "phantomjs error")
             }
             
@@ -93,53 +93,5 @@ class PdfController {
             response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
-    
-    func htmlToPdf(model: PdfDocument) -> Data? {
-        //let header = "http://\(server.serverName)/media/header.png"
-        let header = "http\(ZenRetail.zenNIO.port == 443 ? "s" : "")://localhost:\(ZenRetail.zenNIO.port)/media/header.png"
-        model.content = model.content.replacingOccurrences(of: "/media/header.png", with: header)
-        model.content = model.content.replacingOccurrences(of: "Header not found. Upload on Settings -> Company -> Document Header", with: header)
-        
-        let pathOutput = "/tmp/\(model.subject)";
-        
-        let result = self.execCommand(
-            command: "/usr/local/bin/phantomjs",
-            args: [
-                "--output-encoding=utf8",
-                "--script-encoding=utf8",
-                "--ignore-ssl-errors=yes",
-                "--load-images=yes",
-                "--local-to-remote-url-access=yes",
-                "rasterize.js",
-                "'\(model.content)'",
-                pathOutput,
-                model.size
-            ])
-        
-        if !result.isEmpty {
-            print(result);
-            return nil;
-        }
-
-        let content = FileManager.default.contents(atPath: pathOutput)
-        try? FileManager.default.removeItem(atPath: pathOutput)
-        return content
-    }
-
-    func execCommand(command: String, args: [String]) -> String {
-        if !command.hasPrefix("/") {
-            let commandFull = execCommand(command: "/usr/bin/which", args: [command]).trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
-            return execCommand(command: commandFull, args: args)
-        } else {
-            print("\(command) \(args.joined(separator: " "))")
-            let proc = Process()
-            proc.launchPath = command
-            proc.arguments = args
-            let pipe = Pipe()
-            proc.standardOutput = pipe
-            proc.launch()
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            return String(data: data, encoding: String.Encoding.utf8)!
-        }
-    }
 }
+
