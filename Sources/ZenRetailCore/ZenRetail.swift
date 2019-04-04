@@ -17,9 +17,11 @@ public class ZenRetail {
     var zenPostgres: ZenPostgres!
     var zenSMTP: ZenSMTP!
     let router = Router()
-
-    public init() throws {
-        try setup()
+    let numberOfThreads: Int
+    
+    public init(numberOfThreads: Int) {
+        self.numberOfThreads = numberOfThreads
+        setup()
     }
 
     deinit {
@@ -27,7 +29,7 @@ public class ZenRetail {
     }
 
     public func start() throws {
-        ZenRetail.zenNIO = ZenNIO(host: configuration.serverName, port: configuration.serverPort, router: router)
+        ZenRetail.zenNIO = ZenNIO(host: configuration.serverName, port: configuration.serverPort, router: router, numberOfThreads: numberOfThreads)
         ZenRetail.zenNIO.addCORS()
         ZenRetail.zenNIO.addWebroot(path: configuration.documentRoot)
         ZenRetail.zenNIO.addAuthentication(handler: { (username, password) -> (Bool) in
@@ -39,7 +41,8 @@ public class ZenRetail {
                 return false
             }
         })
-        
+
+        try setupDatabase()
         try createTables()
         try setupSmtp()
         
@@ -55,7 +58,7 @@ public class ZenRetail {
         try? zenPostgres?.close()
     }
 
-    private func setup() throws {
+    private func setup() {
         configuration = loadConfiguration()
         
         if let serverName = ProcessInfo.processInfo.environment["HOST"] {
@@ -67,7 +70,6 @@ public class ZenRetail {
         if let databaseUrl = ProcessInfo.processInfo.environment["DATABASE_URL"] {
             parseConnectionString(databaseUrl: databaseUrl)
         }
-        try setupDatabase()
     }
     
     private func setupSmtp() throws {
@@ -118,7 +120,7 @@ public class ZenRetail {
             password: configuration.postgresPassword,
             database: configuration.postgresDatabase
         )
-        zenPostgres = try ZenPostgres(config: config)
+        zenPostgres = try ZenPostgres(config: config, numberOfThreads: numberOfThreads)
     }
  
     private func createTables() throws {

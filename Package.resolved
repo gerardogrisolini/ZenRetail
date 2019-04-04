@@ -33,7 +33,7 @@
         "repositoryURL": "https://github.com/vapor/nio-postgres.git",
         "state": {
           "branch": "master",
-          "revision": "cd694bbde80a48c5fd81bc2f60d78c3d9a83118d",
+          "revision": "d2d9e8c82c1e80885bf3662ed3cb2f54de2d03f6",
           "version": null
         }
       },
@@ -60,7 +60,7 @@
         "repositoryURL": "https://github.com/apple/swift-nio.git",
         "state": {
           "branch": "master",
-          "revision": "0c74dfbbfbf1719aa30a3903175a83eefac08ee9",
+          "revision": "d1c9ed1d3f164ed93c97073196c272fc0bf0cf62",
           "version": null
         }
       },
@@ -114,7 +114,7 @@
         "repositoryURL": "https://github.com/gerardogrisolini/ZenNIO.git",
         "state": {
           "branch": "swift-5.0",
-          "revision": "09b2f4cd193f46f927d777458090a0c1f561986f",
+          "revision": "315754c936d333d452058c00f63628f3494a34e1",
           "version": null
         }
       },
@@ -123,7 +123,7 @@
         "repositoryURL": "https://github.com/gerardogrisolini/ZenPostgres.git",
         "state": {
           "branch": "master",
-          "revision": "828ddb954bfd1ed65d5b064da6b840cdc6f44146",
+          "revision": "6ee6137eef88ee3d3c178a2720133f4fc8e56f2e",
           "version": null
         }
       },
@@ -132,7 +132,7 @@
         "repositoryURL": "https://github.com/gerardogrisolini/ZenSMTP.git",
         "state": {
           "branch": "master",
-          "revision": "795584026d5c989932fd4c1be1bc3e6310e3a154",
+          "revision": "9c22ab64808810b3ed51dd609a4d4acbdf060fd1",
           "version": null
         }
       }

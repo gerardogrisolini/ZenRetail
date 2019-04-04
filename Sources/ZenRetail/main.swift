@@ -1,4 +1,3 @@
 import ZenRetailCore
 
-let retail = try ZenRetail()
-try retail.start()
+try ZenRetail(numberOfThreads: 1).start()
