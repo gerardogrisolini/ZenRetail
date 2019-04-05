@@ -25,8 +25,25 @@ class DeviceController {
 	}
 	
 	func devicesHandlerGET(request: HttpRequest, response: HttpResponse) {
+        if request.head.uri.contains("devicefrom") {
+            do {
+                let info = request.authorization.replacingOccurrences(of: "Basic ", with: "").split(separator: "#")
+                let deviceName = info.first?.description ?? ""
+                let deviceToken = info.last?.description ?? ""
+                
+                let device = Device()
+                try device.get(deviceToken: deviceName, deviceName: deviceToken)
+                if device.idStore == 0 {
+                    throw HttpError.internalError
+                }
+            } catch {
+                response.completed(.unauthorized)
+                return
+            }
+        }
+        
 		do {
-            let date = request.getParam(Int.self, key: "id") ?? 0
+            let date = request.getParam(Int.self, key: "date") ?? 0
 			let items = try self.repository.getAll(date: date)
 			try response.send(json:items)
 			response.completed()
@@ -54,7 +71,7 @@ class DeviceController {
                 throw HttpError.badRequest
             }
             let item = try JSONDecoder().decode(Device.self, from: data)
-            item.storeId = item._store.storeId
+            item.idStore = item._store.storeId
             try self.repository.add(item: item)
             try response.send(json:item)
 			response.completed( .created)
@@ -70,7 +87,7 @@ class DeviceController {
                 throw HttpError.badRequest
             }
 			let item = try JSONDecoder().decode(Device.self, from: data)
-            item.storeId = item._store.storeId
+            item.idStore = item._store.storeId
             try self.repository.update(id: id, item: item)
 			try response.send(json:item)
 			response.completed( .accepted)

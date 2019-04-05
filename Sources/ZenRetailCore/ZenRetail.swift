@@ -248,6 +248,7 @@ public class ZenRetail {
         ZenRetail.zenNIO.setFilter(false, methods: [.POST], url: "/api/login")
         ZenRetail.zenNIO.setFilter(false, methods: [.POST], url: "/api/logout")
         ZenRetail.zenNIO.setFilter(false, methods: [.GET], url: "/api/ecommerce/*")
+        ZenRetail.zenNIO.setFilter(false, methods: [.GET], url: "/api/devicefrom/*")
     }
     
     private func loadConfiguration() -> Configuration {

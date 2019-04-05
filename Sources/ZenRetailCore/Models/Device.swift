@@ -14,7 +14,7 @@ import ZenPostgres
 class Device: PostgresTable, Codable {
 	
 	public var deviceId : Int = 0
-	public var storeId : Int = 0
+	public var idStore : Int = 0
 	public var deviceName : String = ""
 	public var deviceToken : String = ""
 	public var deviceCreated : Int = Int.now()
@@ -38,24 +38,30 @@ class Device: PostgresTable, Codable {
     
     override func decode(row: PostgresRow) {
 		deviceId = row.column("deviceId")?.int ?? 0
-		storeId = row.column("storeId")?.int ?? 0
+		idStore = row.column("idStore")?.int ?? 0
 		deviceName = row.column("deviceName")?.string ?? ""
 		deviceToken = row.column("deviceToken")?.string ?? ""
 		deviceCreated = row.column("deviceCreated")?.int ?? 0
 		deviceUpdated = row.column("deviceUpdated")?.int ?? 0
-		_store.decode(row: row)
+        if idStore > 0 {
+		    _store.decode(row: row)
+        }
 	}
 	
 	/// Performs a find on supplied deviceToken
-	func get(deviceToken: String, deviceName: String) {
-		do {
-			_ = try query(
-                whereclause: "deviceToken = $1 AND deviceName = $2",
-                params: [deviceToken, deviceName],
-                cursor: Cursor(limit: 1, offset: 0)
-            )
-		} catch {
-            print(error)
-		}
+	func get(deviceToken: String, deviceName: String) throws {
+        let sql = querySQL(
+            whereclause: "deviceToken = $1 AND deviceName = $2",
+            params: [deviceToken, deviceName],
+            cursor: Cursor(limit: 1, offset: 0)
+        )
+        let rows = try sqlRows(sql)
+        if let row = rows.first {
+            self.decode(row: row)
+        } else {
+            self.deviceName = deviceName
+            self.deviceToken = deviceToken
+            try save()
+        }
 	}
 }

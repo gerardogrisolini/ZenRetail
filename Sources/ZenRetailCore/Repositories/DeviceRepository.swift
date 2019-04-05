@@ -14,7 +14,7 @@ struct DeviceRepository : DeviceProtocol {
 	internal func getJoin() -> DataSourceJoin {
 		return DataSourceJoin(
 			table: "Store",
-			onCondition: "Device.storeId = Store.storeId",
+			onCondition: "Device.idStore = Store.storeId",
 			direction: .LEFT
 		)
 	}
@@ -51,7 +51,7 @@ struct DeviceRepository : DeviceProtocol {
 		guard let current = try get(id: id) else {
 			throw ZenError.noRecordFound
 		}
-		current.storeId = item.storeId
+		current.idStore = item.idStore
 		current.deviceName = item.deviceName
 		current.deviceToken = item.deviceToken
 		current.deviceUpdated = Int.now()
