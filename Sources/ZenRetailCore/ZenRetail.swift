@@ -31,12 +31,16 @@ public class ZenRetail {
         ZenRetail.zenNIO.addCORS()
         ZenRetail.zenNIO.addWebroot(path: configuration.documentRoot)
         ZenRetail.zenNIO.addAuthentication(handler: { (username, password) -> (Bool) in
-            let user = User()
             do {
-                try user.get(usr: username, pwd: password)
+                try User().get(usr: username, pwd: password)
                 return true
             } catch {
-                return false
+                do {
+                    try Registry().get(email: username, pwd: password)
+                    return true
+                } catch {
+                    return false
+                }
             }
         })
 

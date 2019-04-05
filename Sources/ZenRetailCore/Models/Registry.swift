@@ -85,12 +85,10 @@ class Registry: PostgresTable, PostgresJson {
     }
     
     /// Performs a find on supplied email, and matches hashed password
-    open func get(_ email: String, _ pwd: String) throws -> Registry {
+    open func get(email: String, pwd: String) throws {
         try get(email: email)
         
-        if pwd.encrypted == registryPassword {
-            return self
-        } else {
+        if pwd.encrypted != registryPassword {
             throw ZenError.noRecordFound
         }
     }
