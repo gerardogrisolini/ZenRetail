@@ -12,6 +12,10 @@ import ZenNIO
 public class AngularController {
 
     init(router: Router) {
+        router.get("/hello") { (req, res) in
+            res.send(text: "Hello world!")
+            res.completed()
+        }
         router.get("/", handler: angularHandler(webapi: false))
         router.get("/web", handler: angularHandler(webapi: false))
         router.get("/web/home", handler: angularHandler(webapi: false))

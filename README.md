@@ -4,7 +4,7 @@
 # ZenRetail - RMS
 
 Retail Management System and e-Commerce
-developed with Swift 5.0, Angular 6.0 and PostgreSQL 11.0.
+developed with Swift 5.0, Angular 7.0 and PostgreSQL 11.0.
 
 #### Under active development. Please do not use.
 
