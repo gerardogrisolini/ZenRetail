@@ -13,7 +13,6 @@ struct Utils {
         if let zennio = ZenRetail.zenNIO {
             let header = "http\(zennio.port == 443 ? "s" : "")://localhost:\(zennio.port)/media/header.png"
             model.content = model.content.replacingOccurrences(of: "/media/header.png", with: header)
-            //model.content = model.content.replacingOccurrences(of: "Header not found. Upload on Settings -> Company -> Document Header", with: header)
         }
         
         let path = NSTemporaryDirectory() as String

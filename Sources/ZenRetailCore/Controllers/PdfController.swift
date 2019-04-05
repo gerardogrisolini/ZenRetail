@@ -84,8 +84,8 @@ class PdfController {
                     response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
                 } else {
                     item.content = "Email successfully sent"
-                    try? response.send(json:item)
-                    response.completed( .accepted)
+                    try? response.send(json: item)
+                    response.completed(.accepted)
                 }
             }
             
