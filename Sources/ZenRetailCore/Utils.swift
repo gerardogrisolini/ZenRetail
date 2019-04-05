@@ -16,7 +16,8 @@ struct Utils {
             //model.content = model.content.replacingOccurrences(of: "Header not found. Upload on Settings -> Company -> Document Header", with: header)
         }
         
-        let pathOutput = "/tmp/\(model.subject)";
+        let path = NSTemporaryDirectory() as String
+        let pathOutput = "\(path)\(model.subject)";
         
         guard self.execCommand(
             command: "phantomjs",
