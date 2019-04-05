@@ -28,7 +28,7 @@ struct Utils {
                 "--load-images=yes",
                 "--local-to-remote-url-access=yes",
                 "rasterize.js",
-                "'\(model.content)'",
+                model.content,
                 pathOutput,
                 model.size
             ]) != nil else {

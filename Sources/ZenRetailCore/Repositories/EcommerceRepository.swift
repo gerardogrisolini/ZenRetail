@@ -132,8 +132,8 @@ struct EcommerceRepository : EcommerceProtocol {
     func getProducts(brand: String) throws -> [Product] {
         let obj = Product()
         let sql = obj.querySQL(
-            whereclause: "Brand.brandSeo ->> 'permalink' = $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2 AND Product.productIsActive = $3",
-            params: [brand, Int.now(), true],
+            whereclause: "Brand.brandSeo ->> $1 = $2 AND Publication.publicationStartAt <= $3 AND Publication.publicationFinishAt >= $3 AND Product.productIsActive = $4",
+            params: ["permalink", brand, Int.now(), true],
             orderby: ["Product.productName"],
             joins:  [
                 DataSourceJoin(
@@ -174,8 +174,8 @@ struct EcommerceRepository : EcommerceProtocol {
 
         let obj = Product()
         let sql = obj.querySQL(
-            whereclause: "Category.categorySeo ->> 'permalink' = $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2 AND Product.productIsActive = $3",
-            params: [category, Int.now(), true],
+            whereclause: "Category.categorySeo ->> $1 = $2 AND Publication.publicationStartAt <= $3 AND Publication.publicationFinishAt >= $3 AND Product.productIsActive = $4",
+            params: ["permalink", category, Int.now(), true],
             orderby: ["Product.productName"],
             joins:  [publication, brand, productCategories, Category]
         )
@@ -206,8 +206,8 @@ struct EcommerceRepository : EcommerceProtocol {
     func getProduct(name: String) throws -> Product {
         let item = Product()
         let sql = item.querySQL(
-            whereclause: "Product.productSeo ->> 'permalink' = $1",
-            params: [name],
+            whereclause: "Product.productSeo ->> $1 = $2",
+            params: ["permalink", name],
             joins: [
                 DataSourceJoin(
                     table: "Brand",
