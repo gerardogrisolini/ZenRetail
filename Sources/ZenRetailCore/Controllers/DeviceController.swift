@@ -24,24 +24,12 @@ class DeviceController {
 		router.delete("/api/device/:id", handler: deviceHandlerDELETE)
 	}
 	
-	func devicesHandlerGET(request: HttpRequest, response: HttpResponse) {
-        if request.head.uri.contains("devicefrom") {
-            do {
-                let info = request.authorization.replacingOccurrences(of: "Basic ", with: "").split(separator: "#")
-                let deviceName = info.first?.description ?? ""
-                let deviceToken = info.last?.description ?? ""
-                
-                let device = Device()
-                try device.get(deviceToken: deviceName, deviceName: deviceToken)
-                if device.idStore == 0 {
-                    throw HttpError.internalError
-                }
-            } catch {
-                response.completed(.unauthorized)
-                return
-            }
+    func devicesHandlerGET(request: HttpRequest, response: HttpResponse) {
+        if !request.isAuthenticated() {
+            response.completed(.unauthorized)
+            return
         }
-        
+
 		do {
             let date = request.getParam(Int.self, key: "date") ?? 0
 			let items = try self.repository.getAll(date: date)

@@ -247,8 +247,14 @@ public class ZenRetail {
         ZenRetail.zenNIO.setFilter(true, methods: [.GET, .POST, .PUT, .DELETE], url: "/api/*")
         ZenRetail.zenNIO.setFilter(false, methods: [.POST], url: "/api/login")
         ZenRetail.zenNIO.setFilter(false, methods: [.POST], url: "/api/logout")
+        
         ZenRetail.zenNIO.setFilter(false, methods: [.GET], url: "/api/ecommerce/*")
         ZenRetail.zenNIO.setFilter(false, methods: [.GET], url: "/api/devicefrom/*")
+        ZenRetail.zenNIO.setFilter(false, methods: [.GET], url: "/api/causalfrom/*")
+        ZenRetail.zenNIO.setFilter(false, methods: [.GET], url: "/api/registryfrom/*")
+        ZenRetail.zenNIO.setFilter(false, methods: [.GET], url: "/api/productfrom/*")
+        ZenRetail.zenNIO.setFilter(false, methods: [.GET], url: "/api/movementfrom/*")
+        ZenRetail.zenNIO.setFilter(false, methods: [.POST], url: "/api/movement")
     }
     
     private func loadConfiguration() -> Configuration {

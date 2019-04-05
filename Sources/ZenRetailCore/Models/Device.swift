@@ -49,18 +49,18 @@ class Device: PostgresTable, Codable {
 	}
 	
 	/// Performs a find on supplied deviceToken
-	func get(deviceToken: String, deviceName: String) throws {
+	func get(token: String, name: String) throws {
         let sql = querySQL(
             whereclause: "deviceToken = $1 AND deviceName = $2",
-            params: [deviceToken, deviceName],
+            params: [token, name],
             cursor: Cursor(limit: 1, offset: 0)
         )
         let rows = try sqlRows(sql)
         if let row = rows.first {
-            self.decode(row: row)
+            decode(row: row)
         } else {
-            self.deviceName = deviceName
-            self.deviceToken = deviceToken
+            deviceName = name
+            deviceToken = token
             try save()
         }
 	}

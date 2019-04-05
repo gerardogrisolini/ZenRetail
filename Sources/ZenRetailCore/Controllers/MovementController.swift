@@ -159,6 +159,11 @@ class MovementController {
 	}
 	
 	func movementHandlerPOST(request: HttpRequest, response: HttpResponse) {
+        if !request.isAuthenticated() {
+            response.completed(.unauthorized)
+            return
+        }
+
         do {
             guard let data = request.bodyData else {
                 throw HttpError.badRequest
@@ -248,14 +253,15 @@ class MovementController {
             guard let date = request.getParam(Int.self, key: "date") else {
                 throw HttpError.badRequest
             }
-            if let basic = request.session?.token?.basic {
-                let apiKey = basic.split(separator: ":")
+            let basic = request.authorization.replacingOccurrences(of: "Basic ", with: "")
+            let apiKey = basic.split(separator: "#")
+            if apiKey.count == 2 {
                 let items = try self.repository.getAll(
                     device: apiKey[0].description,
                     user: apiKey[1].description,
                     date: date
                 )
-                try response.send(json:items)
+                try response.send(json: items)
                 response.completed()
             } else {
                 response.completed( .unauthorized)
