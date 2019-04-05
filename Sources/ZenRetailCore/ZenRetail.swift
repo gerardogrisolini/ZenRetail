@@ -30,16 +30,18 @@ public class ZenRetail {
         ZenRetail.zenNIO = ZenNIO(host: configuration.serverName, port: configuration.serverPort, router: router)
         ZenRetail.zenNIO.addCORS()
         ZenRetail.zenNIO.addWebroot(path: configuration.documentRoot)
-        ZenRetail.zenNIO.addAuthentication(handler: { (username, password) -> (Bool) in
+        ZenRetail.zenNIO.addAuthentication(handler: { (username, password) -> (String?) in
             do {
-                try User().get(usr: username, pwd: password)
-                return true
+                let user = User()
+                try user.get(usr: username, pwd: password)
+                return user.uniqueID
             } catch {
                 do {
-                    try Registry().get(email: username, pwd: password)
-                    return true
+                    let registry = Registry()
+                    try registry.get(email: username, pwd: password)
+                    return registry.uniqueID
                 } catch {
-                    return false
+                    return nil
                 }
             }
         })
