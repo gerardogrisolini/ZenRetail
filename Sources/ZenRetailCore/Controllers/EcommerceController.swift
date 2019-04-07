@@ -34,9 +34,7 @@ class EcommerceController {
         router.put("/api/ecommerce/registry", handler: ecommerceRegistryHandlerPUT)
         router.delete("/api/ecommerce/registry", handler: ecommerceRegistryHandlerDELETE)
 
-        //TODO:
         router.get("/api/baskets", handler: ecommerceBasketsHandlerGET)
-        
         router.get("/api/ecommerce/basket", handler: ecommerceBasketHandlerGET)
         router.post("/api/ecommerce/basket", handler: ecommerceBasketHandlerPOST)
         router.put("/api/ecommerce/basket/:id", handler: ecommerceBasketHandlerPUT)

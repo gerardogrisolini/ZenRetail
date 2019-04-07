@@ -401,15 +401,15 @@ struct EcommerceRepository : EcommerceProtocol {
 
     func getOrders(registryId: Int) throws -> [Movement] {
         let items = Movement()
-        return try items.query(whereclause: "movementRegistry ->> 'registryId' = $1",
-                               params: [registryId],
+        return try items.query(whereclause: "movementRegistry ->> $1 = $2",
+                               params: ["registryId", registryId],
                                orderby: ["movementId DESC"])
     }
 
     func getOrder(registryId: Int, id: Int) throws -> Movement {
         let item = Movement()
-        let items: [Movement] = try item.query(whereclause: "movementRegistry ->> 'registryId' = $1 AND movementId = $2",
-                                               params: [registryId, id],
+        let items: [Movement] = try item.query(whereclause: "movementRegistry ->> $1 = $2 AND movementId = $3",
+                                               params: ["registryId", registryId, id],
                                                cursor: Cursor(limit: 1, offset: 0))
         if items.count > 0 {
             return items.first!
