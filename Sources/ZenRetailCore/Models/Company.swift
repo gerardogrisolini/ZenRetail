@@ -21,7 +21,8 @@ class Company: Codable {
     public var companyVatNumber : String = ""
     
     public var companyDescription: [Translation] = [Translation]()
-    
+    public var companySeo : Seo = Seo()
+
     public var companyPhone : String = ""
     public var companyEmailInfo : String = ""
     public var companyEmailSales : String = ""
@@ -62,6 +63,9 @@ class Company: Codable {
                 if value is [Translation] {
                     let jsonData = try encoder.encode(value as! [Translation])
                     setting.value = String(data: jsonData, encoding: .utf8)!
+                } else if value is Seo {
+                    let jsonData = try encoder.encode(value as! Seo)
+                    setting.value = String(data: jsonData, encoding: .utf8)!
                 } else {
                     setting.value = "\(value)"
                 }
@@ -77,6 +81,10 @@ class Company: Codable {
         for case let (label?, value) in mirror.children {
             if value is [Translation] {
                 let jsonData = try encoder.encode(value as! [Translation])
+                let valueString = String(data: jsonData, encoding: .utf8)!
+                _ = try settings.update(cols: ["value"], params: [valueString], id: "key", value: label)
+            } else if value is Seo {
+                let jsonData = try encoder.encode(value as! Seo)
                 let valueString = String(data: jsonData, encoding: .utf8)!
                 _ = try settings.update(cols: ["value"], params: [valueString], id: "key", value: label)
             } else {
@@ -102,11 +110,15 @@ class Company: Codable {
         companyCountry = data["companyCountry"] ?? ""
         companyVatNumber = data["companyVatNumber"] ?? ""
         
-        if let descriptions = data["companyDescription"] {
-            let data = descriptions.data(using: .utf8)!
+        if let descriptions = data["companyDescription"],
+            let data = descriptions.data(using: .utf8) {
             companyDescription = try decoder.decode([Translation].self, from: data)
         }
-        
+        if let seo = data["companySeo"],
+            let data = seo.data(using: .utf8) {
+            companySeo = try! decoder.decode(Seo.self, from: data)
+        }
+
         companyPhone = data["companyPhone"] ?? ""
         companyEmailInfo = data["companyEmailInfo"] ?? ""
         companyEmailSales = data["companyEmailSales"] ?? ""
@@ -114,8 +126,8 @@ class Company: Codable {
         
         companyCurrency = data["companyCurrency"] ?? ""
         companyUtc = data["companyUtc"] ?? ""
-        if let locales = data["companyLocales"] {
-            let data = locales.data(using: .utf8)!
+        if let locales = data["companyLocales"],
+            let data = locales.data(using: .utf8) {
             companyLocales = try decoder.decode([Translation].self, from: data)
         }
         

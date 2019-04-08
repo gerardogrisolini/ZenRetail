@@ -66,7 +66,8 @@ class EcommerceController {
             setting.companyCountry = item.companyCountry
             
             setting.companyDescription = item.companyDescription
-            
+            setting.companySeo = item.companySeo
+
             setting.companyPhone = item.companyPhone
             setting.companyEmailInfo = item.companyEmailInfo
             setting.companyEmailSales = item.companyEmailSales

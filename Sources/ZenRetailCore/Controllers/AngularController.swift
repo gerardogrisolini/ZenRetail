@@ -12,23 +12,22 @@ import ZenNIO
 public class AngularController {
 
     init(router: Router) {
-        router.get("/hello") { (req, res) in
-            res.send(text: "Hello world!")
-            res.completed()
-        }
+//        router.get("/hello") { (req, res) in
+//            res.send(text: "Hello world!")
+//            res.completed()
+//        }
         router.get("/", handler: angularHandler(webapi: false))
-        router.get("/web", handler: angularHandler(webapi: false))
-        router.get("/web/home", handler: angularHandler(webapi: false))
-        router.get("/web/account", handler: angularHandler(webapi: false))
-        router.get("/web/login", handler: angularHandler(webapi: false))
-        router.get("/web/register", handler: angularHandler(webapi: false))
-        router.get("/web/products/:id/:name", handler: angularHandler(webapi: false))
-        router.get("/web/product/:id", handler: angularHandler(webapi: false))
-        router.get("/web/basket", handler: angularHandler(webapi: false))
-        router.get("/web/basket/:barcode", handler: angularHandler(webapi: false))
-        router.get("/web/checkout", handler: angularHandler(webapi: false))
-        router.get("/web/orders", handler: angularHandler(webapi: false))
-        router.get("/web/document/:id", handler: angularHandler(webapi: false))
+        router.get("/info", handler: angularHandler(webapi: false))
+        router.get("/login", handler: angularHandler(webapi: false))
+        router.get("/register", handler: angularHandler(webapi: false))
+        router.get("/account", handler: angularHandler(webapi: false))
+        router.get("/brand/:name", handler: angularHandler(webapi: false))
+        router.get("/category/:name", handler: angularHandler(webapi: false))
+        router.get("/product/:id", handler: angularHandler(webapi: false))
+        router.get("/basket", handler: angularHandler(webapi: false))
+        router.get("/checkout", handler: angularHandler(webapi: false))
+        router.get("/orders", handler: angularHandler(webapi: false))
+        router.get("/doc/:id", handler: angularHandler(webapi: false))
     
         router.get("/admin", handler: angularHandler())
         router.get("/admin/home", handler: angularHandler())
@@ -70,8 +69,8 @@ public class AngularController {
 
     func angularHandler(webapi: Bool = true) -> HttpHandler {
         return { req, resp in
-            resp.addHeader(.location, value: webapi ? "/admin/index.html" : "/web/index.html")
-//            let data = FileManager.default.contents(atPath: webapi ? "./webroot/admin/index.html" : "./webroot/web/index.html")
+            resp.addHeader(.location, value: webapi ? "/admin/index.html" : "/index.html")
+//            let data = FileManager.default.contents(atPath: webapi ? ".root/admin/index.html" : ".root/index.html")
 //            guard let content = data else {
 //                resp.completed( .notFound)
 //                return

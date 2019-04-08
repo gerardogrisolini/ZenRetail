@@ -17,7 +17,7 @@ class Amazon: Codable {
     public var accessKey: String = ""
     public var secretKey: String = ""
     public var authToken: String = ""
-    public var userAgent: String = "Webretail/1.0 (Language=Swift/5.0)"
+    public var userAgent: String = "ZenRetail/1.0 (Language=Swift/5.0)"
     
     func create() throws {
         let settings = Settings()
@@ -28,6 +28,7 @@ class Amazon: Codable {
                 let setting = Settings()
                 setting.key = label
                 setting.value = "\(value)"
+                print(label)
                 try setting.save()
             }
         }
