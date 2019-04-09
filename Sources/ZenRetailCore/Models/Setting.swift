@@ -19,7 +19,8 @@ struct Setting: Codable {
     public var companyVatNumber : String = ""
 
     public var companyDescription : [Translation] = [Translation]()
-    public var companySeo : Seo = Seo()
+    public var companyHomeSeo : Seo = Seo()
+    public var companyInfoSeo : Seo = Seo()
 
     public var companyPhone : String = ""
     public var companyEmailInfo : String = ""

@@ -10,7 +10,6 @@ import Foundation
 import NIOPostgres
 
 class Company: Codable {
-    
     public var companyName : String = ""
     public var companyWebsite : String = ""
     public var companyAddress : String = ""
@@ -21,7 +20,8 @@ class Company: Codable {
     public var companyVatNumber : String = ""
     
     public var companyDescription: [Translation] = [Translation]()
-    public var companySeo : Seo = Seo()
+    public var companyHomeSeo : Seo = Seo()
+    public var companyInfoSeo : Seo = Seo()
 
     public var companyPhone : String = ""
     public var companyEmailInfo : String = ""
@@ -114,9 +114,13 @@ class Company: Codable {
             let data = descriptions.data(using: .utf8) {
             companyDescription = try decoder.decode([Translation].self, from: data)
         }
-        if let seo = data["companySeo"],
+        if let seo = data["companyHomeSeo"],
             let data = seo.data(using: .utf8) {
-            companySeo = try! decoder.decode(Seo.self, from: data)
+            companyHomeSeo = try! decoder.decode(Seo.self, from: data)
+        }
+        if let seo = data["companyInfoSeo"],
+            let data = seo.data(using: .utf8) {
+            companyInfoSeo = try! decoder.decode(Seo.self, from: data)
         }
 
         companyPhone = data["companyPhone"] ?? ""
