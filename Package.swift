@@ -25,7 +25,7 @@ let package = Package(
     targets: [
         .target(
             name: "ZenRetailCore",
-            dependencies: ["ZenNIO", "ZenPostgres", "ZenSMTP", "ZenMWS", "ZenEBAY", "SwiftGD", "CryptoSwift"]),
+            dependencies: ["ZenNIO", "ZenNIOSSL", "ZenNIOH2", "ZenPostgres", "ZenSMTP", "ZenMWS", "ZenEBAY", "SwiftGD", "CryptoSwift"]),
         .target(
             name: "ZenRetail",
             dependencies: ["ZenRetailCore"]),

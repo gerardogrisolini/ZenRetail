@@ -6,16 +6,17 @@
 //
 
 import Foundation
+import ZenNIO
 
 class Configuration: Codable {
 
     var serverName: String
     var serverPort: Int
-    let serverSSLPort: Int
     let sslCert: String
     let sslKey: String
+    let httpVersion: Int
     let documentRoot: String
-
+    
     var postgresHost: String
     var postgresDatabase: String
     var postgresUsername: String
@@ -25,11 +26,11 @@ class Configuration: Codable {
     init() {
         self.serverName = "localhost"
         self.serverPort = 8888
-        self.serverSSLPort = 0
+        self.sslCert = "" //cert.crt
+        self.sslKey = "" //key.pem
+        self.httpVersion = 1
         self.documentRoot = "webroot"
-        self.sslCert = "" //certificate.crt
-        self.sslKey = "" //private.pem
-
+        
         self.postgresHost = "localhost"
         self.postgresDatabase = "webretail"
         self.postgresUsername = "postgres"

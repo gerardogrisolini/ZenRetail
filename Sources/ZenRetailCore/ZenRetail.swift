@@ -7,6 +7,8 @@
 
 import Foundation
 import ZenNIO
+import ZenNIOSSL
+import ZenNIOH2
 import ZenSMTP
 import ZenPostgres
 
@@ -27,7 +29,19 @@ public class ZenRetail {
     }
 
     public func start() throws {
-        ZenRetail.zenNIO = ZenNIO(host: configuration.serverName, port: configuration.serverPort, router: router)
+        if configuration.sslCert.isEmpty {
+            ZenRetail.zenNIO = ZenNIO(host: configuration.serverName, port: configuration.serverPort, router: router)
+        } else {
+            let zenNIO = configuration.httpVersion == 1
+                ? ZenNIOSSL(host: configuration.serverName, port: configuration.serverPort, router: router)
+                : ZenNIOH2(host: configuration.serverName, port: configuration.serverPort, router: router)
+            try zenNIO.addSSL(
+                certFile: configuration.sslCert,
+                keyFile: configuration.sslKey
+            )
+            ZenRetail.zenNIO = zenNIO
+        }
+
         ZenRetail.zenNIO.addCORS()
         ZenRetail.zenNIO.addWebroot(path: configuration.documentRoot)
         ZenRetail.zenNIO.addAuthentication(handler: { (username, password) -> (String?) in
