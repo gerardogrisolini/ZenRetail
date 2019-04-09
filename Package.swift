@@ -14,7 +14,7 @@ let package = Package(
             targets: ["ZenRetail"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/gerardogrisolini/ZenNIO.git", .branch("swift-5.0")),
+        .package(url: "https://github.com/gerardogrisolini/ZenNIO.git", .branch("master")),
         .package(url: "https://github.com/gerardogrisolini/ZenPostgres.git", .branch("master")),
         .package(url: "https://github.com/gerardogrisolini/ZenSMTP.git", .branch("master")),
         .package(url: "https://github.com/gerardogrisolini/ZenMWS.git", .branch("master")),
