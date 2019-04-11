@@ -9,7 +9,7 @@
 import Foundation
 import ZenNIO
 import ZenSMTP
-//import SwiftGD
+import SwiftGD
 
 class CompanyController {
 	
@@ -84,15 +84,15 @@ class CompanyController {
         big.setData(data: data)
         try big.save()
         
-//        let image = try Image(data: data)
-//        if let thumb = image.resizedTo(width: 380) {
-//            let small = File()
-//            small.fileName = media.name
-//            small.fileContentType = media.contentType
-//            small.setData(data: try thumb.export())
-//            try small.save()
-//        }
-//        
+        let image = try Image(data: data)
+        if let thumb = image.resizedTo(width: 380) {
+            let small = File()
+            small.fileName = media.name
+            small.fileContentType = media.contentType
+            small.setData(data: try thumb.export())
+            try small.save()
+        }
+
         return media
     }
     
