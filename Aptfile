@@ -8,3 +8,4 @@ perl
 libpq-dev
 libgd-dev
 libxml2-dev
+libicu-dev
