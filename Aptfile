@@ -1,5 +1,5 @@
 clang
-libcurl3
+libcurl4
 libpython2.7
 libpython2.7-dev
 curl
