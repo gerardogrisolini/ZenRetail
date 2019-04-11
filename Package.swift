@@ -19,7 +19,7 @@ let package = Package(
         .package(url: "https://github.com/gerardogrisolini/ZenSMTP.git", .branch("master")),
         .package(url: "https://github.com/gerardogrisolini/ZenMWS.git", .branch("master")),
         .package(url: "https://github.com/gerardogrisolini/ZenEBAY.git", .branch("master")),
-        .package(url: "https://github.com/twostraws/SwiftGD.git", .branch("master")),
+        .package(url: "https://github.com/twostraws/SwiftGD.git", from: "2.0.0"),
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .branch("master")),
     ],
     targets: [
