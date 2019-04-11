@@ -10,3 +10,6 @@ libatomic1
 libicu60
 libxml2
 libgd-dev
+pkg-config
+
+
