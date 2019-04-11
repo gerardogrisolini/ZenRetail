@@ -4,7 +4,7 @@ netcat-openbsd
 lsof
 perl
 libatomic1
-libicu60
+libicu61
 libxml2
 libxml2-dev
 libpq-dev
