@@ -9,5 +9,6 @@ perl
 libatomic1
 libicu60
 libxml2
+libgd3
 libgd-dev
 pkg-config
