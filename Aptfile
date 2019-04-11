@@ -12,8 +12,7 @@ clang
 netcat-openbsd
 lsof 
 perl
-nghttp2
-libnghttp2-dev
 libxml2-dev
 libpq-dev
+libgd
 libgd-dev

@@ -61,17 +61,21 @@ struct Utils {
         }
         
         let task = Process()
-        task.launchPath = launchPath
+        task.executableURL = URL(fileURLWithPath: launchPath)
         task.arguments = args
         let pipe = Pipe()
         task.standardOutput = pipe
-        task.launch()
         
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        if let output = String(data: data, encoding: String.Encoding.utf8) {
-            return output
+        do {
+            try task.run()
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            if let output = String(data: data, encoding: String.Encoding.utf8) {
+                return output
+            }
+            return ""
+        } catch {
+            print(error)
+            return nil
         }
-        
-        return ""
     }
 }
