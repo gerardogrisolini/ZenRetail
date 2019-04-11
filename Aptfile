@@ -1,8 +1,4 @@
-curl
-libatomic1
-libxml2
-netcat-openbsd
-lsof
-perl
+pkg-config
 libpq-dev
 libgd-dev
+libxml2-dev

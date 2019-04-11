@@ -92,7 +92,7 @@ To run this project from Xcode, edit the Scheme, Under "Options" for "run", chec
 [INFO] Starting HTTP server on 0.0.0.0:8080 with document root ./webroot
 ```
 
-## Angular 6 - Terminal
+## Angular 7 - Terminal
 
 Steps for the development UI:
 
