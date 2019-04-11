@@ -1,4 +1,10 @@
 pkg-config
+curl
+libatomic1
+libxml2
+netcat-openbsd
+lsof
+perl
 libpq-dev
 libgd-dev
 libxml2-dev
