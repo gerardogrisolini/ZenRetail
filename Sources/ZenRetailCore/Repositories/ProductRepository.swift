@@ -9,7 +9,6 @@
 import Foundation
 import NIOPostgres
 import ZenPostgres
-import SwiftGD
 
 
 struct ProductRepository : ProductProtocol {

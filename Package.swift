@@ -19,13 +19,13 @@ let package = Package(
         .package(url: "https://github.com/gerardogrisolini/ZenSMTP.git", .branch("master")),
         .package(url: "https://github.com/gerardogrisolini/ZenMWS.git", .branch("master")),
         .package(url: "https://github.com/gerardogrisolini/ZenEBAY.git", .branch("master")),
-        .package(url: "https://github.com/twostraws/SwiftGD.git", .branch("master")),
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .branch("master")),
+        //.package(url: "https://github.com/twostraws/SwiftGD.git", .branch("master")),
     ],
     targets: [
         .target(
             name: "ZenRetailCore",
-            dependencies: ["ZenNIO", "ZenNIOSSL", "ZenNIOH2", "ZenPostgres", "ZenSMTP", "ZenMWS", "ZenEBAY", "SwiftGD", "CryptoSwift"]),
+            dependencies: ["ZenNIO", "ZenNIOSSL", "ZenNIOH2", "ZenPostgres", "ZenSMTP", "ZenMWS", "ZenEBAY", "CryptoSwift"]),
         .target(
             name: "ZenRetail",
             dependencies: ["ZenRetailCore"]),
