@@ -1,16 +1,2 @@
-clang
-libcurl4
-libpython2.7
-libpython2.7-dev
-curl
-netcat-openbsd
-lsof
-perl
-libatomic1
-libicu60
-libxml2
-libgd3
-libgd-dev
-pkg-config
 libssl-dev
 uuid-dev
