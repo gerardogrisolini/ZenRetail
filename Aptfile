@@ -12,3 +12,5 @@ libxml2
 libgd3
 libgd-dev
 pkg-config
+libssl-dev
+uuid-dev
