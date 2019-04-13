@@ -69,14 +69,16 @@ public class AngularController {
 
     func angularHandler(webapi: Bool = true) -> HttpHandler {
         return { req, resp in
-            resp.addHeader(.location, value: "/index.html")
-//            let data = FileManager.default.contents(atPath: "index.html")
-//            guard let content = data else {
-//                resp.completed( .notFound)
-//                return
-//            }
-//            resp.send(html: String(data: content, encoding: .utf8)!)
-            resp.completed(.found)
+//            resp.addHeader(.location, value: "/index.html")
+//            resp.completed(.found)
+
+            let data = FileManager.default.contents(atPath: "./webroot/index.html")
+            guard let content = data else {
+                resp.completed( .notFound)
+                return
+            }
+            resp.send(html: String(data: content, encoding: .utf8)!)
+            resp.completed(.ok)
         }
     }
 }
