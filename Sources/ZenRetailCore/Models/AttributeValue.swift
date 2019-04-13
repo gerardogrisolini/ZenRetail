@@ -17,6 +17,7 @@ class AttributeValue: PostgresTable, Codable {
 	public var attributeId : Int = 0
     public var attributeValueCode	: String = ""
     public var attributeValueName : String = ""
+    public var attributeValueMedia: Media = Media()
     public var attributeValueTranslates: [Translation] = [Translation]()
     public var attributeValueCreated : Int = Int.now()
     public var attributeValueUpdated : Int = Int.now()
@@ -26,6 +27,7 @@ class AttributeValue: PostgresTable, Codable {
         case attributeId
         case attributeValueCode
         case attributeValueName
+        case attributeValueMedia = "media"
         case attributeValueTranslates = "translations"
     }
 
@@ -40,8 +42,12 @@ class AttributeValue: PostgresTable, Codable {
 		attributeId = row.column("attributeId")?.int ?? 0
         attributeValueCode = row.column("attributeValueCode")?.string ?? ""
         attributeValueName = row.column("attributeValueName")?.string ?? ""
+        let decoder = JSONDecoder()
+        if let media = row.column("attributeValueMedia")?.data {
+            attributeValueMedia = try! decoder.decode(Media.self, from: media)
+        }
         if let translates = row.column("attributeValueTranslates")?.data {
-            attributeValueTranslates = try! JSONDecoder().decode([Translation].self, from: translates)
+            attributeValueTranslates = try! decoder.decode([Translation].self, from: translates)
         }
         attributeValueCreated = row.column("attributeValueCreated")?.int ?? 0
         attributeValueUpdated = row.column("attributeValueUpdated")?.int ?? 0
@@ -55,6 +61,7 @@ class AttributeValue: PostgresTable, Codable {
         attributeId = try container.decode(Int.self, forKey: .attributeId)
         attributeValueCode = try container.decode(String.self, forKey: .attributeValueCode)
         attributeValueName = try container.decode(String.self, forKey: .attributeValueName)
+        attributeValueMedia = try container.decodeIfPresent(Media.self, forKey: .attributeValueMedia) ?? Media()
         attributeValueTranslates = try container.decodeIfPresent([Translation].self, forKey: .attributeValueTranslates) ?? [Translation]()
     }
     
@@ -64,6 +71,7 @@ class AttributeValue: PostgresTable, Codable {
         try container.encode(attributeId, forKey: .attributeId)
         try container.encode(attributeValueCode, forKey: .attributeValueCode)
         try container.encode(attributeValueName, forKey: .attributeValueName)
+        try container.encode(attributeValueMedia, forKey: .attributeValueMedia)
         try container.encode(attributeValueTranslates, forKey: .attributeValueTranslates)
     }
 }

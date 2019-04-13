@@ -32,7 +32,7 @@ class Configuration: Codable {
         self.documentRoot = "webroot"
         
         self.postgresHost = "localhost"
-        self.postgresDatabase = "webretail"
+        self.postgresDatabase = "zenretail"
         self.postgresUsername = "postgres"
         self.postgresPassword = "zBnwEe8QDR"
         self.postgresPort = 5432

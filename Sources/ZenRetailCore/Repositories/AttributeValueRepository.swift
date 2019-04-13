@@ -39,6 +39,7 @@ struct AttributeValueRepository : AttributeValueProtocol {
         
         current.attributeValueCode = item.attributeValueCode
         current.attributeValueName = item.attributeValueName
+        current.attributeValueMedia = item.attributeValueMedia
         current.attributeValueTranslates = item.attributeValueTranslates
         current.attributeValueUpdated = Int.now()
         try current.save()
