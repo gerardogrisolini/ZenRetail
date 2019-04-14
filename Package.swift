@@ -6,8 +6,7 @@ import PackageDescription
 let package = Package(
     name: "ZenRetail",
     platforms: [
-        .macOS(.v10_14),
-        .linux
+        .macOS(.v10_14)
     ],
     products: [
         .library(
@@ -36,5 +35,6 @@ let package = Package(
         .testTarget(
             name: "ZenRetailTests",
             dependencies: ["ZenRetailCore"]),
-    ]
+    ],
+    swiftLanguageVersions: [.v5]
 )
