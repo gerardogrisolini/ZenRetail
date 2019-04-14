@@ -17,6 +17,87 @@ class EcommerceController {
         self.repository = ZenIoC.shared.resolve() as EcommerceProtocol
         self.registryRepository = ZenIoC.shared.resolve() as RegistryProtocol
 
+        router.get("/robots.txt") { req, res in
+            let robots = """
+User-agent: *
+Disallow:
+
+Sitemap: http://\(ZenRetail.config.serverName):\(ZenRetail.config.serverPort)/sitemap.xml
+"""
+            res.send(text: robots)
+            res.completed()
+        }
+        
+        router.get("/sitemap.xml") { request, response in
+            do {
+                var siteMapItems = [SitemapItem]()
+
+                /// PAGES
+                siteMapItems.append(
+                    SitemapItem(
+                        url: "\(ZenRetail.config.serverWeb)/home",
+                        changeFrequency: .daily,
+                        priority: 1.0
+                    )
+                )
+                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverWeb)/info", priority: 0.8))
+                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverWeb)/account", priority: 0.1))
+                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverWeb)/login", priority: 0.1))
+                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverWeb)/register", priority: 0.1))
+                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverWeb)/checkout", priority: 0.1))
+                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverWeb)/orders", priority: 0.1))
+                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverWeb)/basket", priority: 0.1))
+
+                /// CATEGORIES
+                let categories = try self.repository.getCategories()
+                for item in categories {
+                    siteMapItems.append(
+                        SitemapItem(
+                            url: "\(ZenRetail.config.serverWeb)/category/\(item.categorySeo.permalink)",
+                            lastModified: Date(timeIntervalSinceReferenceDate: TimeInterval(item.categoryUpdated)),
+                            changeFrequency: .weekly,
+                            priority: 0.9
+                        )
+                    )
+                }
+
+                /// BRANDS
+                let brands = try self.repository.getBrands()
+                for item in brands {
+                    siteMapItems.append(
+                        SitemapItem(
+                            url: "\(ZenRetail.config.serverWeb)/brand/\(item.brandSeo.permalink)",
+                            lastModified: Date(timeIntervalSinceReferenceDate: TimeInterval(item.brandUpdated)),
+                            changeFrequency: .weekly,
+                            priority: 0.9
+                        )
+                    )
+                    
+                    /// PRODUCTS
+                    let products = try self.repository.getProducts(brand: item.brandSeo.permalink)
+                    for product in products {
+                        siteMapItems.append(
+                            SitemapItem(
+                                url: "\(ZenRetail.config.serverWeb)/product/\(product.productSeo.permalink)",
+                                lastModified: Date(timeIntervalSinceReferenceDate: TimeInterval(product.productUpdated)),
+                                changeFrequency: .weekly,
+                                priority: 0.9
+                            )
+                        )
+                    }
+
+                }
+                let siteMap = Sitemap(items: siteMapItems)
+                
+                response.addHeader(.contentType, value: "application/xml; charset=utf-8")
+                let data = siteMap.xmlString.data(using: .utf8)!
+                response.send(data: data)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            }
+        }
+        
         /// Guest Api
         router.get("/api/ecommerce/setting", handler: ecommerceCompanyHandlerGET)
         router.get("/api/ecommerce/category", handler: ecommerceCategoriesHandlerGET)

@@ -14,7 +14,7 @@ import ZenPostgres
 
 
 public class ZenRetail {
-    var configuration: Configuration!
+    static var config: Configuration!
     static var zenNIO: ZenNIO!
     var zenPostgres: ZenPostgres!
     var zenSMTP: ZenSMTP!
@@ -29,21 +29,21 @@ public class ZenRetail {
     }
 
     public func start() throws {
-        if configuration.sslCert.isEmpty {
-            ZenRetail.zenNIO = ZenNIO(host: configuration.serverName, port: configuration.serverPort, router: router)
+        if ZenRetail.config.sslCert.isEmpty {
+            ZenRetail.zenNIO = ZenNIO(host: ZenRetail.config.serverName, port: ZenRetail.config.serverPort, router: router)
         } else {
-            let zenNIO = configuration.httpVersion == 1
-                ? ZenNIOSSL(host: configuration.serverName, port: configuration.serverPort, router: router)
-                : ZenNIOH2(host: configuration.serverName, port: configuration.serverPort, router: router)
+            let zenNIO = ZenRetail.config.httpVersion == 1
+                ? ZenNIOSSL(host: ZenRetail.config.serverName, port: ZenRetail.config.serverPort, router: router)
+                : ZenNIOH2(host: ZenRetail.config.serverName, port: ZenRetail.config.serverPort, router: router)
             try zenNIO.addSSL(
-                certFile: configuration.sslCert,
-                keyFile: configuration.sslKey
+                certFile: ZenRetail.config.sslCert,
+                keyFile: ZenRetail.config.sslKey
             )
             ZenRetail.zenNIO = zenNIO
         }
 
         ZenRetail.zenNIO.addCORS()
-        ZenRetail.zenNIO.addWebroot(path: configuration.documentRoot)
+        ZenRetail.zenNIO.addWebroot(path: ZenRetail.config.documentRoot)
         ZenRetail.zenNIO.addAuthentication(handler: { (username, password) -> (String?) in
             do {
                 let user = User()
@@ -77,13 +77,13 @@ public class ZenRetail {
     }
 
     private func setup() {
-        configuration = loadConfiguration()
+        ZenRetail.config = loadConfiguration()
         
         if let serverName = ProcessInfo.processInfo.environment["HOST"] {
-            configuration.serverName = serverName
+            ZenRetail.config.serverName = serverName
         }
         if let portString = ProcessInfo.processInfo.environment["PORT"] {
-            configuration.serverPort = Int(portString)!
+            ZenRetail.config.serverPort = Int(portString)!
         }
         if let databaseUrl = ProcessInfo.processInfo.environment["DATABASE_URL"] {
             parseConnectionString(databaseUrl: databaseUrl)
@@ -108,35 +108,35 @@ public class ZenRetail {
     private func parseConnectionString(databaseUrl: String) {
         var url = databaseUrl.replacingOccurrences(of: "postgres://", with: "")
         var index = url.index(before: url.firstIndex(of: ":")!)
-        configuration.postgresUsername = url[url.startIndex...index].description
+        ZenRetail.config.postgresUsername = url[url.startIndex...index].description
         
         index = url.index(index, offsetBy: 2)
         var index2 = url.index(before: url.firstIndex(of: "@")!)
-        configuration.postgresPassword = url[index...index2].description
+        ZenRetail.config.postgresPassword = url[index...index2].description
         
         index = url.index(index2, offsetBy: 2)
         url = url[index...].description
         
         index2 = url.index(before: url.firstIndex(of: ":")!)
-        configuration.postgresHost = url[url.startIndex...index2].description
+        ZenRetail.config.postgresHost = url[url.startIndex...index2].description
         
         index = url.index(index2, offsetBy: 2)
         index2 = url.index(before: url.firstIndex(of: "/")!)
-        configuration.postgresPort = Int(url[index...index2].description)!
+        ZenRetail.config.postgresPort = Int(url[index...index2].description)!
         
         index = url.index(index2, offsetBy: 2)
-        configuration.postgresDatabase = url[index...].description
+        ZenRetail.config.postgresDatabase = url[index...].description
     }
     
     private func setupDatabase() throws {
         
         let config = PostgresConfig(
-            host: configuration.postgresHost,
-            port: configuration.postgresPort,
+            host: ZenRetail.config.postgresHost,
+            port: ZenRetail.config.postgresPort,
             tls: false,
-            username: configuration.postgresUsername,
-            password: configuration.postgresPassword,
-            database: configuration.postgresDatabase
+            username: ZenRetail.config.postgresUsername,
+            password: ZenRetail.config.postgresPassword,
+            database: ZenRetail.config.postgresDatabase
         )
         zenPostgres = try ZenPostgres(config: config)
     }
@@ -293,7 +293,7 @@ public class ZenRetail {
     private func saveConfiguration(cfg: Configuration) {
         let fileUrl = URL(fileURLWithPath: "\(FileManager.default.currentDirectoryPath)/zenretail.json")
         do {
-            let str = try JSONEncoder().encode(configuration)
+            let str = try JSONEncoder().encode(ZenRetail.config)
             try str.write(to: fileUrl, options: Data.WritingOptions.atomic)
         } catch {
             print(error)

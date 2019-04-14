@@ -9,7 +9,7 @@ import Foundation
 import ZenNIO
 
 class Configuration: Codable {
-
+    var serverWeb: String
     var serverName: String
     var serverPort: Int
     let sslCert: String
@@ -24,6 +24,7 @@ class Configuration: Codable {
     var postgresPort: Int
 
     init() {
+        self.serverWeb = "http://localhost"
         self.serverName = "localhost"
         self.serverPort = 8888
         self.sslCert = "" //cert.crt

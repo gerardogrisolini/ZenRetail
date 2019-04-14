@@ -78,7 +78,7 @@ public class AngularController {
                 return
             }
             resp.send(html: String(data: content, encoding: .utf8)!)
-            resp.completed(.ok)
+            resp.completed()
         }
     }
 }

@@ -5,6 +5,10 @@ import PackageDescription
 
 let package = Package(
     name: "ZenRetail",
+    platforms: [
+        .macOS(.v10_14),
+        .linux
+    ],
     products: [
         .library(
             name: "ZenRetailCore",

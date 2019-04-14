@@ -96,6 +96,7 @@ public class AmazonController: NSObject {
             userAgent: amazon.userAgent
         )
         
+        //TODO: decomment
 //        if !amazon.authToken.isEmpty {
 //            self.startWorker()
 //        }

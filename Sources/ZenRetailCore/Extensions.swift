@@ -42,7 +42,7 @@ extension Double {
     func roundCurrency() -> Double {
         return (self * 100).rounded() / 100
     }
-    
+
     func formatCurrency() -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
@@ -397,7 +397,7 @@ extension Product {
                         ProductImage(
                             sku: article.articleNumber > 0 ? "\(self.productCode)-\(article.articleNumber)" : self.productCode,
                             imageType: imageType,
-                            imageLocation: "http://\(ZenRetail.zenNIO.host):\(ZenRetail.zenNIO.port)/media/\(media.name)"
+                            imageLocation: "http://\(ZenRetail.config.serverName):\(ZenRetail.config.serverPort)/media/\(media.name)"
                         )
                     )
                 )
