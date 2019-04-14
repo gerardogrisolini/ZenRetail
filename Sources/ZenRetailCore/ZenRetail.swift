@@ -30,7 +30,7 @@ public class ZenRetail {
 
     public func start() throws {
         if ZenRetail.config.sslCert.isEmpty {
-            ZenRetail.zenNIO = ZenNIO(host: ZenRetail.config.serverName, port: ZenRetail.config.serverPort, router: router)
+            ZenRetail.zenNIO = ZenNIO(host: "0.0.0.0", port: ZenRetail.config.serverPort, router: router)
         } else {
             let zenNIO = ZenRetail.config.httpVersion == 1
                 ? ZenNIOSSL(host: ZenRetail.config.serverName, port: ZenRetail.config.serverPort, router: router)
