@@ -18,11 +18,14 @@ class EcommerceController {
         self.registryRepository = ZenIoC.shared.resolve() as RegistryProtocol
 
         router.get("/robots.txt") { req, res in
+            let port = ZenRetail.config.serverPort != 80 && ZenRetail.config.serverPort != 443
+                ? ":\(ZenRetail.config.serverPort)"
+                : ""
             let robots = """
 User-agent: *
 Disallow:
 
-Sitemap: http://\(ZenRetail.config.serverName):\(ZenRetail.config.serverPort)/sitemap.xml
+Sitemap: \(ZenRetail.config.sslCert.isEmpty ? "http" : "https")://\(ZenRetail.config.serverName)\(port)/sitemap.xml
 """
             res.send(text: robots)
             res.completed()
