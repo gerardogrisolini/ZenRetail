@@ -33,8 +33,8 @@ public class ZenRetail {
             ZenRetail.zenNIO = ZenNIO(host: "0.0.0.0", port: ZenRetail.config.serverPort, router: router)
         } else {
             let zenNIO = ZenRetail.config.httpVersion == 1
-                ? ZenNIOSSL(host: ZenRetail.config.serverName, port: ZenRetail.config.serverPort, router: router)
-                : ZenNIOH2(host: ZenRetail.config.serverName, port: ZenRetail.config.serverPort, router: router)
+                ? ZenNIOSSL(host: "0.0.0.0", port: ZenRetail.config.serverPort, router: router)
+                : ZenNIOH2(host: "0.0.0.0", port: ZenRetail.config.serverPort, router: router)
             try zenNIO.addSSL(
                 certFile: ZenRetail.config.sslCert,
                 keyFile: ZenRetail.config.sslKey
