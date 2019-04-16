@@ -149,10 +149,11 @@ Sitemap: \(ZenRetail.config.sslCert.isEmpty ? "http" : "https")://\(ZenRetail.co
             setting.companyProvince = item.companyProvince
             setting.companyCountry = item.companyCountry
             
-            setting.companyDescription = item.companyDescription
             setting.companyHomeSeo = item.companyHomeSeo
+            setting.companyHomeContent = item.companyHomeContent
             setting.companyInfoSeo = item.companyInfoSeo
-
+            setting.companyInfoContent = item.companyInfoContent
+            
             setting.companyPhone = item.companyPhone
             setting.companyEmailInfo = item.companyEmailInfo
             setting.companyEmailSales = item.companyEmailSales

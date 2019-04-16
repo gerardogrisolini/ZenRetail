@@ -19,9 +19,10 @@ class Company: Codable {
     public var companyCountry : String = ""
     public var companyVatNumber : String = ""
     
-    public var companyDescription: [Translation] = [Translation]()
     public var companyHomeSeo : Seo = Seo()
+    public var companyHomeContent: [Translation] = [Translation]()
     public var companyInfoSeo : Seo = Seo()
+    public var companyInfoContent: [Translation] = [Translation]()
 
     public var companyPhone : String = ""
     public var companyEmailInfo : String = ""
@@ -110,17 +111,21 @@ class Company: Codable {
         companyCountry = data["companyCountry"] ?? ""
         companyVatNumber = data["companyVatNumber"] ?? ""
         
-        if let descriptions = data["companyDescription"],
-            let data = descriptions.data(using: .utf8) {
-            companyDescription = try decoder.decode([Translation].self, from: data)
-        }
         if let seo = data["companyHomeSeo"],
             let data = seo.data(using: .utf8) {
             companyHomeSeo = try! decoder.decode(Seo.self, from: data)
         }
+        if let content = data["companyHomeContent"],
+            let data = content.data(using: .utf8) {
+            companyHomeContent = try decoder.decode([Translation].self, from: data)
+        }
         if let seo = data["companyInfoSeo"],
             let data = seo.data(using: .utf8) {
             companyInfoSeo = try! decoder.decode(Seo.self, from: data)
+        }
+        if let content = data["companyInfoContent"],
+            let data = content.data(using: .utf8) {
+            companyInfoContent = try decoder.decode([Translation].self, from: data)
         }
 
         companyPhone = data["companyPhone"] ?? ""
