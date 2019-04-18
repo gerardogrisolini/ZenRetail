@@ -30,7 +30,7 @@ public class AngularController {
         router.get("/orders", handler: angularHandler(webapi: false))
         router.get("/doc/:id", handler: angularHandler(webapi: false))
     
-        router.get("/admin/", handler: angularHandler())
+        router.get("/admin", handler: angularHandler())
         router.get("/admin/home", handler: angularHandler())
         router.get("/admin/company", handler: angularHandler())
         router.get("/admin/login", handler: angularHandler())
@@ -74,11 +74,11 @@ public class AngularController {
             
             let agent = req.head.headers["User-Agent"]
             print(agent)
-            if agent.contains("Googlebot") {
+//            if agent.contains("Googlebot") {
                 data = self.getContent(request: req)
-            } else {
-                data = FileManager.default.contents(atPath: webapi ? "./webroot/admin/index.html" : "./webroot/index.html")
-            }
+//            } else {
+//                data = FileManager.default.contents(atPath: webapi ? "./webroot/admin/index.html" : "./webroot/index.html")
+//            }
             
             guard let content = data else {
                 resp.completed( .notFound)
