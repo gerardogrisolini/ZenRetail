@@ -38,7 +38,7 @@ class CompanyController {
 		do {
 			let item = Company()
             try item.select()
-			try response.send(json:item)
+			try response.send(json: item)
 			response.completed()
 		} catch {
 			response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
