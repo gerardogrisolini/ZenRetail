@@ -111,7 +111,7 @@ public class AngularController {
                     .replacingOccurrences(of: "#title#", with: brand.brandSeo.title.defaultValue())
                     .replacingOccurrences(of: "#description#", with: brand.brandSeo.description.defaultValue())
                     .replacingOccurrences(of: "#content#", with: brand.brandDescription.defaultValue())
-                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/image/\(brand.brandMedia.name)")
+                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/\(brand.brandMedia.name)")
                 break
             case let x where x.hasPrefix("/category"):
                 guard let name = request.getParam(String.self, key: "name") else {
@@ -125,7 +125,7 @@ public class AngularController {
                     .replacingOccurrences(of: "#title#", with: category.categorySeo.title.defaultValue())
                     .replacingOccurrences(of: "#description#", with: category.categorySeo.description.defaultValue())
                     .replacingOccurrences(of: "#content#", with: category.categoryDescription.defaultValue())
-                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/image/\(category.categoryMedia.name)")
+                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/\(category.categoryMedia.name)")
                 break
             case let x where x.hasPrefix("/product"):
                 guard let name = request.getParam(String.self, key: "name") else {
@@ -136,21 +136,21 @@ public class AngularController {
                     .replacingOccurrences(of: "#title#", with: product.productSeo.title.defaultValue())
                     .replacingOccurrences(of: "#description#", with: product.productSeo.description.defaultValue())
                     .replacingOccurrences(of: "#content#", with: product.productDescription.defaultValue())
-                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/image/\(product.productMedia.first?.name ?? "")")
+                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/\(product.productMedia.first?.name ?? "")")
                 break
             case let x where x.hasPrefix("/info"):
                 content = content
                     .replacingOccurrences(of: "#title#", with: settings.companyInfoSeo.title.defaultValue())
                     .replacingOccurrences(of: "#description#", with: settings.companyInfoSeo.description.defaultValue())
                     .replacingOccurrences(of: "#content#", with: settings.companyInfoContent.defaultValue())
-                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/image/logo.png)")
+                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/logo.png)")
                 break
             default:
                 content = content
                     .replacingOccurrences(of: "#title#", with: settings.companyHomeSeo.title.defaultValue())
                     .replacingOccurrences(of: "#description#", with: settings.companyHomeSeo.description.defaultValue())
                     .replacingOccurrences(of: "#content#", with: settings.companyHomeContent.defaultValue())
-                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/image/logo.png)")
+                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/logo.png)")
                 break
             }
             
@@ -180,10 +180,10 @@ public class AngularController {
     <meta property="og:image" content="#image#">
     <meta property="og:site_name" content="#sitename#">
     <meta name="twitter:card" property="summary_large_image">
-    <meta name="twitter:site" property="og:site_name">
-    <meta name="twitter:title" property="og:title">
-    <meta name="twitter:description" property="og:description">
-    <meta name="twitter:image" property="og:image">
+    <meta name="twitter:site" content="#sitename#">
+    <meta name="twitter:title" property="#title#">
+    <meta name="twitter:description" property="#description#">
+    <meta name="twitter:image" property="#image#">
 <body>
 #content#
 </body>
