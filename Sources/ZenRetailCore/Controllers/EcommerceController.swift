@@ -18,14 +18,11 @@ class EcommerceController {
         self.registryRepository = ZenIoC.shared.resolve() as RegistryProtocol
 
         router.get("/robots.txt") { req, res in
-            let port = ZenRetail.config.serverPort != 80 && ZenRetail.config.serverPort != 443
-                ? ":\(ZenRetail.config.serverPort)"
-                : ""
             let robots = """
 User-agent: *
 Disallow:
 
-Sitemap: \(ZenRetail.config.sslCert.isEmpty ? "http" : "https")://\(ZenRetail.config.serverName)\(port)/sitemap.xml
+Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
 """
             res.send(text: robots)
             res.completed()
@@ -38,25 +35,25 @@ Sitemap: \(ZenRetail.config.sslCert.isEmpty ? "http" : "https")://\(ZenRetail.co
                 /// PAGES
                 siteMapItems.append(
                     SitemapItem(
-                        url: "\(ZenRetail.config.serverWeb)/home",
+                        url: "\(ZenRetail.config.serverUrl)/home",
                         changeFrequency: .daily,
                         priority: 1.0
                     )
                 )
-                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverWeb)/info", priority: 0.8))
-                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverWeb)/account", priority: 0.1))
-                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverWeb)/login", priority: 0.1))
-                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverWeb)/register", priority: 0.1))
-                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverWeb)/checkout", priority: 0.1))
-                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverWeb)/orders", priority: 0.1))
-                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverWeb)/basket", priority: 0.1))
+                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/info", priority: 0.8))
+                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/account", priority: 0.1))
+                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/login", priority: 0.1))
+                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/register", priority: 0.1))
+                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/checkout", priority: 0.1))
+                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/orders", priority: 0.1))
+                siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/basket", priority: 0.1))
 
                 /// CATEGORIES
                 let categories = try self.repository.getCategories()
                 for item in categories {
                     siteMapItems.append(
                         SitemapItem(
-                            url: "\(ZenRetail.config.serverWeb)/category/\(item.categorySeo.permalink)",
+                            url: "\(ZenRetail.config.serverUrl)/category/\(item.categorySeo.permalink)",
                             lastModified: Date(timeIntervalSinceReferenceDate: TimeInterval(item.categoryUpdated)),
                             changeFrequency: .weekly,
                             priority: 0.9
@@ -69,7 +66,7 @@ Sitemap: \(ZenRetail.config.sslCert.isEmpty ? "http" : "https")://\(ZenRetail.co
                 for item in brands {
                     siteMapItems.append(
                         SitemapItem(
-                            url: "\(ZenRetail.config.serverWeb)/brand/\(item.brandSeo.permalink)",
+                            url: "\(ZenRetail.config.serverUrl)/brand/\(item.brandSeo.permalink)",
                             lastModified: Date(timeIntervalSinceReferenceDate: TimeInterval(item.brandUpdated)),
                             changeFrequency: .weekly,
                             priority: 0.9
@@ -81,7 +78,7 @@ Sitemap: \(ZenRetail.config.sslCert.isEmpty ? "http" : "https")://\(ZenRetail.co
                     for product in products {
                         siteMapItems.append(
                             SitemapItem(
-                                url: "\(ZenRetail.config.serverWeb)/product/\(product.productSeo.permalink)",
+                                url: "\(ZenRetail.config.serverUrl)/product/\(product.productSeo.permalink)",
                                 lastModified: Date(timeIntervalSinceReferenceDate: TimeInterval(product.productUpdated)),
                                 changeFrequency: .weekly,
                                 priority: 0.9
@@ -139,40 +136,8 @@ Sitemap: \(ZenRetail.config.sslCert.isEmpty ? "http" : "https")://\(ZenRetail.co
     
     func ecommerceCompanyHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            let item = Company()
-            try item.select()
-            var setting = Setting()
-            setting.companyName = item.companyName
-            setting.companyAddress = item.companyAddress
-            setting.companyCity = item.companyCity
-            setting.companyZip = item.companyZip
-            setting.companyProvince = item.companyProvince
-            setting.companyCountry = item.companyCountry
-            
-            setting.companyHomeSeo = item.companyHomeSeo
-            setting.companyHomeContent = item.companyHomeContent
-            setting.companyInfoSeo = item.companyInfoSeo
-            setting.companyInfoContent = item.companyInfoContent
-            
-            setting.companyPhone = item.companyPhone
-            setting.companyEmailInfo = item.companyEmailInfo
-            setting.companyEmailSales = item.companyEmailSales
-            setting.companyEmailSupport = item.companyEmailSupport
-            
-            setting.companyCurrency = item.companyCurrency
-            setting.companyUtc = item.companyUtc
-
-            setting.cashOnDelivery = item.cashOnDelivery
-            setting.paypalEnv = item.paypalEnv
-            setting.paypalSandbox = item.paypalSandbox
-            setting.paypalProduction = item.paypalProduction
-            setting.bankName = item.bankName
-            setting.bankIban = item.bankIban
-
-            setting.shippingStandard = item.shippingStandard
-            setting.shippingExpress = item.shippingExpress
-
-            try response.send(json:setting)
+            let settings = try self.repository.getSettings()
+            try response.send(json: settings)
             response.completed()
         } catch {
             response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")

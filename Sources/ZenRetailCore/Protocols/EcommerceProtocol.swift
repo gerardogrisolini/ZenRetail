@@ -22,6 +22,8 @@ struct Order: Codable {
 
 protocol EcommerceProtocol {
     
+    func getSettings() throws -> Setting
+    
     func getCategories() throws -> [Category]
 
     func getBrands() throws -> [Brand]

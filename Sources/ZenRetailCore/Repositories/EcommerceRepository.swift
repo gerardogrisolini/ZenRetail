@@ -11,6 +11,43 @@ import ZenPostgres
 
 struct EcommerceRepository : EcommerceProtocol {
 
+    func getSettings() throws -> Setting {
+        let item = Company()
+        try item.select()
+        var setting = Setting()
+        setting.companyName = item.companyName
+        setting.companyAddress = item.companyAddress
+        setting.companyCity = item.companyCity
+        setting.companyZip = item.companyZip
+        setting.companyProvince = item.companyProvince
+        setting.companyCountry = item.companyCountry
+        
+        setting.companyHomeSeo = item.companyHomeSeo
+        setting.companyHomeContent = item.companyHomeContent
+        setting.companyInfoSeo = item.companyInfoSeo
+        setting.companyInfoContent = item.companyInfoContent
+        
+        setting.companyPhone = item.companyPhone
+        setting.companyEmailInfo = item.companyEmailInfo
+        setting.companyEmailSales = item.companyEmailSales
+        setting.companyEmailSupport = item.companyEmailSupport
+        
+        setting.companyCurrency = item.companyCurrency
+        setting.companyUtc = item.companyUtc
+        
+        setting.cashOnDelivery = item.cashOnDelivery
+        setting.paypalEnv = item.paypalEnv
+        setting.paypalSandbox = item.paypalSandbox
+        setting.paypalProduction = item.paypalProduction
+        setting.bankName = item.bankName
+        setting.bankIban = item.bankIban
+        
+        setting.shippingStandard = item.shippingStandard
+        setting.shippingExpress = item.shippingExpress
+        
+        return setting
+    }
+
     func getCategories() throws -> [Category] {
         let category = DataSourceJoin(
             table: "ProductCategory",
