@@ -143,14 +143,14 @@ public class AngularController {
                     .replacingOccurrences(of: "#title#", with: settings.companyInfoSeo.title.defaultValue())
                     .replacingOccurrences(of: "#description#", with: settings.companyInfoSeo.description.defaultValue())
                     .replacingOccurrences(of: "#content#", with: settings.companyInfoContent.defaultValue())
-                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/logo.png)")
+                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/logo.png")
                 break
             default:
                 content = content
                     .replacingOccurrences(of: "#title#", with: settings.companyHomeSeo.title.defaultValue())
                     .replacingOccurrences(of: "#description#", with: settings.companyHomeSeo.description.defaultValue())
                     .replacingOccurrences(of: "#content#", with: settings.companyHomeContent.defaultValue())
-                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/logo.png)")
+                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/logo.png")
                 break
             }
             
@@ -179,11 +179,11 @@ public class AngularController {
     <meta property="og:url" content="#url#">
     <meta property="og:image" content="#image#">
     <meta property="og:site_name" content="#sitename#">
-    <meta name="twitter:card" property="summary_large_image">
-    <meta name="twitter:site" content="#sitename#">
-    <meta name="twitter:title" property="#title#">
-    <meta name="twitter:description" property="#description#">
-    <meta name="twitter:image" property="#image#">
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:site" content="#sitename#">
+    <meta property="twitter:title" content="#title#">
+    <meta property="twitter:description" content="#description#">
+    <meta property="twitter:image" content="#image#">
 <body>
 #content#
 </body>
