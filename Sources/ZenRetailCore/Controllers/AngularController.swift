@@ -179,11 +179,11 @@ public class AngularController {
     <meta property="og:url" content="#url#">
     <meta property="og:image" content="#image#">
     <meta property="og:site_name" content="#sitename#">
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:site" content="#sitename#">
-    <meta property="twitter:title" content="#title#">
-    <meta property="twitter:description" content="#description#">
-    <meta property="twitter:image" content="#image#">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="#sitename#">
+    <meta name="twitter:title" content="#title#">
+    <meta name="twitter:description" content="#description#">
+    <meta name="twitter:image" property="#image#">
 <body>
 #content#
 </body>
