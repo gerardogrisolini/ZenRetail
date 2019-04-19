@@ -42,7 +42,7 @@ public class ZenRetail {
             ZenRetail.zenNIO = zenNIO
         }
 
-        ZenRetail.zenNIO.addCORS()
+        //ZenRetail.zenNIO.addCORS()
         ZenRetail.zenNIO.addWebroot(path: ZenRetail.config.documentRoot)
         ZenRetail.zenNIO.addAuthentication(handler: { (username, password) -> (String?) in
             do {
