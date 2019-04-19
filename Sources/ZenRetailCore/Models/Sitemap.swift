@@ -67,10 +67,15 @@ public struct Sitemap
         for item in items {
             let url = content.addChild(name: "url")
             url.addChild(name: "loc", value: item.url)
-            url.addChild(name: "lastmod", value: item.lastModified?.formatDate(format: "yyyy-MM-dd"))
-            url.addChild(name: "changefreq", value: item.changeFrequency?.rawValue)
-            let priority = item.priority != nil ? String(format:"%.1f", item.priority!) : nil
-            url.addChild(name: "priority", value: priority)
+            if let lastModified = item.lastModified {
+                url.addChild(name: "lastmod", value: lastModified.formatDate(format: "yyyy-MM-dd"))
+            }
+            if let changeFrequency = item.changeFrequency {
+                url.addChild(name: "changefreq", value: changeFrequency.rawValue)
+            }
+            if let priority = item.priority {
+                url.addChild(name: "priority", value: String(format:"%.1f", priority))
+            }
         }
         
         //print(map.xml)
