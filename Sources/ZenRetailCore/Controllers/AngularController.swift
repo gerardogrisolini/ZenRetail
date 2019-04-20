@@ -72,8 +72,6 @@ public class AngularController {
         return { req, resp in
             var data: Data?
             
-            let agent = req.head.headers["User-Agent"].first?.lowercased() ?? ""
-            print(agent)
             if let agent = req.head.headers["User-Agent"].first?.lowercased(),
                 agent.contains("googlebot") || agent.contains("adsbot")
                 || agent.contains("bingbot") || agent.contains("msnbot") {
