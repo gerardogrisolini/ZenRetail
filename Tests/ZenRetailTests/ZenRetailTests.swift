@@ -82,6 +82,7 @@ final class ZenRetailTests: XCTestCase {
         XCTAssertNotNil(pdf)
     }
     
+
     static var allTests = [
         ("testQueryCategory", testQueryCategory),
         ("testQuery", testQuery),

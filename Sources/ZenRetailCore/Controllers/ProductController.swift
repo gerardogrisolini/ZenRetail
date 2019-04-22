@@ -106,7 +106,7 @@ class ProductController {
             let item = try JSONDecoder().decode(Product.self, from: data)
             try self.repository.add(item: item)
             let result = try self.repository.sync(item: item)
-            try response.send(json:result)
+            try response.send(json: result)
             response.completed( .created)
         } catch {
 			response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
@@ -118,11 +118,11 @@ class ProductController {
             guard let data = request.bodyData else {
                 throw HttpError.badRequest
             }
-            let item = try JSONDecoder().decode(Product.self, from: data)
+            var item = try JSONDecoder().decode(Product.self, from: data)
             try self.repository.add(item: item)
-            let result = try self.repository.sync(item: item)
-            try self.repository.syncImport(item: item)
-            try response.send(json:result)
+            item = try self.repository.sync(item: item)
+            let result = try self.repository.syncImport(item: item)
+            try response.send(json: result)
             response.completed( .created)
         } catch {
             response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")

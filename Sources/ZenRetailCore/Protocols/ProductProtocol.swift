@@ -24,7 +24,7 @@ protocol ProductProtocol {
     
     func sync(item: Product) throws -> Product
 
-    func syncImport(item: Product) throws
+    func syncImport(item: Product) throws -> Result
     
     func update(id: Int, item: Product) throws
     

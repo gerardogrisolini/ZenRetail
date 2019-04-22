@@ -9,7 +9,7 @@
 import Foundation
 import NIOPostgres
 import ZenPostgres
-
+import ZenNIO
 
 struct ProductRepository : ProductProtocol {
 
@@ -364,6 +364,7 @@ struct ProductRepository : ProductProtocol {
                     attributeValue.attributeId = a.attributeId
                     attributeValue.attributeValueCode = v._attributeValue.attributeValueCode
                     attributeValue.attributeValueName = v._attributeValue.attributeValueName
+                    attributeValue.attributeValueMedia = v._attributeValue.attributeValueMedia
                     attributeValue.attributeValueTranslates = v._attributeValue.attributeValueTranslates
                     attributeValue.attributeValueCreated = Int.now()
                     attributeValue.attributeValueUpdated = Int.now()
@@ -435,24 +436,20 @@ struct ProductRepository : ProductProtocol {
         }
         
         return item
-//        return try (ZenIoC.shared.resolve() as ArticleProtocol).build(productId: item.productId)
     }
     
-    func syncImport(item: Product) throws {
+    func syncImport(item: Product) throws -> Result {
 
         /// Sync barcodes
         for a in item._articles.filter({ $0._attributeValues.count > 0 }) {
-            var values = a._attributeValues.map({ a in a._attributeValue.attributeValueName }).joined(separator: ", ")
-            values.append("\(item.productId)")
-            values.append("\(item._attributes.count)")
-            
+            let values = a._attributeValues.map({ a in a._attributeValue.attributeValueName }).joined(separator: "', '")
             let article = Article()
             let current = try article.sqlRows("""
 SELECT a.*
 FROM "Article" as a
 LEFT JOIN "ArticleAttributeValue" as b ON a."articleId" = b."articleId"
 LEFT JOIN "AttributeValue" as c ON b."attributeValueId" = c."attributeValueId"
-WHERE "attributeValueName" IN (\(values)) AND a."productId" = \(item.productId)
+WHERE c."attributeValueName" IN ('\(values)') AND a."productId" = \(item.productId)
 GROUP BY a."articleId" HAVING count(b."attributeValueId") = \(item._attributes.count)
 """)
             if current.count > 0 {
@@ -465,11 +462,13 @@ GROUP BY a."articleId" HAVING count(b."attributeValueId") = \(item._attributes.c
         /// Publication
         let publication = Publication()
         publication.productId = item.productId
-        publication.publicationStartAt = "2017-11-01".DateToInt()
-        publication.publicationFinishAt = "2018-12-31".DateToInt()
+        publication.publicationStartAt = "2019-01-01".DateToInt()
+        publication.publicationFinishAt = "2030-12-31".DateToInt()
         try publication.save {
             id in publication.publicationId = id as! Int
         }
+        
+        return try (ZenIoC.shared.resolve() as ArticleProtocol).build(productId: item.productId)
     }
 
     func delete(id: Int) throws {
@@ -481,7 +480,7 @@ GROUP BY a."articleId" HAVING count(b."attributeValueId") = \(item._attributes.c
         _ = try item.sqlRows("DELETE FROM \"ProductCategory\" WHERE \"productId\" = \(productId)")
         _ = try item.sqlRows("""
 DELETE FROM "ProductAttributeValue"
-WHERE "ProductAttributeId" IN
+WHERE "productAttributeId" IN
 (
     SELECT "productAttributeId"
     FROM   "ProductAttribute"
