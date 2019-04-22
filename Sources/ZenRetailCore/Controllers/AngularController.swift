@@ -118,7 +118,7 @@ public class AngularController {
                     .replacingOccurrences(of: "#title#", with: brand.brandSeo.title.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#description#", with: brand.brandSeo.description.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#content#", with: brand.brandDescription.valueOrDefault(country: country))
-                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/\(brand.brandMedia.name)")
+                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/thumb/\(brand.brandMedia.name)")
                 break
             case let x where x.hasPrefix("/category"):
                 guard let name = request.getParam(String.self, key: "name") else {
@@ -133,7 +133,7 @@ public class AngularController {
                     .replacingOccurrences(of: "#title#", with: category.categorySeo.title.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#description#", with: category.categorySeo.description.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#content#", with: category.categoryDescription.valueOrDefault(country: country))
-                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/\(category.categoryMedia.name)")
+                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/thumb/\(category.categoryMedia.name)")
                 break
             case let x where x.hasPrefix("/product"):
                 guard let name = request.getParam(String.self, key: "name") else {
@@ -152,7 +152,7 @@ public class AngularController {
                     .replacingOccurrences(of: "#title#", with: product.productSeo.title.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#description#", with: product.productSeo.description.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#content#", with: info)
-                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/\(product.productMedia.first?.name ?? "")")
+                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/thumb/\(product.productMedia.first?.name ?? "")")
                 break
             case let x where x.hasPrefix("/info"):
                 content = content
@@ -160,7 +160,7 @@ public class AngularController {
                     .replacingOccurrences(of: "#title#", with: settings.companyInfoSeo.title.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#description#", with: settings.companyInfoSeo.description.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#content#", with: settings.companyInfoContent.valueOrDefault(country: country))
-                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/logo.png")
+                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/thumb/logo.png")
                 break
             case let x where x.hasPrefix("/home"):
                 content = content
@@ -168,7 +168,7 @@ public class AngularController {
                     .replacingOccurrences(of: "#title#", with: settings.companyHomeSeo.title.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#description#", with: settings.companyHomeSeo.description.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#content#", with: settings.companyHomeContent.valueOrDefault(country: country))
-                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/logo.png")
+                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/thumb/logo.png")
                 break
             default:
                 content = content
