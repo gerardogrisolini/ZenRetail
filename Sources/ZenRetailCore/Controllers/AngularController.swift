@@ -72,7 +72,7 @@ public class AngularController {
         return { req, resp in
             var data: Data?
             
-            if let agent = req.head.headers[canonicalForm: "User-Agent"].first?.lowercased(),
+            if let agent = req.head.headers["User-Agent"].first?.lowercased(),
                 agent.contains("googlebot") || agent.contains("adsbot")
                 || agent.contains("bingbot") || agent.contains("msnbot") {
                 data = self.getContent(request: req)
@@ -92,7 +92,8 @@ public class AngularController {
     
     func getContent(request: HttpRequest) -> Data? {
         var country = "EN"
-        if let language = request.head.headers[canonicalForm: "Accept-Language"].first {
+        let herader = ZenRetail.zenNIO.httpProtocol == .v1 ? "Accept-Language" : "accept-language";
+        if let language = request.head.headers[herader].first {
             country = language[...language.index(language.startIndex, offsetBy: 2)].description
         }
         
