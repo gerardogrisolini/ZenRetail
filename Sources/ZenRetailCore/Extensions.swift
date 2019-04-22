@@ -397,7 +397,7 @@ extension Product {
                         ProductImage(
                             sku: article.articleNumber > 0 ? "\(self.productCode)-\(article.articleNumber)" : self.productCode,
                             imageType: imageType,
-                            imageLocation: "http://\(ZenRetail.config.serverName):\(ZenRetail.config.serverPort)/media/\(media.name)"
+                            imageLocation: "\(ZenRetail.config.serverUrl)/media/\(media.name)"
                         )
                     )
                 )

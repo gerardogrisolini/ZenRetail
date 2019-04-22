@@ -76,7 +76,7 @@ class CompanyController {
     fileprivate func saveFiles(_ fileName: String, _ data: Data) throws -> Media {
         let media = Media()
         media.contentType = fileName.contentType
-        media.name = fileName
+        media.name = fileName.uniqueName()
         
         let big = File()
         big.fileName = media.name
@@ -99,7 +99,7 @@ class CompanyController {
     fileprivate func saveFile(_ fileName: String, _ data: Data) throws -> Media {
         let media = Media()
         media.contentType = fileName.contentType
-        media.name = fileName
+        media.name = fileName.uniqueName()
         
         let big = File()
         try big.get("fileName", media.name)

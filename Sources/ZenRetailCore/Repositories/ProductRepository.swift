@@ -150,26 +150,13 @@ struct ProductRepository : ProductProtocol {
             c.categoryId = category.categoryId
         }
         
-//        /// Medias
-//        for m in item.productMedias {
-//            if m.name.startsWith("http") || m.name.startsWith("ftp") {
-//                
-//                let url = URL(string: m.name)
-//                let data = try? Data(contentsOf: url!)
-//                
-//                m.name = m.name.uniqueName();
-//                let toMedia = "./webroot/media/\(m.name)"
-//                if !FileManager.default.createFile(atPath: toMedia, contents: data, attributes: nil) {
-//                    throw Error.error("File \(m.name) not found")
-//                }
-//                
-//                let image = Image(url: URL(string: toMedia)!)
-//                let thumb = image!.resizedTo(width: 380)
-//                let toThumb = URL(fileURLWithPath: "./webroot/thumb/\(m.name)")
-//                thumb!.write(to: toThumb, quality: 70)
-//            }
-//        }
-
+        /// Medias
+        for var m in item.productMedia {
+            if m.name.hasPrefix("http") || m.name.hasPrefix("ftp") {
+                try download(media: &m)
+            }
+        }
+        
         /// Seo
         if (item.productSeo.permalink.isEmpty) {
             item.productSeo.permalink = item.productName.permalink()
@@ -304,25 +291,12 @@ struct ProductRepository : ProductProtocol {
 //            }
 //        }
         
-//        /// Medias
-//        for m in item.productMedias {
-//            if m.name.startsWith("http") || m.name.startsWith("ftp") {
-//
-//                let url = URL(string: m.name)
-//                let data = try? Data(contentsOf: url!)
-//
-//                m.name = m.name.uniqueName();
-//                let toMedia = "./webroot/media/\(m.name)"
-//                if !FileManager.default.createFile(atPath: toMedia, contents: data, attributes: nil) {
-//                    throw Error.error("File \(m.name) not found")
-//                }
-//
-//                let image = Image(url: URL(string: toMedia)!)
-//                let thumb = image!.resizedTo(width: 380)
-//                let toThumb = URL(fileURLWithPath: "./webroot/thumb/\(m.name)")
-//                thumb!.write(to: toThumb, quality: 70)
-//            }
-//        }
+        /// Medias
+        for var m in item.productMedia {
+            if m.name.hasPrefix("http") || m.name.hasPrefix("ftp") {
+                try download(media: &m)
+            }
+        }
         current.productMedia = item.productMedia
 
         /// Seo
@@ -343,6 +317,23 @@ struct ProductRepository : ProductProtocol {
         try current.save()
     }
 
+    fileprivate func download(media: inout Media) throws {
+        guard let url = URL(string: media.name) else {
+            throw ZenError.noRecordFound
+        }
+        let data = try Data(contentsOf: url)
+        
+        media.contentType = media.name.contentType
+        media.name = media.name.uniqueName()
+        
+        let big = File()
+        try big.get("fileName", media.name)
+        big.fileName = media.name
+        big.fileContentType = media.contentType
+        big.setData(data: data)
+        try big.save()
+    }
+    
     func sync(item: Product) throws -> Product {
         
         /// Fix empty attribute
