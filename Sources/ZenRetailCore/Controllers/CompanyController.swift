@@ -32,7 +32,28 @@ class CompanyController {
             request, response in
             self.getFile(request, response, .big)
         })
-	}
+	
+//        router.get("/resize") { (req, res) in
+//            do {
+//                let files: [File] = try File().query()
+//                for file in files {
+//                    if file.fileContentType == "image/jpeg" && files.filter({ $0.fileName == file.fileName }).count == 1 {
+//                        if let data = Data(base64Encoded: file.fileData, options: .ignoreUnknownCharacters),
+//                            let thumb =  try Image(data: data).resizedTo(width: 380) {
+//                            let small = File()
+//                            small.fileName = file.fileName
+//                            small.fileContentType = file.fileContentType
+//                            small.setData(data: try thumb.export())
+//                            try small.save()
+//                        }
+//                    }
+//                }
+//            } catch {
+//                print(error)
+//            }
+//        }
+    }
+    
 	
     func companyHandlerGET(request: HttpRequest, response: HttpResponse) {
 		do {

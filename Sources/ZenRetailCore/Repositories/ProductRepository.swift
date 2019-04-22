@@ -10,6 +10,7 @@ import Foundation
 import NIOPostgres
 import ZenPostgres
 import ZenNIO
+import SwiftGD
 
 struct ProductRepository : ProductProtocol {
 
@@ -332,6 +333,15 @@ struct ProductRepository : ProductProtocol {
         big.fileContentType = media.contentType
         big.setData(data: data)
         try big.save()
+        
+        let image = try Image(data: data)
+        if let thumb = image.resizedTo(width: 380) {
+            let small = File()
+            small.fileName = media.name
+            small.fileContentType = media.contentType
+            small.setData(data: try thumb.export())
+            try small.save()
+        }
     }
     
     func sync(item: Product) throws -> Product {
