@@ -191,6 +191,16 @@ extension Array where Element:Translation {
         }
         return ""
     }
+
+    func valueOrDefault(country: String) -> String {
+        if let translation = self.first(where:{ $0.country == country }) {
+            return translation.value
+        }
+        if let translation = self.first {
+            return translation.value
+        }
+        return ""
+    }
 }
 
 // Amazon MWS

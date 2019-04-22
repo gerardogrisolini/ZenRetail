@@ -72,7 +72,7 @@ public class AngularController {
         return { req, resp in
             var data: Data?
             
-            if let agent = req.head.headers["User-Agent"].first?.lowercased(),
+            if let agent = req.head.headers[canonicalForm: "User-Agent"].first?.lowercased(),
                 agent.contains("googlebot") || agent.contains("adsbot")
                 || agent.contains("bingbot") || agent.contains("msnbot") {
                 data = self.getContent(request: req)
@@ -91,6 +91,11 @@ public class AngularController {
     }
     
     func getContent(request: HttpRequest) -> Data? {
+        var country = "EN"
+        if let language = request.head.headers[canonicalForm: "Accept-Language"].first {
+            country = language[...language.index(language.startIndex, offsetBy: 2)].description
+        }
+        
         do {
             var content = try self.getHtml()
             let settings = try self.repository.getSettings()
@@ -109,9 +114,9 @@ public class AngularController {
                 }
                 content = content
                     .replacingOccurrences(of: "#robots#", with: "index, follow")
-                    .replacingOccurrences(of: "#title#", with: brand.brandSeo.title.defaultValue())
-                    .replacingOccurrences(of: "#description#", with: brand.brandSeo.description.defaultValue())
-                    .replacingOccurrences(of: "#content#", with: brand.brandDescription.defaultValue())
+                    .replacingOccurrences(of: "#title#", with: brand.brandSeo.title.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#description#", with: brand.brandSeo.description.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#content#", with: brand.brandDescription.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/\(brand.brandMedia.name)")
                 break
             case let x where x.hasPrefix("/category"):
@@ -124,9 +129,9 @@ public class AngularController {
                 }
                 content = content
                     .replacingOccurrences(of: "#robots#", with: "index, follow")
-                    .replacingOccurrences(of: "#title#", with: category.categorySeo.title.defaultValue())
-                    .replacingOccurrences(of: "#description#", with: category.categorySeo.description.defaultValue())
-                    .replacingOccurrences(of: "#content#", with: category.categoryDescription.defaultValue())
+                    .replacingOccurrences(of: "#title#", with: category.categorySeo.title.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#description#", with: category.categorySeo.description.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#content#", with: category.categoryDescription.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/\(category.categoryMedia.name)")
                 break
             case let x where x.hasPrefix("/product"):
@@ -136,32 +141,32 @@ public class AngularController {
                 let product = try self.repository.getProduct(name: name)
                 let info = """
 <h1>\(product.productName)</h1>
-<p>\(product.productDescription.defaultValue())</p>
-<p>Category: <b>\(product._categories.map { $0._category.categoryDescription.defaultValue() }.joined(separator: "</b>, <b>"))</b></p>
+<p>\(product.productDescription.valueOrDefault(country: country))</p>
+<p>Category: <b>\(product._categories.map { $0._category.categoryDescription.valueOrDefault(country: country) }.joined(separator: "</b>, <b>"))</b></p>
 <p>Price: <b>\(product.productPrice.selling.formatCurrency())</b></p>
 <p><img src="/thumb/\(product.productMedia.first?.name ?? "logo.png")" alt='\(product.productName)'></p>
 """
                 content = content
                     .replacingOccurrences(of: "#robots#", with: "index, follow")
-                    .replacingOccurrences(of: "#title#", with: product.productSeo.title.defaultValue())
-                    .replacingOccurrences(of: "#description#", with: product.productSeo.description.defaultValue())
+                    .replacingOccurrences(of: "#title#", with: product.productSeo.title.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#description#", with: product.productSeo.description.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#content#", with: info)
                     .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/\(product.productMedia.first?.name ?? "")")
                 break
             case let x where x.hasPrefix("/info"):
                 content = content
                     .replacingOccurrences(of: "#robots#", with: "index, follow")
-                    .replacingOccurrences(of: "#title#", with: settings.companyInfoSeo.title.defaultValue())
-                    .replacingOccurrences(of: "#description#", with: settings.companyInfoSeo.description.defaultValue())
-                    .replacingOccurrences(of: "#content#", with: settings.companyInfoContent.defaultValue())
+                    .replacingOccurrences(of: "#title#", with: settings.companyInfoSeo.title.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#description#", with: settings.companyInfoSeo.description.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#content#", with: settings.companyInfoContent.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/logo.png")
                 break
             case let x where x.hasPrefix("/home"):
                 content = content
                     .replacingOccurrences(of: "#robots#", with: "index, follow")
-                    .replacingOccurrences(of: "#title#", with: settings.companyHomeSeo.title.defaultValue())
-                    .replacingOccurrences(of: "#description#", with: settings.companyHomeSeo.description.defaultValue())
-                    .replacingOccurrences(of: "#content#", with: settings.companyHomeContent.defaultValue())
+                    .replacingOccurrences(of: "#title#", with: settings.companyHomeSeo.title.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#description#", with: settings.companyHomeSeo.description.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#content#", with: settings.companyHomeContent.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/media/logo.png")
                 break
             default:
