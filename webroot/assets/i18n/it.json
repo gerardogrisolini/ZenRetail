@@ -93,5 +93,7 @@
     "Show Basket": "Visualizza carrello",
     "You must login before adding to basket": "Devi effettuare l'accesso per aggiungere al carrello",
     "Date": "Data",
-    "Status": "Stato"
+    "Status": "Stato",
+    "load other items": "carica altri elementi",
+    "filter items": "filtra elementi"
 }
