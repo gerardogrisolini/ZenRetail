@@ -1,7 +1,0 @@
-clang
-libcurl4
-libpython2.7
-libpython2.7-dev
-libatomic1
-libgd-dev
-pkg-config
