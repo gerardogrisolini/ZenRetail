@@ -80,6 +80,8 @@ THE SOFTWARE.
 
 @angular/material/list
 
+@angular/material/progress-spinner
+
 @angular/material/radio
 
 @angular/material/select

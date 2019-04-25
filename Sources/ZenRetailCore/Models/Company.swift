@@ -51,7 +51,6 @@ class Company: Codable {
     public var shippingStandard : Bool = false
     public var shippingExpress : Bool = false
 
-
     func create() throws {
         let encoder = JSONEncoder()
         let settings = Settings()
