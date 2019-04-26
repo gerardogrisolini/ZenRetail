@@ -18,12 +18,6 @@ class Company: Codable {
     public var companyProvince : String = ""
     public var companyCountry : String = ""
     public var companyVatNumber : String = ""
-    
-    public var companyHomeSeo : Seo = Seo()
-    public var companyHomeContent: [Translation] = [Translation]()
-    public var companyInfoSeo : Seo = Seo()
-    public var companyInfoContent: [Translation] = [Translation]()
-
     public var companyPhone : String = ""
     public var companyEmailInfo : String = ""
     public var companyEmailSales : String = ""
@@ -32,7 +26,18 @@ class Company: Codable {
     public var companyCurrency : String = ""
     public var companyUtc : String = ""
     public var companyLocales : [Translation] = [Translation]()
-    
+
+    public var homeFeatured : Bool = true
+    public var homeNews : Bool = true
+    public var homeDiscount : Bool = true
+    public var homeCategory : Bool = true
+    public var homeBrand : Bool = true
+
+    public var homeSeo : Seo = Seo()
+    public var homeContent: [Translation] = [Translation]()
+    public var infoSeo : Seo = Seo()
+    public var infoContent: [Translation] = [Translation]()
+
     public var barcodeCounterPublic : String = "688986544001"
     public var barcodeCounterPrivate : String = "616161616161"
 
@@ -109,24 +114,6 @@ class Company: Codable {
         companyProvince = data["companyProvince"] ?? ""
         companyCountry = data["companyCountry"] ?? ""
         companyVatNumber = data["companyVatNumber"] ?? ""
-        
-        if let seo = data["companyHomeSeo"],
-            let data = seo.data(using: .utf8) {
-            companyHomeSeo = try! decoder.decode(Seo.self, from: data)
-        }
-        if let content = data["companyHomeContent"],
-            let data = content.data(using: .utf8) {
-            companyHomeContent = try decoder.decode([Translation].self, from: data)
-        }
-        if let seo = data["companyInfoSeo"],
-            let data = seo.data(using: .utf8) {
-            companyInfoSeo = try! decoder.decode(Seo.self, from: data)
-        }
-        if let content = data["companyInfoContent"],
-            let data = content.data(using: .utf8) {
-            companyInfoContent = try decoder.decode([Translation].self, from: data)
-        }
-
         companyPhone = data["companyPhone"] ?? ""
         companyEmailInfo = data["companyEmailInfo"] ?? ""
         companyEmailSales = data["companyEmailSales"] ?? ""
@@ -137,6 +124,29 @@ class Company: Codable {
         if let locales = data["companyLocales"],
             let data = locales.data(using: .utf8) {
             companyLocales = try decoder.decode([Translation].self, from: data)
+        }
+
+        homeFeatured = data["homeFeatured"]! == "true"
+        homeNews = data["homeNews"]! == "true"
+        homeDiscount = data["homeDiscount"]! == "true"
+        homeCategory = data["homeCategory"]! == "true"
+        homeBrand = data["homeBrand"]! == "true"
+        
+        if let seo = data["homeSeo"],
+            let data = seo.data(using: .utf8) {
+            homeSeo = try! decoder.decode(Seo.self, from: data)
+        }
+        if let content = data["homeContent"],
+            let data = content.data(using: .utf8) {
+            homeContent = try decoder.decode([Translation].self, from: data)
+        }
+        if let seo = data["infoSeo"],
+            let data = seo.data(using: .utf8) {
+            infoSeo = try! decoder.decode(Seo.self, from: data)
+        }
+        if let content = data["infoContent"],
+            let data = content.data(using: .utf8) {
+            infoContent = try decoder.decode([Translation].self, from: data)
         }
         
         barcodeCounterPublic = data["barcodeCounterPublic"] ?? barcodeCounterPublic

@@ -94,12 +94,12 @@ public class AngularController {
         var country = "EN"
         let herader = ZenRetail.zenNIO.httpProtocol == .v1 ? "Accept-Language" : "accept-language";
         if let language = request.head.headers[herader].first {
-            country = language[...language.index(language.startIndex, offsetBy: 2)].description
+            country = language[...language.index(language.startIndex, offsetBy: 1)].uppercased()
         }
         
         do {
-            var content = try self.getHtml()
-            let settings = try self.repository.getSettings()
+            var content = try getHtml()
+            let settings = try repository.getSettings()
             content = content
                 .replacingOccurrences(of: "#sitename#", with: settings.companyName)
                 .replacingOccurrences(of: "#url#", with: "\(ZenRetail.config.serverUrl)\(request.head.uri)")
@@ -109,75 +109,154 @@ public class AngularController {
                 guard let name = request.getParam(String.self, key: "name") else {
                     return nil
                 }
-                let products = try self.repository.getProducts(brand: name)
+                let products = try repository.getProducts(brand: name)
                 guard let brand = products.first?._brand else {
                     return nil
                 }
+
+                var body = "<h1>\(brand.brandDescription.valueOrDefault(country: country))</h1>"
+                body += "<br/><ul>"
+                for item in products {
+                    body += getProductHtml(item: item, country: country)
+                }
+                body += "</ul>"
+
                 content = content
                     .replacingOccurrences(of: "#robots#", with: "index, follow")
                     .replacingOccurrences(of: "#title#", with: brand.brandSeo.title.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#description#", with: brand.brandSeo.description.valueOrDefault(country: country))
-                    .replacingOccurrences(of: "#content#", with: brand.brandDescription.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#content#", with: body)
                     .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/thumb/\(brand.brandMedia.name)")
                 break
             case let x where x.hasPrefix("/category"):
                 guard let name = request.getParam(String.self, key: "name") else {
                     return nil
                 }
-                let products = try self.repository.getProducts(category: name)
+                let products = try repository.getProducts(category: name)
                 guard let category = products.first?._categories.first(where: { $0._category.categorySeo.permalink == name })?._category else {
                     return nil
                 }
+
+                var body = "<h1>\(category.categoryDescription.valueOrDefault(country: country))</h1>"
+                body += "<br/><ul>"
+                for item in products {
+                    body += getProductHtml(item: item, country: country)
+                }
+                body += "</ul>"
+
                 content = content
                     .replacingOccurrences(of: "#robots#", with: "index, follow")
                     .replacingOccurrences(of: "#title#", with: category.categorySeo.title.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#description#", with: category.categorySeo.description.valueOrDefault(country: country))
-                    .replacingOccurrences(of: "#content#", with: category.categoryDescription.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#content#", with: body)
                     .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/thumb/\(category.categoryMedia.name)")
                 break
             case let x where x.hasPrefix("/product"):
                 guard let name = request.getParam(String.self, key: "name") else {
                     return nil
                 }
-                let product = try self.repository.getProduct(name: name)
-                let info = """
+                let product = try repository.getProduct(name: name)
+                var body = """
 <h1>\(product.productName)</h1>
+<p>\(product._categories.map { $0._category.categoryDescription.valueOrDefault(country: country) }.joined(separator: " - "))</p>
 <p>\(product.productDescription.valueOrDefault(country: country))</p>
-<p>Category: <b>\(product._categories.map { $0._category.categoryDescription.valueOrDefault(country: country) }.joined(separator: "</b>, <b>"))</b></p>
-<p>Price: <b>\(product.productPrice.selling.formatCurrency())</b></p>
-<p><img src="/thumb/\(product.productMedia.first?.name ?? "logo.png")" alt='\(product.productName)'></p>
+<p>\(product.productPrice.selling.formatCurrency())</p>
 """
+                for media in product.productMedia {
+                    body += """
+<p><img src="/thumb/\(media.name)" alt='\(product.productName)'></p>
+"""
+                }
+
+                for att in product._attributes {
+                    body += "<ul> <b>\(att._attribute.attributeTranslates.valueOrDefault(country: country, defaultValue: att._attribute.attributeName).uppercased())</b>"
+                    for val in att._attributeValues {
+                        body += "<li>\(val._attributeValue.attributeValueTranslates.valueOrDefault(country: country, defaultValue: val._attributeValue.attributeValueName))</li>"
+                    }
+                    body += "</ul>"
+                }
+
                 content = content
                     .replacingOccurrences(of: "#robots#", with: "index, follow")
                     .replacingOccurrences(of: "#title#", with: product.productSeo.title.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#description#", with: product.productSeo.description.valueOrDefault(country: country))
-                    .replacingOccurrences(of: "#content#", with: info)
+                    .replacingOccurrences(of: "#content#", with: body)
                     .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/thumb/\(product.productMedia.first?.name ?? "")")
                 break
             case let x where x.hasPrefix("/info"):
                 content = content
                     .replacingOccurrences(of: "#robots#", with: "index, follow")
-                    .replacingOccurrences(of: "#title#", with: settings.companyInfoSeo.title.valueOrDefault(country: country))
-                    .replacingOccurrences(of: "#description#", with: settings.companyInfoSeo.description.valueOrDefault(country: country))
-                    .replacingOccurrences(of: "#content#", with: settings.companyInfoContent.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#title#", with: settings.infoSeo.title.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#description#", with: settings.infoSeo.description.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#content#", with: settings.infoContent.valueOrDefault(country: country))
                     .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/thumb/logo.png")
                 break
-            case let x where x.hasPrefix("/home"):
+            case let x where x.hasPrefix("/home") || x.hasPrefix("/"):
+                var body = settings.homeContent.valueOrDefault(country: country)
+                if settings.homeFeatured {
+                    let featured = try repository.getProductsFeatured()
+                    body += "<br/><ul><h3>Featured</h3>"
+                    for item in featured {
+                        body += getProductHtml(item: item, country: country)
+                    }
+                    body += "</ul>"
+                }
+                if settings.homeNews {
+                    let news = try repository.getProductsNews()
+                    body += "<br/><ul><h3>News</h3>"
+                    for item in news {
+                        body += getProductHtml(item: item, country: country)
+                    }
+                    body += "</ul>"
+                }
+//                if settings.homeDiscount {
+//                    let discount = try repository.getProductsDiscount()
+//                    body += "<br/><ul><h3>Discount</h3>"
+//                    for item in discount {
+//                        body += getProductHtml(item: item, country: country)
+//                    }
+//                    body += "</ul>"
+//                }
+                if settings.homeCategory {
+                    let categories = try repository.getCategories()
+                    body += "<br/><ul><h3>Categories</h3>"
+                    for item in categories {
+                        body += """
+<li>
+    <a href="/category/\(item.categorySeo.permalink)">
+        <h4>\(item.categoryDescription.valueOrDefault(country: country))</h4>
+    </a>
+    <p><img src="/thumb/\(item.categoryMedia.name)" alt='\(item.categoryName)'></p>
+</li>
+"""
+                    }
+                    body += "</ul>"
+                }
+                if settings.homeBrand {
+                    let brands = try repository.getBrands()
+                    body += "<br/><ul><h3>Brands</h3>"
+                    for item in brands {
+                        body += """
+<li>
+    <a href="/brand/\(item.brandSeo.permalink)">
+        <h4>\(item.brandDescription.valueOrDefault(country: country))</h4>
+    </a>
+    <p><img src="/thumb/\(item.brandMedia.name)" alt='\(item.brandName)'></p>
+</li>
+"""
+                    }
+                    body += "</ul>"
+                }
+                
                 content = content
                     .replacingOccurrences(of: "#robots#", with: "index, follow")
-                    .replacingOccurrences(of: "#title#", with: settings.companyHomeSeo.title.valueOrDefault(country: country))
-                    .replacingOccurrences(of: "#description#", with: settings.companyHomeSeo.description.valueOrDefault(country: country))
-                    .replacingOccurrences(of: "#content#", with: settings.companyHomeContent.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#title#", with: settings.homeSeo.title.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#description#", with: settings.homeSeo.description.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#content#", with: body)
                     .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/thumb/logo.png")
                 break
             default:
-                content = content
-                    .replacingOccurrences(of: "#robots#", with: "noindex")
-                    .replacingOccurrences(of: "#title#", with: settings.companyName)
-                    .replacingOccurrences(of: "#description#", with: "")
-                    .replacingOccurrences(of: "#content#", with: "")
-                    .replacingOccurrences(of: "#image#", with: "")
-                break
+                return nil
             }
             
             return content.data(using: .utf8)
@@ -185,6 +264,18 @@ public class AngularController {
             print(error)
             return nil
         }
+    }
+    
+    private func getProductHtml(item: Product, country: String) -> String {
+        return """
+<li>
+    <a href="/product/\(item.productSeo.permalink)"><h4>\(item.productName)</h4></a>
+    <p>\(item._categories.map { $0._category.categoryDescription.valueOrDefault(country: country) }.joined(separator: " - "))</p>
+    <p>\(item.productDescription.valueOrDefault(country: country))</p>
+    <p>\(item.productPrice.selling.formatCurrency())</p>
+    <p><img src="/thumb/\(item.productMedia.first?.name ?? "logo.png")" alt='\(item.productName)'></p>
+</li>
+"""
     }
     
     func getHtml() throws -> String {

@@ -192,14 +192,14 @@ extension Array where Element:Translation {
         return ""
     }
 
-    func valueOrDefault(country: String) -> String {
+    func valueOrDefault(country: String, defaultValue: String = "") -> String {
         if let translation = self.first(where:{ $0.country == country }) {
             return translation.value
         }
         if let translation = self.first {
             return translation.value
         }
-        return ""
+        return defaultValue
     }
 }
 

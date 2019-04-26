@@ -21,20 +21,24 @@ struct EcommerceRepository : EcommerceProtocol {
         setting.companyZip = item.companyZip
         setting.companyProvince = item.companyProvince
         setting.companyCountry = item.companyCountry
-        
-        setting.companyHomeSeo = item.companyHomeSeo
-        setting.companyHomeContent = item.companyHomeContent
-        setting.companyInfoSeo = item.companyInfoSeo
-        setting.companyInfoContent = item.companyInfoContent
-        
         setting.companyPhone = item.companyPhone
         setting.companyEmailInfo = item.companyEmailInfo
         setting.companyEmailSales = item.companyEmailSales
         setting.companyEmailSupport = item.companyEmailSupport
-        
         setting.companyCurrency = item.companyCurrency
         setting.companyUtc = item.companyUtc
         
+        setting.homeFeatured = item.homeFeatured
+        setting.homeNews = item.homeNews
+        setting.homeDiscount = item.homeDiscount
+        setting.homeCategory = item.homeCategory
+        setting.homeBrand = item.homeBrand
+
+        setting.homeSeo = item.homeSeo
+        setting.homeContent = item.homeContent
+        setting.infoSeo = item.infoSeo
+        setting.infoContent = item.infoContent
+
         setting.cashOnDelivery = item.cashOnDelivery
         setting.paypalEnv = item.paypalEnv
         setting.paypalSandbox = item.paypalSandbox

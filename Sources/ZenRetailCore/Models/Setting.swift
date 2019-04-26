@@ -17,20 +17,24 @@ struct Setting: Codable {
     public var companyProvince : String = ""
     public var companyCountry : String = ""
     public var companyVatNumber : String = ""
-
-    public var companyHomeSeo : Seo = Seo()
-    public var companyHomeContent : [Translation] = [Translation]()
-    public var companyInfoSeo : Seo = Seo()
-    public var companyInfoContent : [Translation] = [Translation]()
-
     public var companyPhone : String = ""
     public var companyEmailInfo : String = ""
     public var companyEmailSales : String = ""
     public var companyEmailSupport : String = ""
-    
     public var companyWebsite : String = ""
     public var companyCurrency : String = ""
     public var companyUtc : String = ""
+
+    public var homeFeatured : Bool = true
+    public var homeNews : Bool = true
+    public var homeDiscount : Bool = true
+    public var homeCategory : Bool = true
+    public var homeBrand : Bool = true
+    
+    public var homeSeo : Seo = Seo()
+    public var homeContent: [Translation] = [Translation]()
+    public var infoSeo : Seo = Seo()
+    public var infoContent: [Translation] = [Translation]()
 
     public var bankName : String = ""
     public var bankIban : String = ""
