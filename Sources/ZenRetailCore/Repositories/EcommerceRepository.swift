@@ -160,13 +160,19 @@ struct EcommerceRepository : EcommerceProtocol {
         )
         
         let obj = Product()
-        let sql = obj.querySQL(
-            whereclause: "Product.productIsActive = $1 AND Product.productDiscount <> NULL AND (Product.productDiscount ->> 'discountStartAt')::int <= $2 AND (Product.productDiscount ->> 'discountFinishAt')::int >= $2 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2",
-            params: [true, Int.now()],
-            orderby: ["Publication.publicationStartAt DESC"],
-            joins: [publication, brand]
-        )
-        
+        let now = Int.now()
+        let sql = """
+SELECT "Product".*, "Publication".*, "Brand".*
+FROM "Product"
+INNER JOIN "Publication" ON "Product"."productId" = "Publication"."productId"
+INNER JOIN "Brand" ON "Product"."brandId" = "Brand"."brandId"
+WHERE "Product"."productIsActive" = 'true'
+AND ("Product"."productDiscount" ->> 'discountStartAt')::int <= \(now)
+AND ("Product"."productDiscount" ->> 'discountFinishAt')::int >= \(now)
+AND "Publication"."publicationStartAt" <= \(now)
+AND "Publication"."publicationFinishAt" >= \(now)
+ORDER BY "Publication"."publicationStartAt" DESC
+"""
         return try obj.rows(sql: sql, barcodes: false)
     }
 
