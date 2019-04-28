@@ -293,7 +293,9 @@ public class ZenRetail {
     private func saveConfiguration(cfg: Configuration) {
         let fileUrl = URL(fileURLWithPath: "\(FileManager.default.currentDirectoryPath)/zenretail.json")
         do {
-            let str = try JSONEncoder().encode(ZenRetail.config)
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            let str = try encoder.encode(ZenRetail.config)
             try str.write(to: fileUrl, options: Data.WritingOptions.atomic)
         } catch {
             print(error)
