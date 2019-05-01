@@ -159,13 +159,15 @@ struct ProductRepository : ProductProtocol {
         }
         
         /// Seo
-        if (item.productSeo.permalink.isEmpty) {
-            item.productSeo.permalink = item.productName.permalink()
+        if let seo = item.productSeo {
+            if (seo.permalink.isEmpty) {
+                seo.permalink = item.productName.permalink()
+            }
+            seo.description = seo.description.filter({ !$0.value.isEmpty })
         }
-        item.productSeo.description = item.productSeo.description.filter({ !$0.value.isEmpty })
-
+        
         /// Discount
-        item.productDiscount.makeDiscount(sellingPrice: item.productPrice.selling)
+        item.productDiscount?.makeDiscount(sellingPrice: item.productPrice.selling)
 
         /// Product
         item.productDescription = item.productDescription.filter({ !$0.value.isEmpty })
@@ -301,14 +303,16 @@ struct ProductRepository : ProductProtocol {
         current.productMedia = item.productMedia
 
         /// Seo
-        if (item.productSeo.permalink.isEmpty) {
-            item.productSeo.permalink = item.productName.permalink()
+        if let seo = item.productSeo {
+            if (seo.permalink.isEmpty) {
+                seo.permalink = item.productName.permalink()
+            }
+            seo.description = seo.description.filter({ !$0.value.isEmpty })
+            current.productSeo = seo
         }
-        item.productSeo.description = item.productSeo.description.filter({ !$0.value.isEmpty })
-        current.productSeo = item.productSeo
         
         /// Discount
-        item.productDiscount.makeDiscount(sellingPrice: item.productPrice.selling)
+        item.productDiscount?.makeDiscount(sellingPrice: item.productPrice.selling)
         current.productDiscount = item.productDiscount;
         
         /// Product

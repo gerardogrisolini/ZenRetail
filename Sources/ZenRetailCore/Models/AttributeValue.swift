@@ -17,7 +17,7 @@ class AttributeValue: PostgresTable, Codable {
 	public var attributeId : Int = 0
     public var attributeValueCode	: String = ""
     public var attributeValueName : String = ""
-    public var attributeValueMedia: Media = Media()
+    public var attributeValueMedia: Media? = nil
     public var attributeValueTranslates: [Translation] = [Translation]()
     public var attributeValueCreated : Int = Int.now()
     public var attributeValueUpdated : Int = Int.now()
@@ -61,7 +61,7 @@ class AttributeValue: PostgresTable, Codable {
         attributeId = try container.decode(Int.self, forKey: .attributeId)
         attributeValueCode = try container.decode(String.self, forKey: .attributeValueCode)
         attributeValueName = try container.decode(String.self, forKey: .attributeValueName)
-        attributeValueMedia = try container.decodeIfPresent(Media.self, forKey: .attributeValueMedia) ?? Media()
+        attributeValueMedia = try container.decodeIfPresent(Media.self, forKey: .attributeValueMedia) ?? nil
         attributeValueTranslates = try container.decodeIfPresent([Translation].self, forKey: .attributeValueTranslates) ?? [Translation]()
     }
     
@@ -71,7 +71,7 @@ class AttributeValue: PostgresTable, Codable {
         try container.encode(attributeId, forKey: .attributeId)
         try container.encode(attributeValueCode, forKey: .attributeValueCode)
         try container.encode(attributeValueName, forKey: .attributeValueName)
-        try container.encode(attributeValueMedia, forKey: .attributeValueMedia)
+        try container.encodeIfPresent(attributeValueMedia, forKey: .attributeValueMedia)
         try container.encode(attributeValueTranslates, forKey: .attributeValueTranslates)
     }
 }

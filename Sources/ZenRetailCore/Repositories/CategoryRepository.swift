@@ -22,10 +22,14 @@ struct CategoryRepository : CategoryProtocol {
     }
     
     func add(item: Category) throws {
-        if (item.categorySeo.permalink.isEmpty) {
-            item.categorySeo.permalink = item.categoryName.permalink()
+        if item.categoryIsPrimary {
+            if (item.categorySeo == nil) {
+                item.categorySeo = Seo()
+                item.categorySeo!.permalink = item.categoryName.permalink()
+            }
+            item.categorySeo!.description = item.categorySeo!.description.filter({ !$0.value.isEmpty })
         }
-        item.categorySeo.description = item.categorySeo.description.filter({ !$0.value.isEmpty })
+        
         item.categoryDescription = item.categoryDescription.filter({ !$0.value.isEmpty })
         item.categoryCreated = Int.now()
         item.categoryUpdated = Int.now()
@@ -41,10 +45,13 @@ struct CategoryRepository : CategoryProtocol {
         
         current.categoryIsPrimary = item.categoryIsPrimary
         current.categoryName = item.categoryName
-        if (item.categorySeo.permalink.isEmpty) {
-            item.categorySeo.permalink = item.categoryName.permalink()
+        if item.categoryIsPrimary {
+            if (item.categorySeo != nil) {
+                item.categorySeo = Seo()
+                item.categorySeo!.permalink = item.categoryName.permalink()
+            }
+            current.categorySeo!.description = item.categorySeo!.description.filter({ !$0.value.isEmpty })
         }
-        current.categorySeo.description = item.categorySeo.description.filter({ !$0.value.isEmpty })
         current.categoryDescription = item.categoryDescription.filter({ !$0.value.isEmpty })
         current.categoryMedia = item.categoryMedia
         current.categorySeo = item.categorySeo

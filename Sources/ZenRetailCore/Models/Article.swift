@@ -17,7 +17,7 @@ class Article: PostgresTable, Codable {
     public var productId : Int = 0
     public var articleNumber : Int = 0
     public var articleBarcodes : [Barcode] = [Barcode]()
-    public var articlePackaging : Packaging = Packaging()
+    public var articlePackaging : Packaging? = nil
     public var articleIsValid : Bool = false
     public var articleCreated : Int = Int.now()
     public var articleUpdated : Int = Int.now()
@@ -90,7 +90,7 @@ class Article: PostgresTable, Codable {
         productId = try container.decodeIfPresent(Int.self, forKey: .productId) ?? 0
         articleNumber = try container.decodeIfPresent(Int.self, forKey: .articleNumber) ?? 0
         articleBarcodes = try container.decodeIfPresent([Barcode].self, forKey: .articleBarcodes) ?? [Barcode]()
-        articlePackaging = try container.decodeIfPresent(Packaging.self, forKey: .articlePackaging) ?? Packaging()
+        articlePackaging = try container.decodeIfPresent(Packaging.self, forKey: .articlePackaging) ?? nil
         _attributeValues = try container.decodeIfPresent([ArticleAttributeValue].self, forKey: ._attributeValues) ?? [ArticleAttributeValue]()
     }
     
@@ -99,7 +99,7 @@ class Article: PostgresTable, Codable {
         try container.encode(articleId, forKey: .articleId)
         try container.encode(articleNumber, forKey: .articleNumber)
         try container.encode(articleBarcodes, forKey: .articleBarcodes)
-        try container.encode(articlePackaging, forKey: .articlePackaging)
+        try container.encodeIfPresent(articlePackaging, forKey: .articlePackaging)
         try container.encode(_quantity, forKey: ._quantity)
         try container.encode(_booked, forKey: ._booked)
         try container.encode(_attributeValues, forKey: ._attributeValues)

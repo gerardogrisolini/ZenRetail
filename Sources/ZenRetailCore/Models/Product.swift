@@ -18,14 +18,14 @@ class Product: PostgresTable, PostgresJson {
     public var productCode : String = ""
     public var productName : String = ""
     //public var productType : String = ""
-    public var productTax : Tax = Tax()
     public var productUm : String = ""
+    public var productTax : Tax = Tax()
     public var productPrice : Price = Price()
-    public var productDiscount : Discount = Discount()
-    public var productPackaging : Packaging = Packaging()
+    public var productSeo : Seo? = nil
+    public var productDiscount : Discount? = nil
+    public var productPackaging : Packaging? = nil
     public var productDescription: [Translation] = [Translation]()
     public var productMedia: [Media] = [Media]()
-    public var productSeo : Seo = Seo()
     public var productIsActive : Bool = false
     public var productIsValid : Bool = false
     public var productCreated : Int = Int.now()
@@ -136,10 +136,10 @@ class Product: PostgresTable, PostgresJson {
         productUm = try container.decode(String.self, forKey: .productUm)
         productTax = try container.decodeIfPresent(Tax.self, forKey: .productTax) ?? Tax()
         productPrice = try container.decodeIfPresent(Price.self, forKey: .productPrice) ?? Price()
-        productDiscount = try container.decodeIfPresent(Discount.self, forKey: .productDiscount) ?? Discount()
-        productPackaging = try container.decodeIfPresent(Packaging.self, forKey: .productPackaging) ?? Packaging()
+        productDiscount = try container.decodeIfPresent(Discount.self, forKey: .productDiscount) ?? nil
+        productPackaging = try container.decodeIfPresent(Packaging.self, forKey: .productPackaging) ?? nil
         productMedia = try container.decodeIfPresent([Media].self, forKey: .productMedia) ?? [Media]()
-        productSeo = try container.decodeIfPresent(Seo.self, forKey: .productSeo) ?? Seo()
+        productSeo = try container.decodeIfPresent(Seo.self, forKey: .productSeo) ?? nil
         productIsActive = try container.decode(Bool.self, forKey: .productIsActive)
         _brand = try container.decodeIfPresent(Brand.self, forKey: ._brand) ?? Brand()
         brandId = try container.decodeIfPresent(Int.self, forKey: .brandId) ?? _brand.brandId
@@ -159,10 +159,10 @@ class Product: PostgresTable, PostgresJson {
         try container.encode(productUm, forKey: .productUm)
         try container.encode(productTax, forKey: .productTax)
         try container.encode(productPrice, forKey: .productPrice)
-        try container.encode(productDiscount, forKey: .productDiscount)
-        try container.encode(productPackaging, forKey: .productPackaging)
+        try container.encodeIfPresent(productDiscount, forKey: .productDiscount)
+        try container.encodeIfPresent(productPackaging, forKey: .productPackaging)
         try container.encode(productMedia, forKey: .productMedia)
-        try container.encode(productSeo, forKey: .productSeo)
+        try container.encodeIfPresent(productSeo, forKey: .productSeo)
         try container.encode(productIsActive, forKey: .productIsActive)
         try container.encode(_brand, forKey: ._brand)
         try container.encode(_categories, forKey: ._categories)

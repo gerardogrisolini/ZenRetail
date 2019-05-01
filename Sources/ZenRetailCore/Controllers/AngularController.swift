@@ -133,7 +133,7 @@ public class AngularController {
                     return nil
                 }
                 let products = try repository.getProducts(category: name)
-                guard let category = products.first?._categories.first(where: { $0._category.categorySeo.permalink == name })?._category else {
+                guard let category = products.first?._categories.first(where: { $0._category.categorySeo?.permalink == name })?._category else {
                     return nil
                 }
 
@@ -146,10 +146,10 @@ public class AngularController {
 
                 content = content
                     .replacingOccurrences(of: "#robots#", with: "index, follow")
-                    .replacingOccurrences(of: "#title#", with: category.categorySeo.title.valueOrDefault(country: country))
-                    .replacingOccurrences(of: "#description#", with: category.categorySeo.description.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#title#", with: category.categorySeo?.title.valueOrDefault(country: country) ?? category.categoryName)
+                    .replacingOccurrences(of: "#description#", with: category.categorySeo?.description.valueOrDefault(country: country) ?? "")
                     .replacingOccurrences(of: "#content#", with: body)
-                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/thumb/\(category.categoryMedia.name)")
+                    .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/thumb/\(category.categoryMedia?.name ?? "logo.png")")
                 break
             case let x where x.hasPrefix("/product"):
                 guard let name = request.getParam(String.self, key: "name") else {
@@ -178,8 +178,8 @@ public class AngularController {
 
                 content = content
                     .replacingOccurrences(of: "#robots#", with: "index, follow")
-                    .replacingOccurrences(of: "#title#", with: product.productSeo.title.valueOrDefault(country: country))
-                    .replacingOccurrences(of: "#description#", with: product.productSeo.description.valueOrDefault(country: country))
+                    .replacingOccurrences(of: "#title#", with: product.productSeo?.title.valueOrDefault(country: country) ?? product.productName)
+                    .replacingOccurrences(of: "#description#", with: product.productSeo?.description.valueOrDefault(country: country) ?? "")
                     .replacingOccurrences(of: "#content#", with: body)
                     .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/thumb/\(product.productMedia.first?.name ?? "")")
                 break
@@ -223,10 +223,10 @@ public class AngularController {
                     for item in categories {
                         body += """
 <li>
-    <a href="/category/\(item.categorySeo.permalink)">
+    <a href="/category/\(item.categorySeo?.permalink ?? "")">
         <h4>\(item.categoryDescription.valueOrDefault(country: country))</h4>
     </a>
-    <p><img src="/thumb/\(item.categoryMedia.name)" alt='\(item.categoryName)'></p>
+    <p><img src="/thumb/\(item.categoryMedia?.name ?? "logo.png")" alt='\(item.categoryName)'></p>
 </li>
 """
                     }
@@ -269,7 +269,7 @@ public class AngularController {
     private func getProductHtml(item: Product, country: String) -> String {
         return """
 <li>
-    <a href="/product/\(item.productSeo.permalink)"><h4>\(item.productName)</h4></a>
+    <a href="/product/\(item.productSeo?.permalink ?? "")"><h4>\(item.productName)</h4></a>
     <p>\(item._categories.map { $0._category.categoryDescription.valueOrDefault(country: country) }.joined(separator: " - "))</p>
     <p>\(item.productDescription.valueOrDefault(country: country))</p>
     <p>\(item.productPrice.selling.formatCurrency())</p>

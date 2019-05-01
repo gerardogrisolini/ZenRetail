@@ -36,9 +36,9 @@ struct MovementArticleRepository : MovementArticleProtocol {
         }
         
         if price == "selling" {
-            if product.productDiscount.discountStartAt < Int.now()
-                && product.productDiscount.discountFinishAt > Int.now() {
-                item.movementArticlePrice = product.productDiscount.discountPrice
+            if let discount = product.productDiscount, discount.discountStartAt < Int.now()
+                && discount.discountFinishAt > Int.now() {
+                item.movementArticlePrice = discount.discountPrice
             } else {
                 item.movementArticlePrice = product.productPrice.selling
             }

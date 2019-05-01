@@ -16,7 +16,7 @@ class ArticleAttributeValue: PostgresTable, Codable {
     public var articleAttributeValueId : Int = 0
     public var articleId : Int = 0
     public var attributeValueId : Int = 0
-    public var articleAttributeValueMedia: [Media] = [Media]()
+//    public var articleAttributeValueMedia: [Media] = [Media]()
 
     public var _attributeValue: AttributeValue = AttributeValue()
 
@@ -31,9 +31,9 @@ class ArticleAttributeValue: PostgresTable, Codable {
         articleAttributeValueId = row.column("articleAttributeValueId")?.int ?? 0
         articleId = row.column("articleId")?.int ?? 0
         attributeValueId = row.column("attributeValueId")?.int ?? 0
-        if let media = row.column("articleAttributeValueMedia")?.data {
-            articleAttributeValueMedia = try! JSONDecoder().decode([Media].self, from: media)
-        }
+//        if let media = row.column("articleAttributeValueMedia")?.data {
+//            articleAttributeValueMedia = try! JSONDecoder().decode([Media].self, from: media)
+//        }
     }
     
     required init() {
@@ -46,13 +46,13 @@ class ArticleAttributeValue: PostgresTable, Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         articleId = try container.decodeIfPresent(Int.self, forKey: .articleId) ?? 0
         attributeValueId = try container.decodeIfPresent(Int.self, forKey: .attributeValueId) ?? 0
-        articleAttributeValueMedia = try container.decodeIfPresent([Media].self, forKey: .articleAttributeValueMedia) ?? [Media]()
+//        articleAttributeValueMedia = try container.decodeIfPresent([Media].self, forKey: .articleAttributeValueMedia) ?? [Media]()
         _attributeValue = try container.decodeIfPresent(AttributeValue.self, forKey: ._attributeValue) ?? AttributeValue()
 }
     
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(attributeValueId, forKey: .attributeValueId)
-        try container.encode(articleAttributeValueMedia, forKey: .articleAttributeValueMedia)
+//        try container.encode(articleAttributeValueMedia, forKey: .articleAttributeValueMedia)
     }
 }

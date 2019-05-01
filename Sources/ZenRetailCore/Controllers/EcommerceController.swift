@@ -53,7 +53,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                 for item in categories {
                     siteMapItems.append(
                         SitemapItem(
-                            url: "\(ZenRetail.config.serverUrl)/category/\(item.categorySeo.permalink)",
+                            url: "\(ZenRetail.config.serverUrl)/category/\(item.categorySeo?.permalink ?? "")",
                             lastModified: Date(timeIntervalSinceReferenceDate: TimeInterval(item.categoryUpdated)),
                             changeFrequency: .weekly,
                             priority: 0.9
@@ -78,7 +78,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                     for product in products {
                         siteMapItems.append(
                             SitemapItem(
-                                url: "\(ZenRetail.config.serverUrl)/product/\(product.productSeo.permalink)",
+                                url: "\(ZenRetail.config.serverUrl)/product/\(product.productSeo?.permalink ?? "")",
                                 lastModified: Date(timeIntervalSinceReferenceDate: TimeInterval(product.productUpdated)),
                                 changeFrequency: .weekly,
                                 priority: 0.9
@@ -129,9 +129,36 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
         router.get("/api/ecommerce/order/:id", handler: ecommerceOrderHandlerGET)
         router.get("/api/ecommerce/order/:id/items", handler: ecommerceOrderItemsHandlerGET)
         router.post("/api/ecommerce/order", handler: ecommerceOrderHandlerPOST)
+
+        router.post("/api/register") { request, response in
+            guard let data = request.bodyData else {
+                response.completed(.badRequest)
+                return
+            }
+            
+            do {
+                let account = try JSONDecoder().decode(Account.self, from: data)
+                let registry = Registry()
+                if registry.exists(account.username) {
+                    response.completed(.notAcceptable)
+                    return
+                }
+                registry.registryEmail = account.username
+                registry.registryPassword = account.password.encrypted
+                try registry.save(id: { id in
+                    registry.registryId = id as! Int
+                })
+                
+                let session = ZenNIO.sessions.new(id: request.session!.id, uniqueID: registry.registryId.description)
+                request.session = session
+                try response.send(json: session.token!)
+                response.completed()
+            } catch {
+                response.completed(.internalServerError)
+            }
+        }
     }
 
-    
     /// Company
     
     func ecommerceCompanyHandlerGET(request: HttpRequest, response: HttpResponse) {
@@ -333,8 +360,8 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                 return
             }
             basket.basketProduct = product
-            basket.basketPrice = product.productDiscount.discountPrice > 0
-                ? product.productDiscount.discountPrice : product.productPrice.selling
+            basket.basketPrice = product.productDiscount != nil
+                ? product.productDiscount!.discountPrice : product.productPrice.selling
 
             try self.repository.addBasket(item: basket)
             try response.send(json:basket)

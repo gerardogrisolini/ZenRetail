@@ -450,12 +450,12 @@ extension Product {
             }
             
             var salePrice: SalePrice?
-            if barcode.discount.discountStartAt > 0 {
+            if let discount = barcode.discount {
                 salePrice = SalePrice(
-                    price: Float(barcode.discount.discountPrice),
+                    price: Float(discount.discountPrice),
                     currency: .eur,
-                    startDate: Date(timeIntervalSinceReferenceDate: TimeInterval(barcode.discount.discountStartAt)),
-                    endDate: Date(timeIntervalSinceReferenceDate: TimeInterval(barcode.discount.discountFinishAt))
+                    startDate: Date(timeIntervalSinceReferenceDate: TimeInterval(discount.discountStartAt)),
+                    endDate: Date(timeIntervalSinceReferenceDate: TimeInterval(discount.discountFinishAt))
                 )
             }
             
@@ -464,7 +464,7 @@ extension Product {
                     operationType: .update,
                     price: MwsPrice(
                         sku: article.articleNumber > 0 ? "\(self.productCode)-\(article.articleNumber)" : self.productCode,
-                        standardPrice: StandardPrice(price: Float(barcode.price.selling), currency: .eur),
+                        standardPrice: StandardPrice(price: Float(self.productPrice.selling), currency: .eur),
                         salePrice: salePrice
                     )
                 )

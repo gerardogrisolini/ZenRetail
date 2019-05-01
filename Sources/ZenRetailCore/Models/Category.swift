@@ -17,8 +17,8 @@ class Category: PostgresTable, Codable {
     public var categoryIsPrimary : Bool = false
     public var categoryName : String = ""
     public var categoryDescription: [Translation] = [Translation]()
-    public var categoryMedia: Media = Media()
-    public var categorySeo : Seo = Seo()
+    public var categoryMedia: Media? = nil
+    public var categorySeo : Seo? = nil
     public var categoryCreated : Int = Int.now()
     public var categoryUpdated : Int = Int.now()
     
@@ -62,8 +62,8 @@ class Category: PostgresTable, Codable {
         categoryIsPrimary = try container.decode(Bool.self, forKey: .categoryIsPrimary)
         categoryName = try container.decode(String.self, forKey: .categoryName)
         categoryDescription = try container.decodeIfPresent([Translation].self, forKey: .categoryDescription) ?? [Translation]()
-        categoryMedia = try container.decodeIfPresent(Media.self, forKey: .categoryMedia) ?? Media()
-        categorySeo = try container.decodeIfPresent(Seo.self, forKey: .categorySeo) ?? Seo()
+        categoryMedia = try container.decodeIfPresent(Media.self, forKey: .categoryMedia) ?? nil
+        categorySeo = try container.decodeIfPresent(Seo.self, forKey: .categorySeo) ?? nil
     }
 
     func encode(to encoder: Encoder) throws {
@@ -72,8 +72,8 @@ class Category: PostgresTable, Codable {
         try container.encode(categoryIsPrimary, forKey: .categoryIsPrimary)
         try container.encode(categoryName, forKey: .categoryName)
         try container.encode(categoryDescription, forKey: .categoryDescription)
-        try container.encode(categoryMedia, forKey: .categoryMedia)
-        try container.encode(categorySeo, forKey: .categorySeo)
+        try container.encodeIfPresent(categoryMedia, forKey: .categoryMedia)
+        try container.encodeIfPresent(categorySeo, forKey: .categorySeo)
     }
     
     fileprivate func addCategory(name: String, description: String, isPrimary: Bool) throws {
@@ -85,7 +85,10 @@ class Category: PostgresTable, Codable {
         item.categoryName = name
         item.categoryIsPrimary = isPrimary
         item.categoryDescription.append(translation)
-        item.categorySeo.permalink = item.categoryName.permalink()
+        if isPrimary {
+            item.categorySeo = Seo()
+            item.categorySeo!.permalink = item.categoryName.permalink()
+        }
         item.categoryCreated = Int.now()
         item.categoryUpdated = Int.now()
         try item.save()

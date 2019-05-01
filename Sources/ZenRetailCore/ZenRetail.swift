@@ -260,6 +260,7 @@ public class ZenRetail {
     private func addFilters() {
         ZenRetail.zenNIO.setFilter(true, methods: [.GET, .POST, .PUT, .DELETE], url: "/api/*")
         ZenRetail.zenNIO.setFilter(false, methods: [.POST], url: "/api/login")
+        ZenRetail.zenNIO.setFilter(false, methods: [.POST], url: "/api/register")
         ZenRetail.zenNIO.setFilter(false, methods: [.POST], url: "/api/logout")
         
         ZenRetail.zenNIO.setFilter(false, methods: [.GET], url: "/api/ecommerce/*")
