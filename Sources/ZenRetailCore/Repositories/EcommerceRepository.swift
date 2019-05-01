@@ -148,17 +148,6 @@ struct EcommerceRepository : EcommerceProtocol {
     }
     
     func getProductsDiscount() throws -> [Product] {
-        let publication = DataSourceJoin(
-            table: "Publication",
-            onCondition: "Product.productId = Publication.productId",
-            direction: .INNER
-        )
-        let brand = DataSourceJoin(
-            table: "Brand",
-            onCondition: "Product.brandId = Brand.brandId",
-            direction: .INNER
-        )
-        
         let obj = Product()
         let now = Int.now()
         let sql = """
