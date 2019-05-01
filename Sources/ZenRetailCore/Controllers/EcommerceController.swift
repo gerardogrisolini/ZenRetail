@@ -145,9 +145,9 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                 }
                 registry.registryEmail = account.username
                 registry.registryPassword = account.password.encrypted
-                try registry.save(id: { id in
+                try registry.save { id in
                     registry.registryId = id as! Int
-                })
+                }
                 
                 let session = ZenNIO.sessions.new(id: request.session!.id, uniqueID: registry.registryId.description)
                 request.session = session
