@@ -27,8 +27,8 @@ class Barcode: PostgresJson {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         barcode = try container.decodeIfPresent(String.self, forKey: .barcode) ?? ""
         tags = try container.decodeIfPresent([Tag].self, forKey: .tags) ?? [Tag]()
-        price = try container.decodeIfPresent(Price.self, forKey: .price) ?? nil
-        discount = try container.decodeIfPresent(Discount.self, forKey: .discount) ?? nil
+        price = try? container.decodeIfPresent(Price.self, forKey: .price)
+        discount = try? container.decodeIfPresent(Discount.self, forKey: .discount)
     }
     
     func encode(to encoder: Encoder) throws {

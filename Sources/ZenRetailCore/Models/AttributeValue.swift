@@ -61,7 +61,7 @@ class AttributeValue: PostgresTable, Codable {
         attributeId = try container.decode(Int.self, forKey: .attributeId)
         attributeValueCode = try container.decode(String.self, forKey: .attributeValueCode)
         attributeValueName = try container.decode(String.self, forKey: .attributeValueName)
-        attributeValueMedia = try container.decodeIfPresent(Media.self, forKey: .attributeValueMedia) ?? nil
+        attributeValueMedia = try? container.decodeIfPresent(Media.self, forKey: .attributeValueMedia)
         attributeValueTranslates = try container.decodeIfPresent([Translation].self, forKey: .attributeValueTranslates) ?? [Translation]()
     }
     

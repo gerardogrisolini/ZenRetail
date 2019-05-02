@@ -118,6 +118,8 @@ class ProductController {
             guard let data = request.bodyData else {
                 throw HttpError.badRequest
             }
+            print(String(data: data, encoding: .utf8)!)
+            
             var item = try JSONDecoder().decode(Product.self, from: data)
             try self.repository.add(item: item)
             item = try self.repository.sync(item: item)

@@ -62,8 +62,8 @@ class Category: PostgresTable, Codable {
         categoryIsPrimary = try container.decode(Bool.self, forKey: .categoryIsPrimary)
         categoryName = try container.decode(String.self, forKey: .categoryName)
         categoryDescription = try container.decodeIfPresent([Translation].self, forKey: .categoryDescription) ?? [Translation]()
-        categoryMedia = try container.decodeIfPresent(Media.self, forKey: .categoryMedia) ?? nil
-        categorySeo = try container.decodeIfPresent(Seo.self, forKey: .categorySeo) ?? nil
+        categoryMedia = try? container.decodeIfPresent(Media.self, forKey: .categoryMedia)
+        categorySeo = try? container.decodeIfPresent(Seo.self, forKey: .categorySeo)
     }
 
     func encode(to encoder: Encoder) throws {

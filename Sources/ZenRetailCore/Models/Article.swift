@@ -90,7 +90,7 @@ class Article: PostgresTable, Codable {
         productId = try container.decodeIfPresent(Int.self, forKey: .productId) ?? 0
         articleNumber = try container.decodeIfPresent(Int.self, forKey: .articleNumber) ?? 0
         articleBarcodes = try container.decodeIfPresent([Barcode].self, forKey: .articleBarcodes) ?? [Barcode]()
-        articlePackaging = try container.decodeIfPresent(Packaging.self, forKey: .articlePackaging) ?? nil
+        articlePackaging = try? container.decodeIfPresent(Packaging.self, forKey: .articlePackaging)
         _attributeValues = try container.decodeIfPresent([ArticleAttributeValue].self, forKey: ._attributeValues) ?? [ArticleAttributeValue]()
     }
     
