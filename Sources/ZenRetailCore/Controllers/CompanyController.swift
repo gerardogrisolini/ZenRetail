@@ -120,7 +120,7 @@ class CompanyController {
     fileprivate func saveFiles(_ fileName: String, _ data: Data) throws -> Media {
         let media = Media()
         media.contentType = fileName.contentType
-        media.name = fileName.uniqueName()
+        media.name = fileName != "logo.png" && fileName != "header.png" ? fileName.uniqueName() : fileName
         
         let big = File()
         big.fileName = media.name
