@@ -456,7 +456,8 @@ struct ProductRepository : ProductProtocol {
     }
     
     func syncImport(item: Product) throws -> Result {
-
+        let result = try (ZenIoC.shared.resolve() as ArticleProtocol).build(productId: item.productId)
+        
         /// Sync barcodes
         for a in item._articles.filter({ $0._attributeValues.count > 0 }) {
             let values = a._attributeValues.map({ a in a._attributeValue.attributeValueName }).joined(separator: "', '")
@@ -485,7 +486,7 @@ GROUP BY a."articleId" HAVING count(b."attributeValueId") = \(item._attributes.c
             id in publication.publicationId = id as! Int
         }
         
-        return try (ZenIoC.shared.resolve() as ArticleProtocol).build(productId: item.productId)
+        return result
     }
 
     func delete(id: Int) throws {
