@@ -149,7 +149,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                     registry.registryId = id as! Int
                 }
                 
-                let session = ZenNIO.sessions.new(id: request.session!.id, uniqueID: registry.registryId.description)
+                let session = ZenNIO.sessions.new(id: request.session!.id, data: registry.registryId.description)
                 request.session = session
                 try response.send(json: session.token!)
                 response.completed()
@@ -278,7 +278,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
     /// Registry
 
     func ecommerceRegistryHandlerGET(request: HttpRequest, response: HttpResponse) {
-        let uniqueID = Int(request.session?.uniqueID ?? "0")!
+        let uniqueID = Int(request.session?.data as? String  ?? "0")!
         do {
             let registry = try self.registryRepository.get(id: uniqueID)
             try response.send(json:registry)
@@ -289,7 +289,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
     }
     
     func ecommerceRegistryHandlerPUT(request: HttpRequest, response: HttpResponse) {
-        let uniqueID = Int(request.session?.uniqueID ?? "0")!
+        let uniqueID = Int(request.session?.data as? String  ?? "0")!
         do {
             guard let data = request.bodyData else {
                 throw HttpError.badRequest
@@ -304,7 +304,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
     }
     
     func ecommerceRegistryHandlerDELETE(request: HttpRequest, response: HttpResponse) {
-        let uniqueID = Int(request.session?.uniqueID ?? "0")!
+        let uniqueID = Int(request.session?.data as? String  ?? "0")!
         do {
             try self.registryRepository.delete(id: uniqueID)
             response.completed( .noContent)
@@ -326,7 +326,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
     }
 
     func ecommerceBasketHandlerGET(request: HttpRequest, response: HttpResponse) {
-        guard let uniqueID = request.session?.uniqueID, let id = Int(uniqueID) else {
+        guard let uniqueID = request.session?.data as? String , let id = Int(uniqueID) else {
             response.completed( .unauthorized)
             return
         }
@@ -341,7 +341,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
     }
     
     func ecommerceBasketHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        guard let uniqueID = request.session?.uniqueID, let id = Int(uniqueID) else {
+        guard let uniqueID = request.session?.data as? String , let id = Int(uniqueID) else {
             response.completed( .unauthorized)
             return
         }
@@ -423,7 +423,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
     }
 
     func ecommerceShippingCostHandlerGET(request: HttpRequest, response: HttpResponse) {
-        let uniqueID = Int(request.session?.uniqueID ?? "0")!
+        let uniqueID = Int(request.session?.data as? String  ?? "0")!
         do {
             guard let id = request.getParam(String.self, key: "id") else {
                 throw HttpError.badRequest
@@ -440,7 +440,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
     /// Order
     
     func ecommerceOrdersHandlerGET(request: HttpRequest, response: HttpResponse) {
-        let uniqueID = Int(request.session?.uniqueID ?? "0")!
+        let uniqueID = Int(request.session?.data as? String  ?? "0")!
         do {
             let items = try self.repository.getOrders(registryId: uniqueID)
             try response.send(json:items)
@@ -451,7 +451,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
     }
     
     func ecommerceOrderHandlerGET(request: HttpRequest, response: HttpResponse) {
-        let uniqueID = Int(request.session?.uniqueID ?? "0")!
+        let uniqueID = Int(request.session?.data as? String  ?? "0")!
         do {
             guard let id = request.getParam(Int.self, key: "id") else {
                 throw HttpError.badRequest
@@ -465,7 +465,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
     }
 
     func ecommerceOrderItemsHandlerGET(request: HttpRequest, response: HttpResponse) {
-        let uniqueID = Int(request.session?.uniqueID ?? "0")!
+        let uniqueID = Int(request.session?.data as? String  ?? "0")!
         do {
             guard let id = request.getParam(Int.self, key: "id") else {
                 throw HttpError.badRequest
@@ -479,7 +479,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
     }
 
     func ecommerceOrderHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        let uniqueID = Int(request.session?.uniqueID ?? "0")!
+        let uniqueID = Int(request.session?.data as? String ?? "0")!
         do {
             guard let data = request.bodyData else {
                 throw HttpError.badRequest
