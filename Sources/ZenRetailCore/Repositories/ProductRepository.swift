@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import NIOPostgres
+import PostgresNIO
 import ZenPostgres
 import ZenNIO
 import SwiftGD
