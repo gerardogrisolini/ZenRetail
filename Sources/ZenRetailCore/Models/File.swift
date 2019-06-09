@@ -8,7 +8,7 @@
 import Foundation
 import PostgresNIO
 import ZenPostgres
-
+import ZenNIO
 
 enum MediaType: String, Codable {
     case thumb
