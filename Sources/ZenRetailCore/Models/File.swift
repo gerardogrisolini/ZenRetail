@@ -26,7 +26,7 @@ class File {
     public var fileCreated : Int = Int.now()
 
     func setupShippingCost() throws {
-        if !FileManager.default.fileExists(atPath: "\(ZenRetail.zenNIO.htdocsPath)/media/logo.png") {
+        if !FileManager.default.fileExists(atPath: "\(ZenNIO.htdocsPath)/media/logo.png") {
             let fileNames = ["logo.png", "shippingcost.csv", "shippingcost_express.csv"]
             for fileName in fileNames {
                 if let data = FileManager.default.contents(atPath: "./Assets/\(fileName)") {
@@ -49,7 +49,7 @@ class File {
         let paths = ["csv", "media", "thumb"]
         for path in paths {
             var isDirectory: ObjCBool = true
-            let p = "\(ZenRetail.zenNIO.htdocsPath)/\(path)"
+            let p = "\(ZenNIO.htdocsPath)/\(path)"
             if !fileManager.fileExists(atPath: p, isDirectory: &isDirectory) {
                 try fileManager.createDirectory(atPath: p, withIntermediateDirectories: true, attributes: nil)
             }
@@ -63,7 +63,7 @@ class File {
         } else if fileType == .thumb {
             path = "thumb"
         }
-        if !fileManager.createFile(atPath: "\(ZenRetail.zenNIO.htdocsPath)/\(path)/\(fileName)", contents: fileData, attributes: nil) {
+        if !fileManager.createFile(atPath: "\(ZenNIO.htdocsPath)/\(path)/\(fileName)", contents: fileData, attributes: nil) {
             throw ZenError.error("file not saved")
         }
     }

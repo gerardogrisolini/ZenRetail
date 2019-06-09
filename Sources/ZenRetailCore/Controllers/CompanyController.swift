@@ -38,7 +38,7 @@ class CompanyController {
             try FileStatic().create()
             
 //            let files: [File] = try File().query()
-            let files: [String] = try FileManager.default.contentsOfDirectory(atPath: "\(ZenRetail.zenNIO.htdocsPath)/media")
+            let files: [String] = try FileManager.default.contentsOfDirectory(atPath: "\(ZenNIO.htdocsPath)/media")
             for file in files {
                 
 //                // Create thumb
@@ -62,7 +62,7 @@ class CompanyController {
 //                try newFile.save()
                 
                 // Save thumb to disk
-                let data = FileManager.default.contents(atPath: "\(ZenRetail.zenNIO.htdocsPath)/media/\(file)")!
+                let data = FileManager.default.contents(atPath: "\(ZenNIO.htdocsPath)/media/\(file)")!
                 let thumb =  try Image(data: data).resizedTo(width: 380)!
                 let small = FileStatic()
                 small.fileType = .thumb
@@ -129,7 +129,7 @@ class CompanyController {
         try big.save()
         
         if let thumb = try Image(data: data).resizedTo(width: 380) {
-            let url = URL(fileURLWithPath: "\(ZenRetail.zenNIO.htdocsPath)/thumb/\(media.name)")
+            let url = URL(fileURLWithPath: "\(ZenNIO.htdocsPath)/thumb/\(media.name)")
             if !thumb.write(to: url, quality: 75, allowOverwrite: true) {
                 throw HttpError.systemError(0, "file thumb not saved")
             }
