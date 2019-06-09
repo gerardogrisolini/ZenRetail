@@ -6,7 +6,7 @@
 //  Copyright © 2017 Gerardo Grisolini. All rights reserved.
 //
 
-import NIOPostgres
+import PostgresNIO
 import ZenPostgres
 
 
