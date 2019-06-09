@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import NIOPostgres
+import PostgresNIO
 
 class Company: Codable {
     public var companyName : String = ""

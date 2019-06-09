@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import NIOPostgres
+import PostgresNIO
 import ZenPostgres
 
 /// Provides the Account structure for Perfect Turnstile

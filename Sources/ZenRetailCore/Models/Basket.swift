@@ -6,7 +6,7 @@
 //å
 
 import Foundation
-import NIOPostgres
+import PostgresNIO
 import ZenPostgres
 
 
