@@ -39,7 +39,7 @@ class Causal: PostgresTable, PostgresJson {
         causalName = row.column("causalName")?.string ?? ""
         causalQuantity = row.column("causalQuantity")?.int ?? 0
         causalBooked = row.column("causalBooked")?.int ?? 0
-        causalIsPos = row.column("causalIsPos")?.bool ?? false
+        causalIsPos = row.column("causalIsPos")?.boolean ?? false
         causalCreated = row.column("causalCreated")?.int ?? 0
         causalUpdated = row.column("causalUpdated")?.int ?? 0
     }

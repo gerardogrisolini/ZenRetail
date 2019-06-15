@@ -38,7 +38,7 @@ class Category: PostgresTable, Codable {
 
     override func decode(row: PostgresRow) {
         categoryId = row.column("categoryId")?.int ?? 0
-        categoryIsPrimary = row.column("categoryIsPrimary")?.bool ?? true
+        categoryIsPrimary = row.column("categoryIsPrimary")?.boolean ?? true
         categoryName = row.column("categoryName")?.string ?? ""
         let decoder = JSONDecoder()
         if let translates = row.column("categoryDescription")?.data {

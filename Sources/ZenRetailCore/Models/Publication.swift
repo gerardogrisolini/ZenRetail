@@ -45,8 +45,7 @@ class Publication: PostgresTable, Codable {
     override func decode(row: PostgresRow) {
         publicationId = row.column("publicationId")?.int ?? 0
         productId = row.column("productId")?.int ?? 0
-		publicationFeatured = row.column("publicationFeatured")?.bool ?? false
-        let p = row.column("publicationNew")?.bool
+		publicationFeatured = row.column("publicationFeatured")?.boolean ?? false
         publicationStartAt = row.column("publicationStartAt")?.int ?? 0
         publicationFinishAt = row.column("publicationFinishAt")?.int ?? 0
 		publicationUpdated = row.column("publicationUpdated")?.int ?? 0

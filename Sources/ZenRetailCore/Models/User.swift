@@ -56,7 +56,7 @@ class User : PostgresTable, Codable {
         firstname = row.column("firstname")?.string ?? ""
         lastname = row.column("lastname")?.string ?? ""
         email = row.column("email")?.string ?? ""
-        isAdmin = row.column("isAdmin")?.bool ?? false
+        isAdmin = row.column("isAdmin")?.boolean ?? false
     }
 
     /// Shortcut to store the id

@@ -9,6 +9,7 @@ import Foundation
 import ZenNIO
 import ZenMWS
 import CryptoSwift
+import PostgresNIO
 
 extension Int {
     static func now() -> Int {
@@ -87,7 +88,7 @@ extension String {
             print("error the lenght must be 12 numbers")
         }
         
-        var array = [1,3,1,3,1,3,1,3,1,3,1,3]
+        let array = [1,3,1,3,1,3,1,3,1,3,1,3]
         var sum = 0
         for i in 0...11 {
             let index = self.index(self.startIndex, offsetBy: i)
@@ -126,6 +127,42 @@ extension String {
         let salt: Array<UInt8> = Array("ZenRetail".utf8)
         let key = try! PKCS5.PBKDF2(password: password, salt: salt, iterations: 4096, variant: .sha256).calculate()
         return key.toBase64()!
+    }
+}
+
+extension PostgresData {
+    
+    public var boolean: Bool? {
+        guard var value = self.value else {
+            return nil
+        }
+        guard value.readableBytes == 1 else {
+            return nil
+        }
+        guard let byte = value.readInteger(as: UInt8.self) else {
+            return nil
+        }
+        
+        switch self.formatCode {
+        case .text:
+            switch byte {
+            case Character("t").asciiValue!:
+                return true
+            case Character("f").asciiValue!:
+                return false
+            default:
+                return nil
+            }
+        case .binary:
+            switch byte {
+            case 1:
+                return true
+            case 0:
+                return false
+            default:
+                return nil
+            }
+        }
     }
 }
 

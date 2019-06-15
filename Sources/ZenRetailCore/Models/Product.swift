@@ -94,8 +94,8 @@ class Product: PostgresTable, PostgresJson {
         if let seo = row.column("productSeo")?.data {
             productSeo = try! decoder.decode(Seo.self, from: seo)
         }
-        productIsActive = row.column("productIsActive")?.bool ?? false
-        productIsValid = row.column("productIsValid")?.bool ?? false
+        productIsActive = row.column("productIsActive")?.boolean ?? false
+        productIsValid = row.column("productIsValid")?.boolean ?? false
         productCreated = row.column("productCreated")?.int ?? 0
         productUpdated = row.column("productUpdated")?.int ?? 0
         productAmazonUpdated = row.column("productAmazonUpdated")?.int ?? 0

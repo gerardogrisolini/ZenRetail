@@ -48,7 +48,7 @@ class Article: PostgresTable, Codable {
         if let packaging = row.column("articlePackaging")?.data {
             articlePackaging = try! JSONDecoder().decode(Packaging.self, from: packaging)
         }
-        articleIsValid = row.column("articleIsValid")?.bool ?? true
+        articleIsValid = row.column("articleIsValid")?.boolean ?? true
         articleCreated = row.column("articleCreated")?.int ?? 0
         articleUpdated = row.column("articleUpdated")?.int ?? 0
         
