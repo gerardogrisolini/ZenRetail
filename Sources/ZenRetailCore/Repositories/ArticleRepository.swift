@@ -336,7 +336,7 @@ struct ArticleRepository : ArticleProtocol {
 
     func update(id: Int, item: Article) throws {
         guard let current = try get(id: id) else {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         
         // TODO: check this in test

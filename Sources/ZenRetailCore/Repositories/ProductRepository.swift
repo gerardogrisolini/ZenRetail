@@ -80,7 +80,7 @@ struct ProductRepository : ProductProtocol {
 			joins: [self.getJoin()]
 		)
         if items.count == 0 {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         
         let item = items.first!
@@ -324,7 +324,7 @@ struct ProductRepository : ProductProtocol {
 
     fileprivate func download(media: inout Media) throws {
         guard let url = URL(string: media.name) else {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         let data = try Data(contentsOf: url)
         

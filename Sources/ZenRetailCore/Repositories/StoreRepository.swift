@@ -35,7 +35,7 @@ struct StoreRepository : StoreProtocol {
     func update(id: Int, item: Store) throws {
         
         guard let current = try get(id: id) else {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         
         current.storeName = item.storeName

@@ -255,7 +255,7 @@ ORDER BY "Publication"."publicationStartAt" DESC
         
         let rows = try item.sqlRows(sql)
         if rows.count == 0 {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         
         item.decode(row: rows.first!)
@@ -304,7 +304,7 @@ ORDER BY "Publication"."publicationStartAt" DESC
         let current = Basket()
         try current.get(id)
         if current.basketId == 0 {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         current.basketQuantity = item.basketQuantity
         current.basketUpdated = Int.now()
@@ -376,13 +376,13 @@ ORDER BY "Publication"."publicationStartAt" DESC
         
         let items = try self.getBasket(registryId: registryId)
         if items.count == 0 {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
 
         let registry = Registry()
         try registry.get(registryId)
         if registry.registryId == 0 {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         
         var store = Store()

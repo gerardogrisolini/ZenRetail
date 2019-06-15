@@ -181,7 +181,7 @@ ORDER BY "MovementArticle"."movementArticleId"
     
     func update(id: Int, item: Movement) throws {
         guard let current = try get(id: id) else {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         
         item.movementUpdated = Int.now()

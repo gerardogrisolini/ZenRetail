@@ -49,7 +49,7 @@ struct DeviceRepository : DeviceProtocol {
 	func update(id: Int, item: Device) throws {
 		
 		guard let current = try get(id: id) else {
-			throw ZenError.noRecordFound
+			throw ZenError.recordNotFound
 		}
 		current.idStore = item.idStore
 		current.deviceName = item.deviceName

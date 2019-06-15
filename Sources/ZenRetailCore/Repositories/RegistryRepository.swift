@@ -38,7 +38,7 @@ struct RegistryRepository : RegistryProtocol {
 	func update(id: Int, item: Registry) throws {
 		
 		guard let current = try get(id: id) else {
-			throw ZenError.noRecordFound
+			throw ZenError.recordNotFound
 		}
         if (item.registryPassword.count >= 8 && item.registryPassword.count <= 20) {
             current.registryPassword = item.registryPassword.encrypted

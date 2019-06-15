@@ -34,7 +34,7 @@ struct AttributeValueRepository : AttributeValueProtocol {
     func update(id: Int, item: AttributeValue) throws {
 
         guard let current = try get(id: id) else {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         
         current.attributeValueCode = item.attributeValueCode

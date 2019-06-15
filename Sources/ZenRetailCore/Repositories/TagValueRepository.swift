@@ -33,7 +33,7 @@ struct TagValueRepository : TagValueProtocol {
     func update(id: Int, item: TagValue) throws {
         
         guard let current = try get(id: id) else {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         
         current.tagValueName = item.tagValueName

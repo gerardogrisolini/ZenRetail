@@ -32,7 +32,7 @@ struct MovementArticleRepository : MovementArticleProtocol {
         let product = Product()
         try product.get(barcode: item.movementArticleBarcode)
         if product.productId == 0 {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         
         if price == "selling" {
@@ -57,7 +57,7 @@ struct MovementArticleRepository : MovementArticleProtocol {
     func update(id: Int, item: MovementArticle) throws {
         
         guard let current = try get(id: id) else {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         
         current.movementArticleQuantity = item.movementArticleQuantity

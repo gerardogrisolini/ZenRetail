@@ -79,7 +79,7 @@ class Registry: PostgresTable, PostgresJson {
         )
         let rows = try self.sqlRows(sql)
         if rows.count == 0 {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         decode(row: rows.first!)
     }
@@ -89,7 +89,7 @@ class Registry: PostgresTable, PostgresJson {
         try get(email: email)
         
         if pwd.encrypted != registryPassword {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
     }
 

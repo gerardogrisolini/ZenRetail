@@ -31,7 +31,7 @@ struct PublicationRepository : PublicationProtocol {
         try item.get("productId", productId)
         
         if (item.publicationId == 0) {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         
         return item.publicationId == 0 ? nil : item
@@ -46,7 +46,7 @@ struct PublicationRepository : PublicationProtocol {
     func update(id: Int, item: Publication) throws {
 
         guard let current = try get(id: id) else {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         
         current.publicationFeatured = item.publicationFeatured

@@ -37,7 +37,7 @@ struct BrandRepository : BrandProtocol {
     
     func update(id: Int, item: Brand) throws {
         guard let current = try get(id: id) else {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         
         current.brandName = item.brandName

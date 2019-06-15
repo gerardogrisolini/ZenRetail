@@ -39,7 +39,7 @@ struct AttributeRepository : AttributeProtocol {
     func update(id: Int, item: Attribute) throws {
         
         guard let current = try get(id: id) else {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         
         current.attributeName = item.attributeName

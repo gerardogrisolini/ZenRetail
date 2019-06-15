@@ -66,7 +66,7 @@ struct InvoiceRepository : InvoiceProtocol {
 	func update(id: Int, item: Invoice) throws {
 		
 		guard let current = try get(id: id) else {
-			throw ZenError.noRecordFound
+			throw ZenError.recordNotFound
 		}
 		
 		item.invoiceUpdated = Int.now()

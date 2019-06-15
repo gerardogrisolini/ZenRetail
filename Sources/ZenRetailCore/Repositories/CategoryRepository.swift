@@ -40,7 +40,7 @@ struct CategoryRepository : CategoryProtocol {
     
     func update(id: Int, item: Category) throws {
         guard let current = try get(id: id) else {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         
         current.categoryIsPrimary = item.categoryIsPrimary

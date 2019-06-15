@@ -33,7 +33,7 @@ struct CausalRepository : CausalProtocol {
     func update(id: Int, item: Causal) throws {
         
         guard let current = try get(id: id) else {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
         
         current.causalName = item.causalName

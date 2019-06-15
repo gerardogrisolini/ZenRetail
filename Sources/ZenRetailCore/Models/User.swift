@@ -55,7 +55,7 @@ class User : PostgresTable, Codable {
         password = row.column("password")?.string ?? ""
         firstname = row.column("firstname")?.string ?? ""
         lastname = row.column("lastname")?.string ?? ""
-        email	 = row.column("email")?.string ?? ""
+        email = row.column("email")?.string ?? ""
         isAdmin = row.column("isAdmin")?.bool ?? false
     }
 
@@ -67,9 +67,9 @@ class User : PostgresTable, Codable {
     /// Forces a create with a hashed password
     func make() throws {
         let sql = """
-        INSERT INTO "User" ("uniqueID", "username", "password", "firstname", "lastname", "email", "isAdmin")
-        VALUES ('\(uniqueID)','\(username)','\(password)','\(firstname)','\(lastname)','\(email)',true)
-        """
+INSERT INTO "User" ("uniqueID", "username", "password", "firstname", "lastname", "email", "isAdmin")
+VALUES ('\(uniqueID)','\(username)','\(password)','\(firstname)','\(lastname)','\(email)',true)
+"""
         do {
             _ = try self.sqlRows(sql)
         } catch {
@@ -82,7 +82,7 @@ class User : PostgresTable, Codable {
     open func get(usr: String, pwd: String) throws {
         try self.get("username", usr)
         if uniqueID.isEmpty {
-            throw ZenError.noRecordFound
+            throw ZenError.recordNotFound
         }
 
         if pwd.encrypted != password {

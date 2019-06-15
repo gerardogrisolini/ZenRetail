@@ -133,7 +133,7 @@ public class ZenRetail {
         let config = PostgresConfig(
             host: ZenRetail.config.postgresHost,
             port: ZenRetail.config.postgresPort,
-//            tls: false,
+            tls: false,
             username: ZenRetail.config.postgresUsername,
             password: ZenRetail.config.postgresPassword,
             database: ZenRetail.config.postgresDatabase
