@@ -103,9 +103,11 @@ class ProductController {
             guard let data = request.bodyData else {
                 throw HttpError.badRequest
             }
+
             let item = try JSONDecoder().decode(Product.self, from: data)
             try self.repository.add(item: item)
             let result = try self.repository.sync(item: item)
+            
             try response.send(json: result)
             response.completed( .created)
         } catch {
@@ -118,8 +120,6 @@ class ProductController {
             guard let data = request.bodyData else {
                 throw HttpError.badRequest
             }
-            print(String(data: data, encoding: .utf8)!)
-            
             var item = try JSONDecoder().decode(Product.self, from: data)
             try self.repository.add(item: item)
             item = try self.repository.sync(item: item)

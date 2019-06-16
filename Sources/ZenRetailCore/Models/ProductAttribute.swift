@@ -71,7 +71,7 @@ class ProductAttribute: PostgresTable, Codable, Equatable {
             onCondition: "ProductAttributeValue.attributeValueId = AttributeValue.attributeValueId"
         )
 		
-		let attributeValue = ProductAttributeValue()
+		let attributeValue = ProductAttributeValue(db: db!)
 		self._attributeValues = try attributeValue.query(
 			whereclause: "ProductAttributeValue.productAttributeId = $1",
 			params: [self.productAttributeId],

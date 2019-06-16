@@ -109,7 +109,7 @@ class Product: PostgresTable, PostgresJson {
         if rows.count == 0 { return results }
 
         for i in 0..<rows.count {
-            let row = Product()
+            let row = Product(db: db!)
             row.decode(row: rows[i])
 			
             try row.makeCategories();
@@ -177,7 +177,7 @@ class Product: PostgresTable, PostgresJson {
             onCondition: "ProductCategory.categoryId = Category.categoryId"
         )
 		
-		self._categories = try ProductCategory().query(
+        self._categories = try ProductCategory(db: db!).query(
 			whereclause: "ProductCategory.productId = $1",
 			params: [self.productId],
 			orderby: ["Category.categoryId"],
@@ -205,7 +205,7 @@ class Product: PostgresTable, PostgresJson {
             onCondition: "ProductAttribute.attributeId = Attribute.attributeId"
         )
 		
-		let productAttribute = ProductAttribute()
+        let productAttribute = ProductAttribute(db: db!)
 		self._attributes = try productAttribute.query(
 			whereclause: "ProductAttribute.productId = $1",
 			params: [self.productId],
@@ -215,7 +215,7 @@ class Product: PostgresTable, PostgresJson {
 	}
 
     func makeArticles(_ storeIds: String = "0") throws {
-		let article = Article()
+		let article = Article(db: db!)
         article._storeIds = storeIds
 		self._articles = try article.query(
 			whereclause: "productId = $1",
@@ -225,7 +225,7 @@ class Product: PostgresTable, PostgresJson {
 	}
 
 	func makeArticle(barcode: String, rows: [PostgresRow]) throws {
-        let article = Article()
+        let article = Article(db: db!)
         article.decode(row: rows[0])
         article._attributeValues = rows.map({ row -> ArticleAttributeValue in
             let a = ArticleAttributeValue()

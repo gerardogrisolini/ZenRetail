@@ -89,9 +89,12 @@ class ArticleController {
             guard let id = request.getParam(Int.self, key: "id") else {
                 throw HttpError.badRequest
             }
-            let item = try self.repository.get(id: id)
-            try response.send(json: item)
-            response.completed()
+            if let item = self.repository.get(id: id) {
+                try response.send(json: item)
+                response.completed()
+            } else {
+                response.completed(.notFound)
+            }
         } catch {
             response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }

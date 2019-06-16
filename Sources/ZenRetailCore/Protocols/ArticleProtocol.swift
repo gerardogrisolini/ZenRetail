@@ -6,13 +6,15 @@
 //
 //
 
+import PostgresNIO
+
 protocol ArticleProtocol {
     
     func build(productId: Int) throws -> Result
 
     func get(productId: Int, storeIds: String) throws -> [Article]
     
-    func get(id: Int) throws -> Article?
+    func get(id: Int) -> Article?
     
 	func getStock(productId: Int, storeIds: String, tagId: Int) throws -> ArticleForm
 

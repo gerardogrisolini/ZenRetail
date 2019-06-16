@@ -53,7 +53,7 @@ class Article: PostgresTable, Codable {
         articleUpdated = row.column("articleUpdated")?.int ?? 0
         
         do {
-            _attributeValues = try ArticleAttributeValue().query(
+            _attributeValues = try ArticleAttributeValue(db: db!).query(
                 whereclause: "articleId = $1",
                 params: [articleId],
                 orderby: ["articleAttributeValueId"]
@@ -66,7 +66,7 @@ class Article: PostgresTable, Codable {
                         whereclause += " AND storeId IN (\(_storeIds))"
                     }
                 }
-                let stocks: [Stock] = try Stock().query(
+                let stocks: [Stock] = try Stock(db: db!).query(
                     whereclause: whereclause,
                     params: [articleId]
                 )

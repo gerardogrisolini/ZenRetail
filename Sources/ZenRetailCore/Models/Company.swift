@@ -8,6 +8,7 @@
 
 import Foundation
 import PostgresNIO
+import ZenPostgres
 
 class Company: Codable {
     public var companyName : String = ""
@@ -57,13 +58,19 @@ class Company: Codable {
     public var shippingExpress : Bool = false
 
     func create() throws {
+        let db = try ZenPostgres.shared.connect()
+        defer { db.disconnect() }
+        return try create(db: db)
+    }
+    
+    func create(db: PostgresConnection) throws {
         let encoder = JSONEncoder()
-        let settings = Settings()
+        let settings = Settings(db: db)
         let rows: [Settings] = try settings.query()
         if rows.count == 0 {
             let mirror = Mirror(reflecting: self)
             for case let (label?, value) in mirror.children {
-                let setting = Settings()
+                let setting = Settings(db: db)
                 setting.key = label
                 if value is [Translation] {
                     let jsonData = try encoder.encode(value as! [Translation])
@@ -80,8 +87,14 @@ class Company: Codable {
     }
 
     func save() throws {
+        let db = try ZenPostgres.shared.connect()
+        defer { db.disconnect() }
+        return try save(db: db)
+    }
+
+    func save(db: PostgresConnection) throws {
         let encoder = JSONEncoder()
-        let settings = Settings()
+        let settings = Settings(db: db)
         let mirror = Mirror(reflecting: self)
         for case let (label?, value) in mirror.children {
             if value is [Translation] {
@@ -99,8 +112,14 @@ class Company: Codable {
     }
     
     func select() throws {
+        let db = try ZenPostgres.shared.connect()
+        defer { db.disconnect() }
+        return try select(db: db)
+    }
+
+    func select(db: PostgresConnection) throws {
         let decoder = JSONDecoder()
-        let settings = Settings()
+        let settings = Settings(db: db)
         let rows: [Settings] = try settings.query()
         let data = rows.reduce(into: [String: String]()) {
             $0[$1.key] = $1.value

@@ -8,6 +8,7 @@
 
 import Foundation
 import ZenPostgres
+import PostgresNIO
 
 struct ArticleRepository : ArticleProtocol {
 
@@ -19,9 +20,12 @@ struct ArticleRepository : ArticleProtocol {
     }
 
     func build(productId: Int) throws -> Result {
+        let db = try ZenPostgres.shared.connect()
+        defer { db.disconnect() }
+
         var result = Result()
         
-        let product = Product()
+        let product = Product(db: db)
         try product.get(productId)
 
         // Get product attributes
@@ -30,7 +34,7 @@ struct ArticleRepository : ArticleProtocol {
             onCondition: "ProductAttribute.attributeId = Attribute.attributeId"
         )
 
-		var productAttributes: [ProductAttribute] = try ProductAttribute().query(
+		var productAttributes: [ProductAttribute] = try ProductAttribute(db: db).query(
             whereclause: "ProductAttribute.productId = $1",
             params: [productId],
             orderby: ["ProductAttribute.productAttributeId"],
@@ -39,19 +43,19 @@ struct ArticleRepository : ArticleProtocol {
         
         // Add defaults attribute and value if empty
         if productAttributes.count == 0 {
-            let defaultAttribute = Attribute()
+            let defaultAttribute = Attribute(db: db)
             try defaultAttribute.get(1)
-            let defaultAttributeValue = AttributeValue()
+            let defaultAttributeValue = AttributeValue(db: db)
             try defaultAttributeValue.get(1)
             
-            let productAttribute = ProductAttribute()
+            let productAttribute = ProductAttribute(db: db)
             productAttribute.productId = productId
             productAttribute.attributeId = defaultAttribute.attributeId
             productAttribute._attribute = defaultAttribute
             try productAttribute.save {
                 id in productAttribute.productAttributeId = id as! Int
             }
-            let productAttributeValue = ProductAttributeValue()
+            let productAttributeValue = ProductAttributeValue(db: db)
             productAttributeValue.productAttributeId = productAttribute.productAttributeId
             productAttributeValue.attributeValueId = defaultAttributeValue.attributeValueId
             productAttributeValue._attributeValue = defaultAttributeValue
@@ -81,7 +85,7 @@ struct ArticleRepository : ArticleProtocol {
         product.productUpdated = Int.now()
         try product.save()
 
-        _ = try Article().update(
+        _ = try Article(db: db).update(
             cols: ["articleIsValid"],
             params: [false],
             id: "productId",
@@ -90,12 +94,12 @@ struct ArticleRepository : ArticleProtocol {
 
         // Creation articles
         let company = Company()
-        try company.select()
+        try company.select(db: db)
         var index = 0
         while index >= 0 {
             
             // Check if exist article
-            let newArticle = Article()
+            let newArticle = Article(db: db)
             newArticle.productId = productId
             var sql =
                 "SELECT a.* " +
@@ -132,7 +136,7 @@ struct ArticleRepository : ArticleProtocol {
                 
                 // Add article attribute values
                 for i in 0...lastIndex {
-                    let articleAttributeValue = ArticleAttributeValue()
+                    let articleAttributeValue = ArticleAttributeValue(db: db)
                     articleAttributeValue.articleId = newArticle.articleId
                     articleAttributeValue.attributeValueId = productAttributes[i]._attributeValues[indexes[i][0]].attributeValueId
                     try addAttributeValue(item: articleAttributeValue)
@@ -158,7 +162,7 @@ struct ArticleRepository : ArticleProtocol {
         }
 
         // Clean articles
-        result.articles = try get(productId: productId, storeIds: "0")
+        result.articles = try get(db: db, productId: productId, storeIds: "0")
         for (i, item) in result.articles.enumerated() {
             if !item.articleIsValid {
                 if item._attributeValues.count == 0 {
@@ -166,7 +170,7 @@ struct ArticleRepository : ArticleProtocol {
                     _ = try item.update(cols: ["articleIsValid"], params: [true], id:"articleId", value: item.articleId)
                     continue
                 }
-                _ = try ArticleAttributeValue().delete(id: "articleId", value: item.articleId)
+                _ = try ArticleAttributeValue(db: db).delete(id: "articleId", value: item.articleId)
                 try item.delete()
                 result.articles.remove(at: i - result.deleted)
                 result.deleted += 1
@@ -188,28 +192,40 @@ struct ArticleRepository : ArticleProtocol {
         try product.save()
         
         // TODO: Update only barcode counter
-        try company.save()
+        try company.save(db: db)
         
         return result
     }
     
-	func get(productId: Int, storeIds: String) throws -> [Article] {
-        let items = Article()
+    func get(productId: Int, storeIds: String) throws -> [Article] {
+        let db = try ZenPostgres.shared.connect()
+        defer { db.disconnect() }
+        return try get(db: db, productId: productId, storeIds: storeIds)
+    }
+
+    func get(db: PostgresConnection, productId: Int, storeIds: String) throws -> [Article] {
+        let items = Article(db: db)
 		items._storeIds = storeIds
 		return try items.query(whereclause: "productId = $1",
                                params: [productId],
                                orderby: ["articleId"])
     }
 
-    func get(id: Int) throws -> Article? {
+    func get(id: Int) -> Article? {
         let item = Article()
-		try item.get(id)
-		
-        return item
+        do {
+            try item.get(id)
+            return item
+        } catch {
+            return nil
+        }
     }
     
     func getStock(productId: Int, storeIds: String, tagId: Int) throws -> ArticleForm {
-		var header = [String]()
+        let db = try ZenPostgres.shared.connect()
+        defer { db.disconnect() }
+
+        var header = [String]()
 		var body = [[ArticleItem]]()
 		
 		var productAttributeValues = [ProductAttributeValue]()
@@ -218,7 +234,7 @@ struct ArticleRepository : ArticleProtocol {
             onCondition: "ProductAttribute.attributeId = Attribute.attributeId"
         )
 		
-		let attributes: [ProductAttribute] = try ProductAttribute().query(
+        let attributes: [ProductAttribute] = try ProductAttribute(db: db).query(
 			whereclause: "ProductAttribute.productId = $1",
 			params: [productId],
 			orderby: ["ProductAttribute.productAttributeId"],
@@ -238,7 +254,7 @@ struct ArticleRepository : ArticleProtocol {
 			}
 		}
 		
-		let articles = try get(productId: productId, storeIds: storeIds)
+        let articles = try get(db: db, productId: productId, storeIds: storeIds)
 		let grouped = articles.groupBy {
 			$0._attributeValues.dropLast().reduce("") {
 				a,b in "\(a)#\(b.attributeValueId)"
@@ -293,14 +309,16 @@ struct ArticleRepository : ArticleProtocol {
 	}
 	
     func getGrouped(productId: Int) throws -> [GroupItem] {
-        var rows = [GroupItem]()
+        let db = try ZenPostgres.shared.connect()
+        defer { db.disconnect() }
 
-        let articles: [Article] = try Article()
+        var rows = [GroupItem]()
+        let articles: [Article] = try Article(db: db)
             .query(whereclause: "productId = $1", orderby: ["articleId"])
         for row in articles {
             let data = row.articleBarcodes.first(where: { $0.tags.count == 0 })
             if let barcode = data?.barcode {
-                let product = Product()
+                let product = Product(db: db)
                 try product.get(barcode: barcode)
                 if product.productId != productId {
                     rows.append(GroupItem(id: row.articleId, barcode: barcode, product: product))
@@ -320,8 +338,13 @@ struct ArticleRepository : ArticleProtocol {
     }
     
     func addGroup(item: Article) throws -> GroupItem {
+        let db = try ZenPostgres.shared.connect()
+        defer { db.disconnect() }
+
+        item.db = db
+        
         let barcode = item.articleBarcodes.first!.barcode
-        let product = Product()
+        let product = Product(db: db)
         try product.get(barcode: barcode)
 
         item.productId = product.productId
@@ -335,9 +358,11 @@ struct ArticleRepository : ArticleProtocol {
     }
 
     func update(id: Int, item: Article) throws {
-        guard let current = try get(id: id) else {
-            throw ZenError.recordNotFound
-        }
+        let db = try ZenPostgres.shared.connect()
+        defer { db.disconnect() }
+        
+        let item = Article(db: db)
+        try item.get(id)
         
         // TODO: check this in test
         let itemBarcode = item.articleBarcodes.first
@@ -345,15 +370,15 @@ struct ArticleRepository : ArticleProtocol {
             var barcode: Barcode?
             
             if newBarcode.tags.count > 0 {
-                barcode = current.articleBarcodes.first(where: { $0.tags.contains(where: { $0.valueId == newBarcode.tags.first?.valueId }) })
+                barcode = item.articleBarcodes.first(where: { $0.tags.contains(where: { $0.valueId == newBarcode.tags.first?.valueId }) })
             } else {
-                barcode = current.articleBarcodes.first(where: { $0.tags.count == 0 })
+                barcode = item.articleBarcodes.first(where: { $0.tags.count == 0 })
             }
             
             if let barcode = barcode {
                 barcode.barcode = newBarcode.barcode
-                current.articleUpdated = Int.now()
-                try current.save()
+                item.articleUpdated = Int.now()
+                try item.save()
             }
         }
     }
