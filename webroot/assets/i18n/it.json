@@ -1,7 +1,7 @@
 {
     "Ok": "Ok",
     "Cancel": "Annulla",
-    "Featured": "Vetrina",
+    "Featured": "In Vetrina",
     "News": "Novità",
     "Brands": "Marche",
     "Quantity": "Quantità",
@@ -94,5 +94,6 @@
     "You must login before adding to basket": "Devi effettuare l'accesso per aggiungere al carrello",
     "Date": "Data",
     "Status": "Stato",
+    "On Sale": "In Saldo",
     "filter items": "filtra elementi"
 }
