@@ -34,7 +34,7 @@ class Amazon: Codable {
     }
     
     func save() throws {
-        let db = try ZenPostgres.shared.connect()
+        let db = try ZenPostgres.shared.connectAsync()
         defer { db.disconnect() }
 
         let settings = Settings(db: db)

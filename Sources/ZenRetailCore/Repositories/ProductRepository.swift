@@ -73,7 +73,7 @@ struct ProductRepository : ProductProtocol {
     }
     
 	func get(id: Int) throws -> Product {
-        let db = try ZenPostgres.shared.connect()
+        let db = try ZenPostgres.shared.connectAsync()
         defer { db.disconnect() }
         
         let items: [Product] = try Product(db: db).query(
@@ -92,13 +92,11 @@ struct ProductRepository : ProductProtocol {
         try item.makeAttributes()
 		try item.makeArticles()
 		
-        item.db = nil
-        
 		return item
 	}
 
     func get(barcode: String) throws -> Product {
-        let db = try ZenPostgres.shared.connect()
+        let db = try ZenPostgres.shared.connectAsync()
         defer { db.disconnect() }
 
         let item = Product(db: db)
@@ -113,7 +111,7 @@ struct ProductRepository : ProductProtocol {
     }
     
     func add(item: Product) throws {
-        let db = try ZenPostgres.shared.connect()
+        let db = try ZenPostgres.shared.connectAsync()
         defer { db.disconnect() }
         
         item.db = db
@@ -212,7 +210,7 @@ struct ProductRepository : ProductProtocol {
     func update(id: Int, item: Product) throws {
         let current = try get(id: id)
 
-        let db = try ZenPostgres.shared.connect()
+        let db = try ZenPostgres.shared.connectAsync()
         defer { db.disconnect() }
 
         current.db = db
@@ -368,7 +366,7 @@ struct ProductRepository : ProductProtocol {
     }
     
     func sync(item: Product) throws -> Product {
-        let db = try ZenPostgres.shared.connect()
+        let db = try ZenPostgres.shared.connectAsync()
         defer { db.disconnect() }
 
         item.db = db
@@ -478,7 +476,7 @@ struct ProductRepository : ProductProtocol {
     }
     
     func syncImport(item: Product) throws -> Result {
-        let db = try ZenPostgres.shared.connect()
+        let db = try ZenPostgres.shared.connectAsync()
         defer { db.disconnect() }
 
         let result = try (ZenIoC.shared.resolve() as ArticleProtocol).build(productId: item.productId)
@@ -515,7 +513,7 @@ GROUP BY a."articleId" HAVING count(b."attributeValueId") = \(item._attributes.c
     }
 
     func delete(id: Int) throws {
-        let db = try ZenPostgres.shared.connect()
+        let db = try ZenPostgres.shared.connectAsync()
         defer { db.disconnect() }
 
         let item = Product(db: db)
