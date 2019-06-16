@@ -244,6 +244,7 @@ ORDER BY "Publication"."publicationStartAt" DESC
         let sql = item.querySQL(
             whereclause: "Product.productSeo ->> $1 = $2",
             params: ["permalink", name],
+            cursor: Cursor(limit: 1, offset: 0),
             joins: [
                 DataSourceJoin(
                     table: "Brand",
