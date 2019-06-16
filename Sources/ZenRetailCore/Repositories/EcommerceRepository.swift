@@ -240,7 +240,10 @@ ORDER BY "Publication"."publicationStartAt" DESC
     }
 
     func getProduct(name: String) throws -> Product {
-        let item = Product()
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+
+        let item = Product(db: db)
         let sql = item.querySQL(
             whereclause: "Product.productSeo ->> $1 = $2",
             params: ["permalink", name],
