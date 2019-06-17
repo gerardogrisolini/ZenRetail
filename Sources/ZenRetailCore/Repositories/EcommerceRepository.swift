@@ -69,7 +69,9 @@ struct EcommerceRepository : EcommerceProtocol {
             direction: .INNER
         )
         
-        return try Category().query(
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+        return try Category(db: db).query(
             columns: ["DISTINCT Category.*"],
             whereclause: "Publication.publicationStartAt <= $1 AND Publication.publicationFinishAt >= $1 AND Category.categoryIsPrimary = $2 AND Product.productIsActive = $2",
             params: [Int.now(), true],
@@ -90,8 +92,9 @@ struct EcommerceRepository : EcommerceProtocol {
             direction: .INNER
         )
         
-        let items = Brand()
-        return try items.query(
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+        return try Brand(db: db).query(
             columns: ["DISTINCT Brand.*"],
             whereclause: "Publication.publicationStartAt <= $1 AND Publication.publicationFinishAt >= $1 AND Product.productIsActive = $2",
             params: [Int.now(), true],
@@ -113,7 +116,9 @@ struct EcommerceRepository : EcommerceProtocol {
             direction: .INNER
         )
         
-        let obj = Product()
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+        let obj = Product(db: db)
         let sql = obj.querySQL(
             whereclause: "Publication.publicationFeatured = $1 AND Product.productIsActive = $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2",
             params: [true, Int.now()],
@@ -136,7 +141,9 @@ struct EcommerceRepository : EcommerceProtocol {
             direction: .INNER
         )
         
-        let obj = Product()
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+        let obj = Product(db: db)
         let sql = obj.querySQL(
             whereclause: "Publication.publicationNew = $1 AND Product.productIsActive = $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2",
             params: [true, Int.now()],
@@ -148,7 +155,10 @@ struct EcommerceRepository : EcommerceProtocol {
     }
     
     func getProductsDiscount() throws -> [Product] {
-        let obj = Product()
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+
+        let obj = Product(db: db)
         let now = Int.now()
         let sql = """
 SELECT "Product".*, "Publication".*, "Brand".*
@@ -166,7 +176,10 @@ ORDER BY "Publication"."publicationStartAt" DESC
     }
 
     func getProducts(brand: String) throws -> [Product] {
-        let obj = Product()
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+
+        let obj = Product(db: db)
         let sql = obj.querySQL(
             whereclause: "Brand.brandSeo ->> $1 = $2 AND Publication.publicationStartAt <= $3 AND Publication.publicationFinishAt >= $3 AND Product.productIsActive = $4",
             params: ["permalink", brand, Int.now(), true],
@@ -208,7 +221,10 @@ ORDER BY "Publication"."publicationStartAt" DESC
             direction: .INNER
         )
 
-        let obj = Product()
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+        
+        let obj = Product(db: db)
         let sql = obj.querySQL(
             whereclause: "Category.categorySeo ->> $1 = $2 AND Publication.publicationStartAt <= $3 AND Publication.publicationFinishAt >= $3 AND Product.productIsActive = $4",
             params: ["permalink", category, Int.now(), true],
@@ -220,7 +236,10 @@ ORDER BY "Publication"."publicationStartAt" DESC
     }
 
     func findProducts(text: String) throws -> [Product] {
-        let obj = Product()
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+
+        let obj = Product(db: db)
         let sql = obj.querySQL(
             whereclause: "LOWER(Product.productName) LIKE $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2 AND Product.productIsActive = $3",
             params: ["%\(text.lowercased())%", Int.now(), true],
@@ -277,17 +296,25 @@ ORDER BY "Publication"."publicationStartAt" DESC
             direction: .LEFT
         )
         
-        let items = Basket()
-        return try items.query(joins: [registry])
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+        
+        return try Basket(db: db).query(joins: [registry])
     }
 
     func getBasket(registryId: Int) throws -> [Basket] {
-        let items = Basket()
-        return try items.query(whereclause: "registryId = $1", params: [registryId])
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+
+        return try Basket(db: db).query(whereclause: "registryId = $1", params: [registryId])
     }
     
     func addBasket(item: Basket) throws {
-        let items = try getBasket(registryId: item.registryId)
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+
+        item.db = db
+        let items: [Basket] = try Basket(db: db).query(whereclause: "registryId = $1", params: [item.registryId])
         let basket = items.first(where: { $0.basketBarcode == item.basketBarcode})
         if let current = basket {
             current.basketQuantity += 1
@@ -305,7 +332,10 @@ ORDER BY "Publication"."publicationStartAt" DESC
     }
     
     func updateBasket(id: Int, item: Basket) throws {
-        let current = Basket()
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+
+        let current = Basket(db: db)
         try current.get(id)
         if current.basketId == 0 {
             throw ZenError.recordNotFound
@@ -316,7 +346,10 @@ ORDER BY "Publication"."publicationStartAt" DESC
     }
     
     func deleteBasket(id: Int) throws {
-        let item = Basket()
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+
+        let item = Basket(db: db)
         item.basketId = id
         try item.delete()
     }
@@ -378,23 +411,26 @@ ORDER BY "Publication"."publicationStartAt" DESC
     func addOrder(registryId: Int, order: OrderModel) throws -> Movement {
         let repository = ZenIoC.shared.resolve() as MovementProtocol
         
-        let items = try self.getBasket(registryId: registryId)
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+
+        let items: [Basket] = try Basket(db: db).query(whereclause: "registryId = $1", params: [registryId])
         if items.count == 0 {
             throw ZenError.recordNotFound
         }
 
-        let registry = Registry()
+        let registry = Registry(db: db)
         try registry.get(registryId)
         if registry.registryId == 0 {
             throw ZenError.recordNotFound
         }
         
-        var store = Store()
+        var store = Store(db: db)
         let stores: [Store] = try store.query(orderby: ["storeId"], cursor: Cursor.init(limit: 1, offset: 0))
         if stores.count == 1 {
             store = stores.first!
         }
-        let causals: [Causal] = try Causal().query(
+        let causals: [Causal] = try Causal(db: db).query(
             whereclause: "causalBooked = $1 AND causalQuantity = $2 AND causalIsPos = $3",
             params: [1, -1 , true],
             orderby: ["causalId"],
@@ -404,7 +440,7 @@ ORDER BY "Publication"."publicationStartAt" DESC
             throw ZenError.error("no causal found")
         }
         
-        let movement = Movement()
+        let movement = Movement(db: db)
         movement.movementDate = Int.now()
         movement.movementStore = store
         movement.movementCausal = causals.first!
@@ -420,7 +456,7 @@ ORDER BY "Publication"."publicationStartAt" DESC
         try repository.add(item: movement)
         
         for item in items {
-            let movementArticle = MovementArticle()
+            let movementArticle = MovementArticle(db: db)
             movementArticle.movementId = movement.movementId
             movementArticle.movementArticleBarcode = item.basketBarcode
             movementArticle.movementArticleProduct = item.basketProduct
@@ -440,14 +476,20 @@ ORDER BY "Publication"."publicationStartAt" DESC
     }
 
     func getOrders(registryId: Int) throws -> [Movement] {
-        let items = Movement()
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+
+        let items = Movement(db: db)
         return try items.query(whereclause: "movementRegistry ->> $1 = $2",
                                params: ["registryId", registryId],
                                orderby: ["movementId DESC"])
     }
 
     func getOrder(registryId: Int, id: Int) throws -> Movement {
-        let item = Movement()
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+
+        let item = Movement(db: db)
         let items: [Movement] = try item.query(whereclause: "movementRegistry ->> $1 = $2 AND movementId = $3",
                                                params: ["registryId", registryId, id],
                                                cursor: Cursor(limit: 1, offset: 0))
@@ -458,7 +500,10 @@ ORDER BY "Publication"."publicationStartAt" DESC
     }
     
     func getOrderItems(registryId: Int, id: Int) throws -> [MovementArticle] {
-        let items = MovementArticle()
+        let db = try ZenPostgres.shared.connectAsync()
+        defer { db.disconnect() }
+
+        let items = MovementArticle(db: db)
         let join = DataSourceJoin(
             table: "Movement",
             onCondition: "MovementArticle.movementId = Movement.movementId",

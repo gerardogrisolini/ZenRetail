@@ -175,7 +175,7 @@ public class ZenRetail {
         let tagValue = TagValue(db: db)
         try tagValue.create()
         //try tagGroup.setupMarketplace()
-        let product = Product()
+        let product = Product(db: db)
         try product.create()
         let productCategeory = ProductCategory(db: db)
         try productCategeory.create()

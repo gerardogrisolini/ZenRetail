@@ -27,12 +27,14 @@ final class ZenRetailTests: XCTestCase {
 //            try attributeValue.get("attributeId\" = '1' AND \"attributeValueName", 1)
 //            XCTAssertTrue(attributeValue.attributeId == 1)
 
-            let c = Category()
+            let db = try p.connectAsync()
+            defer { db.disconnect() }
+            
+            let c = Category(db: db)
             for _ in 0...100 {
                 let rows = try c.query(orderby: ["categoryId"])
                 XCTAssertTrue(rows.count > 0)
             }
-            try p.close()
         } catch {
             XCTFail(error.localizedDescription)
         }
@@ -57,7 +59,11 @@ final class ZenRetailTests: XCTestCase {
                 onCondition: "Product.productId = Publication.productId",
                 direction: .INNER
             )
-            let c = Category()
+
+            let db = try p.connectAsync()
+            defer { db.disconnect() }
+            
+            let c = Category(db: db)
             XCTAssertNoThrow(
                 try c.query(
                     columns: ["DISTINCT Category.*"],
@@ -67,7 +73,6 @@ final class ZenRetailTests: XCTestCase {
                     joins:  [category, product, publication]
                 )
             )
-            try p.close()
         } catch {
             XCTFail(error.localizedDescription)
         }
