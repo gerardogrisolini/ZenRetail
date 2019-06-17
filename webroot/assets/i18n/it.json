@@ -96,5 +96,6 @@
     "Status": "Stato",
     "On Sale": "In Saldo",
     "filter items": "filtra elementi",
-    "Article not available!": "Articolo non disponibile!"
+    "Article not available!": "Articolo non disponibile!",
+    "Invalid email and/or password!": "Email e/o password non valide!"
 }

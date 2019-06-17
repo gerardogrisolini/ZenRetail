@@ -83,7 +83,7 @@ class Basket: PostgresTable, Codable {
     }
 
     func getProduct(barcode: String) throws -> Product {
-        let product = Product(db: db!)
+        let product = db != nil ? Product(db: db!) : Product()
         try product.get(barcode: barcode)
         return product
     }

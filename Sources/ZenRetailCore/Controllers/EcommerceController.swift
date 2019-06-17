@@ -149,9 +149,12 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                     registry.registryId = id as! Int
                 }
                 
-//                let session = ZenNIO.sessions.new(id: request.session!.id, data: registry.registryId.description)
-//                request.session = session
-//                try response.send(json: session.token!)
+                
+                let base64 = UUID().uuidString.data(using: .utf8)!.base64EncodedString()
+                request.session!.token = Token(bearer: base64)
+                request.session!.data = registry.registryId.description
+                
+                try response.send(json: request.session!.token!)
                 response.completed()
             } catch {
                 response.completed(.internalServerError)
