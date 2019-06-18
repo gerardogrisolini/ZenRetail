@@ -1,66 +1,35 @@
 
-<img src="https://github.com/gerardogrisolini/ZenRetail/blob/master/webroot/media/logo.png?raw=true" width="80" alt="Webretail - RMS" />
+<img src="https://github.com/gerardogrisolini/ZenRetail/blob/master/webroot/media/logo.png?raw=true" width="80" alt="ZenRetail - RMS" />
 
 # ZenRetail - RMS
 
 Retail Management System and e-Commerce
-developed with Swift 5.0, Angular 7.0 and PostgreSQL 11.0.
+developed with Swift 5, Angular 7 and PostgreSQL 11.
 
 #### Under active development. Please do not use.
-
-Try Demo <a href="https://zenretail.herokuapp.com/admin">ZenRetail</a>
-usr: admin
-pwd: admin
-
-Try WebApp for eCommerce <a href="https://zenretail.herokuapp.com/web">e-Commerce</a>
 
 
 ## Build Notes
 
-Ensure you have installed Xcode 10.0 or later.
+Ensure you have installed Xcode 11.0 or later.
 
 
 ### macOS
 
-To install and link libxml2 with homebrew, use the following two commands
-
-```
-brew install libxml2
-brew link --force libxml2
-```
-
-To install postgres:
-
-```
-brew install postgres
-```
-
 To install nodejs. libgd and phantomjs:
 
 ```
-brew install node gd phantomjs
+brew install node gd
+brew cask install phantomjs
 ```
 
 ### Linux
 
-Ensure that you have installed libxml2-dev and pkg-config.
-
-``` 
-sudo apt-get install libxml2-dev pkg-config
-```
-
-To install libpq-dev libgd-dev
-
-```
-sudo apt-get install libpq-dev libgd-dev
-```
 
 To install nodejs and phantomjs:
 
 ```
-curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
 sudo apt-get install -y nodejs
-
 sudo apt-get install build-essential chrpath libssl-dev libxft-dev libfreetype6-dev libfreetype6 libfontconfig1-dev libfontconfig1 -y
 sudo wget https://bitbucket.org/ariya/phantomjs/downloads/phantomjs-2.1.1-linux-x86_64.tar.bz2
 sudo tar xvjf phantomjs-2.1.1-linux-x86_64.tar.bz2 -C /usr/local/share/
@@ -81,17 +50,6 @@ swift package generate-xcodeproj
 To run this project from Xcode, edit the Scheme, Under "Options" for "run", check "Use custom working directory" and choose the project's working directory. After doing this, the project can be run from within Xcode.
 
 
-## Setup - Terminal
-
-* Check out or download the project;
-* In terminal, navigate to the directory 
-* Execute `swift build -c release`
-* Once the project has compiled, execute `sudo ../.build/x86_64-unknown-linux/release/ZenRetail`
-
-```
-[INFO] Starting HTTP server on 0.0.0.0:8080 with document root ./webroot
-```
-
 ## Angular 7 - Terminal
 
 Steps for the development UI:
@@ -108,6 +66,7 @@ npm start
 Steps for build UI:
 ```
 npm run build
+npm run deploy
 ```
 
 ## Docker - Terminal
