@@ -105,7 +105,7 @@ class CompanyController {
     
 //    fileprivate func getFile(_ request: HttpRequest, _ response: HttpResponse, _ size: MediaSize) {
 //        let file = File()
-//        if let filename = request.getParam(String.self, key: "filename") {
+//        if let filename: String = request.getParam("filename") {
 //            if let data = try? file.getData(filename: filename, size: size) {
 //                response.addHeader(.contentType, value: file.fileContentType)
 //                response.send(data: data)
@@ -161,8 +161,8 @@ class CompanyController {
 
     func uploadMediaHandlerPOST(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let fileName = request.getParam(String.self, key: "file[]"),
-                let file = request.getParam(Data.self, key: fileName) else {
+            guard let fileName: String = request.getParam("file[]"),
+                let file: Data = request.getParam(fileName) else {
                 throw HttpError.badRequest
             }
 
@@ -177,13 +177,13 @@ class CompanyController {
 
     func uploadMediasHandlerPOST(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let fileNames = request.getParam(String.self, key: "file[]") else {
+            guard let fileNames: String = request.getParam("file[]") else {
                 throw HttpError.badRequest
             }
 
             var medias = [Media]()
             for fileName in fileNames.split(separator: ",") {
-                if let data = request.getParam(Data.self, key: fileName.description) {
+                if let data: Data = request.getParam(fileName.description) {
                     let media = try saveFiles(fileName.description, data)
                     medias.append(media)
                     print("Uploaded file \(fileName) => \(media.name)")

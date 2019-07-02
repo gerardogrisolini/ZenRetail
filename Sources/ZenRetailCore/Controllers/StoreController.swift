@@ -35,7 +35,7 @@ class StoreController {
     
     func storeHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             let item = try self.repository.get(id: id)
@@ -62,7 +62,7 @@ class StoreController {
     
     func storeHandlerPUT(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id"),
+            guard let id: Int = request.getParam("id"),
                 let data = request.bodyData else {
                 throw HttpError.badRequest
             }
@@ -77,7 +77,7 @@ class StoreController {
     
     func storeHandlerDELETE(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             try self.repository.delete(id: id)

@@ -36,7 +36,7 @@ class AttributeController {
     
     func attributeHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             let item = try self.repository.get(id: id)
@@ -49,7 +49,7 @@ class AttributeController {
 
     func attributevalueHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             let item = try self.repository.getValues(id: id)
@@ -76,7 +76,7 @@ class AttributeController {
 
     func attributeHandlerPUT(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id"),
+            guard let id: Int = request.getParam("id"),
                 let data = request.bodyData else {
                 throw HttpError.badRequest
             }
@@ -91,7 +91,7 @@ class AttributeController {
 
     func attributeHandlerDELETE(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             try self.repository.delete(id: id)

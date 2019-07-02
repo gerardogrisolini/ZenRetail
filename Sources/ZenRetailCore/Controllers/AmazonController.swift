@@ -67,8 +67,8 @@ public class AmazonController: NSObject {
         let data: [MwsRequest]
         do {
             let mwsRequest = MwsRequest()
-            if let start = request.getParam(Int.self, key: "start"),
-                let finish = request.getParam(Int.self, key: "finish") {
+            if let start: Int = request.getParam("start"),
+                let finish: Int = request.getParam("finish") {
                 data = try mwsRequest.rangeRequests(startDate: start, finishDate: finish)
             } else {
                 data = try mwsRequest.currentRequests()

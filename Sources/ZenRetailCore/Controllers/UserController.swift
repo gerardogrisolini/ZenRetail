@@ -35,7 +35,7 @@ class UserController {
 
     func accountHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(String.self, key: "id") else {
+            guard let id :String = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             let item = try self.repository.get(id: id)
@@ -62,7 +62,7 @@ class UserController {
     
     func accountHandlerPUT(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(String.self, key: "id"),
+            guard let id :String = request.getParam("id"),
                 let data = request.bodyData else {
                 throw HttpError.badRequest
             }
@@ -77,7 +77,7 @@ class UserController {
     
     func accountHandlerDELETE(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(String.self, key: "id") else {
+            guard let id :String = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             try self.repository.delete(id: id)

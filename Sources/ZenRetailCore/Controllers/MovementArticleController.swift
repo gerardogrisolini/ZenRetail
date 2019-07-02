@@ -26,7 +26,7 @@ class MovementArticleController {
     
     func movementArticlesHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             let items = try self.movementRepository.get(movementId: id)
@@ -39,7 +39,7 @@ class MovementArticleController {
     
     func movementArticleHandlerPOST(request: HttpRequest, response: HttpResponse) {
        	do {
-            guard let price = request.getParam(String.self, key: "price"),
+            guard let price: String = request.getParam("price"),
                 let data = request.bodyData else {
                 throw HttpError.badRequest
             }
@@ -54,7 +54,7 @@ class MovementArticleController {
     
     func movementArticleHandlerPUT(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id"),
+            guard let id: Int = request.getParam("id"),
                 let data = request.bodyData else {
                 throw HttpError.badRequest
             }
@@ -69,7 +69,7 @@ class MovementArticleController {
     
     func movementArticleHandlerDELETE(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             try self.movementRepository.delete(id: id)

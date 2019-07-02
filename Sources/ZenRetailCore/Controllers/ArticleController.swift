@@ -32,7 +32,7 @@ class ArticleController {
     
     func articleBuildHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             let result = try self.repository.build(productId: id)
@@ -45,7 +45,7 @@ class ArticleController {
     
     func articleGroupHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             let items = try self.repository.getGrouped(productId: id)
@@ -58,7 +58,7 @@ class ArticleController {
     
     func productArticleHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             let item = try self.repository.get(productId: id, storeIds: "0")
@@ -71,11 +71,11 @@ class ArticleController {
     
     func articleStockHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id"),
-                let storeIds = request.getParam(String.self, key: "storeids") else {
+            guard let id: Int = request.getParam("id"),
+                let storeIds: String = request.getParam("storeids") else {
                 throw HttpError.badRequest
             }
-            let tagId = request.getParam(Int.self, key: "tagid") ?? 0
+            let tagId: Int = request.getParam("tagid") ?? 0
             let item = try self.repository.getStock(productId: id, storeIds: storeIds, tagId: tagId)
             try response.send(json: item)
             response.completed()
@@ -86,7 +86,7 @@ class ArticleController {
     
     func articleHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             if let item = self.repository.get(id: id) {
@@ -116,7 +116,7 @@ class ArticleController {
     
     func articleHandlerPUT(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id"), let data = request.bodyData else {
+            guard let id: Int = request.getParam("id"), let data = request.bodyData else {
                 throw HttpError.badRequest
             }
             let item = try JSONDecoder().decode(Article.self, from: data)
@@ -130,7 +130,7 @@ class ArticleController {
     
     func articleHandlerDELETE(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             try self.repository.delete(id: id)
@@ -156,7 +156,7 @@ class ArticleController {
     
     func articleAttributeValueHandlerDELETE(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             try self.repository.removeAttributeValue(id: id)

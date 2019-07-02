@@ -106,7 +106,7 @@ public class AngularController {
 
             switch request.head.uri {
             case let x where x.hasPrefix("/brand"):
-                guard let name = request.getParam(String.self, key: "name") else {
+                guard let name: String = request.getParam("name") else {
                     return nil
                 }
                 let products = try repository.getProducts(brand: name)
@@ -129,7 +129,7 @@ public class AngularController {
                     .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/thumb/\(brand.brandMedia.name)")
                 break
             case let x where x.hasPrefix("/category"):
-                guard let name = request.getParam(String.self, key: "name") else {
+                guard let name: String = request.getParam("name") else {
                     return nil
                 }
                 let products = try repository.getProducts(category: name)
@@ -152,7 +152,7 @@ public class AngularController {
                     .replacingOccurrences(of: "#image#", with: "\(ZenRetail.config.serverUrl)/thumb/\(category.categoryMedia?.name ?? "logo.png")")
                 break
             case let x where x.hasPrefix("/product"):
-                guard let name = request.getParam(String.self, key: "name") else {
+                guard let name: String = request.getParam("name") else {
                     return nil
                 }
                 let product = try repository.getProduct(name: name)

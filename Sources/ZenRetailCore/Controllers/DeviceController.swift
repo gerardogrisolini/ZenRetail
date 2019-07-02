@@ -31,7 +31,7 @@ class DeviceController {
         }
 
 		do {
-            let date = request.getParam(Int.self, key: "date") ?? 0
+            let date: Int = request.getParam("date") ?? 0
 			let items = try self.repository.getAll(date: date)
 			try response.send(json:items)
 			response.completed()
@@ -42,7 +42,7 @@ class DeviceController {
 	
 	func deviceHandlerGET(request: HttpRequest, response: HttpResponse) {
 		do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
 			let item = try self.repository.get(id: id)
@@ -70,7 +70,7 @@ class DeviceController {
 	
 	func deviceHandlerPUT(request: HttpRequest, response: HttpResponse) {
 		do {
-            guard let id = request.getParam(Int.self, key: "id"),
+            guard let id: Int = request.getParam("id"),
                 let data = request.bodyData else {
                 throw HttpError.badRequest
             }
@@ -86,7 +86,7 @@ class DeviceController {
 	
 	func deviceHandlerDELETE(request: HttpRequest, response: HttpResponse) {
 		do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
 			try self.repository.delete(id: id)

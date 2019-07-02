@@ -51,7 +51,7 @@ class ProductController {
 
     func productsHandlerGET(request: HttpRequest, response: HttpResponse) {
 		do {
-            let date = request.getParam(Int.self, key: "date") ?? 0
+            let date: Int = request.getParam("date") ?? 0
 			let items = try self.repository.getAll(date: date)
             try response.send(json:items)
             response.completed()
@@ -62,7 +62,7 @@ class ProductController {
 
     func productHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             let item = try self.repository.get(id: id)
@@ -75,7 +75,7 @@ class ProductController {
 
     func productResetHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             try self.repository.reset(id: id)
@@ -87,7 +87,7 @@ class ProductController {
 
     func productBarcodeHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(String.self, key: "id") else {
+            guard let id: String = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             let item = try self.repository.get(barcode: id)
@@ -133,7 +133,7 @@ class ProductController {
 
     func productHandlerPUT(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id"),
+            guard let id: Int = request.getParam("id"),
                 let data = request.bodyData else {
                 throw HttpError.badRequest
             }
@@ -149,7 +149,7 @@ class ProductController {
 
     func productHandlerDELETE(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             try self.repository.delete(id: id)

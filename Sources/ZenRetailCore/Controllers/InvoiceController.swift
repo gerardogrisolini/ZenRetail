@@ -50,7 +50,7 @@ class InvoiceController {
 	
 	func invoiceHandlerGET(request: HttpRequest, response: HttpResponse) {
 		do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
 			let item = try self.repository.get(id: id)
@@ -77,7 +77,7 @@ class InvoiceController {
 	
 	func invoiceHandlerPUT(request: HttpRequest, response: HttpResponse) {
 		do {
-            guard let id = request.getParam(Int.self, key: "id"),
+            guard let id: Int = request.getParam("id"),
                 let data = request.bodyData else {
                     throw HttpError.badRequest
             }
@@ -92,7 +92,7 @@ class InvoiceController {
 	
 	func invoiceHandlerDELETE(request: HttpRequest, response: HttpResponse) {
 		do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
 			try self.repository.delete(id: id)
@@ -104,7 +104,7 @@ class InvoiceController {
 	
 	func invoiceMovementHandlerGET(request: HttpRequest, response: HttpResponse) {
 		do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
 			let items = try self.repository.getMovements(invoiceId: id)
@@ -117,7 +117,7 @@ class InvoiceController {
 	
 	func invoiceMovementArticleHandlerGET(request: HttpRequest, response: HttpResponse) {
 		do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
 			let items = try self.repository.getMovementArticles(invoiceId: id)
@@ -130,7 +130,7 @@ class InvoiceController {
 	
 	func invoiceMovementHandlerPOST(request: HttpRequest, response: HttpResponse) {
 		do {
-            guard let id = request.getParam(Int.self, key: "id"),
+            guard let id: Int = request.getParam("id"),
                 let data = request.bodyData else {
                 throw HttpError.badRequest
             }
@@ -146,7 +146,7 @@ class InvoiceController {
 	
 	func invoiceMovementHandlerDELETE(request: HttpRequest, response: HttpResponse) {
 		do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
 			try self.repository.removeMovement(id: id)

@@ -48,7 +48,7 @@ class TagGroupController {
 
     func tagHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(String.self, key: "id") else {
+            guard let id :String = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             if id == "all" {
@@ -69,7 +69,7 @@ class TagGroupController {
     
     func tagValueHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             let item = try self.repository.getValues(id: id)
@@ -96,7 +96,7 @@ class TagGroupController {
     
     func tagHandlerPUT(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id"),
+            guard let id: Int = request.getParam("id"),
                 let data = request.bodyData else {
                 throw HttpError.badRequest
             }
@@ -111,7 +111,7 @@ class TagGroupController {
     
     func tagHandlerDELETE(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             try self.repository.delete(id: id)

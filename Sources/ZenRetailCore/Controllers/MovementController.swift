@@ -57,8 +57,8 @@ class MovementController {
 
     func movementShippingCostHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id"),
-                let shippingId = request.getParam(String.self, key: "shippingId") else {
+            guard let id: Int = request.getParam("id"),
+                let shippingId: String = request.getParam("shippingId") else {
                 throw HttpError.badRequest
             }
             let item = try self.repository.get(id: id)!
@@ -92,8 +92,8 @@ class MovementController {
 
     func movementsWhouseHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let date = request.getParam(String.self, key: "date"),
-                let store = request.getParam(Int.self, key: "store") else {
+            guard let date: String = request.getParam("date"),
+                let store: Int = request.getParam("store") else {
                 throw HttpError.badRequest
             }
             let items = try self.repository.getWarehouse(date: date.DateToInt(), store: store)
@@ -134,7 +134,7 @@ class MovementController {
 	
 	func movementHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             let item = try self.repository.get(id: id)
@@ -147,7 +147,7 @@ class MovementController {
     
 	func movementRegistryHandlerGET(request: HttpRequest, response: HttpResponse) {
 		do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
 			let items = try self.repository.get(registryId: id)
@@ -208,7 +208,7 @@ class MovementController {
     
 	func movementCloneHandlerPOST(request: HttpRequest, response: HttpResponse) {
 		do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
 			let item = try self.repository.clone(sourceId: id)
@@ -223,7 +223,7 @@ class MovementController {
 
 	func movementHandlerPUT(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let id = request.getParam(Int.self, key: "id"),
+            guard let id: Int = request.getParam("id"),
                 let data = request.bodyData else {
                 throw HttpError.badRequest
             }
@@ -238,7 +238,7 @@ class MovementController {
     
     func movementHandlerDELETE(request: HttpRequest, response: HttpResponse) {
 		do {
-            guard let id = request.getParam(Int.self, key: "id") else {
+            guard let id: Int = request.getParam("id") else {
                 throw HttpError.badRequest
             }
             try self.repository.delete(id: id)
@@ -250,7 +250,7 @@ class MovementController {
 
     func movementFromHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let date = request.getParam(Int.self, key: "date") else {
+            guard let date: Int = request.getParam("date") else {
                 throw HttpError.badRequest
             }
             let basic = request.authorization.replacingOccurrences(of: "Basic ", with: "")

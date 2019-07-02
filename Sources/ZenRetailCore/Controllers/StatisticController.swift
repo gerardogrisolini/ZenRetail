@@ -34,7 +34,7 @@ class StatisticController {
 
     func statisticCategoryHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let year = request.getParam(Int.self, key: "year") else {
+            guard let year: Int = request.getParam("year") else {
                 throw HttpError.badRequest
             }
             let items = try self.repository.getCategories(year: year)
@@ -47,7 +47,7 @@ class StatisticController {
 
     func statisticCategoryformonthHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let year = request.getParam(Int.self, key: "year") else {
+            guard let year: Int = request.getParam("year") else {
                 throw HttpError.badRequest
             }
             let items = try self.repository.getCategoriesForMonth(year: year)
@@ -60,7 +60,7 @@ class StatisticController {
 
     func statisticProductHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let year = request.getParam(Int.self, key: "year") else {
+            guard let year: Int = request.getParam("year") else {
                 throw HttpError.badRequest
             }
             let items = try self.repository.getProducts(year: year)
@@ -73,7 +73,7 @@ class StatisticController {
 
     func statisticProductformonthHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            guard let year = request.getParam(Int.self, key: "year") else {
+            guard let year: Int = request.getParam("year") else {
                 throw HttpError.badRequest
             }
             let items = try self.repository.getProductsForMonth(year: year)
