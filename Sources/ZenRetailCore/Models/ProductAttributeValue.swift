@@ -36,8 +36,10 @@ class ProductAttributeValue: PostgresTable, Codable, Equatable {
         productAttributeValueId	= (try? row.columns[0].int()) ?? 0
         productAttributeId = (try? row.columns[1].int()) ?? 0
         attributeValueId = (try? row.columns[2].int()) ?? 0
-        _ = row.columns.dropFirst(3)
-        _attributeValue.decode(row: row)
+
+        var r = row;
+        r.columns = Array(r.columns.dropFirst(3))
+        _attributeValue.decode(row: r)
     }
 
     required init(from decoder: Decoder) throws {

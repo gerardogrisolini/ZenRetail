@@ -42,6 +42,7 @@ class Article: PostgresTable, Codable {
         productId = (try? row.columns[1].int()) ?? 0
         articleNumber = (try? row.columns[2].int()) ?? 0
         if let barcodes = row.columns[3].data {
+            print(String(data: barcodes, encoding: .utf8)!)
             articleBarcodes = try! JSONDecoder().decode([Barcode].self, from: barcodes)
         }
         if let packaging = row.columns[4].data {

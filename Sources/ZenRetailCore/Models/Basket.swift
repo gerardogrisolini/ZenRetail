@@ -51,8 +51,10 @@ class Basket: PostgresTable, Codable {
         basketQuantity = (try? row.columns[4].double()) ?? 0
         basketPrice = (try? row.columns[5].double()) ?? 0
         basketUpdated = (try? row.columns[6].int()) ?? 0
-        _ = row.columns.dropFirst(7)
-        _registry.decode(row: row)
+        
+        var r = row;
+        r.columns = Array(r.columns.dropFirst(7))
+        _registry.decode(row: r)
     }
     
     required init(from decoder: Decoder) throws {

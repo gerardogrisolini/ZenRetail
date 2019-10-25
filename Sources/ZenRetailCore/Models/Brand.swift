@@ -35,6 +35,8 @@ class Brand: PostgresTable, Codable {
     }
 
     override func decode(row: Row) {
+        if row.columns.count != 8 { return }
+
         brandId = (try? row.columns[0].int()) ?? 0
         brandName = (try? row.columns[1].string()) ?? ""
         let decoder = JSONDecoder()

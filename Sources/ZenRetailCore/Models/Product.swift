@@ -97,13 +97,19 @@ class Product: PostgresTable, PostgresJson {
         productCreated = (try? row.columns[14].int()) ?? 0
         productUpdated = (try? row.columns[15].int()) ?? 0
         productAmazonUpdated = (try? row.columns[16].int()) ?? 0
-        _ = row.columns.dropFirst(17)
-        _brand.decode(row: row)
+
+        if row.columns.count > 17 {
+            var r = row;
+            r.columns = Array(r.columns.dropFirst(17))
+            _brand.decode(row: r)
+        }
     }
     
     func rows(sql: String, barcodes: Bool, storeIds: String = "0") throws -> [Product] {
+        db = try ZenPostgres.shared.connect()
+        defer { db?.disconnect() }
+        
         var results = [Product]()
-
         let rows = try self.sqlRows(sql)
         if rows.count == 0 { return results }
 
@@ -225,10 +231,15 @@ class Product: PostgresTable, PostgresJson {
 
 	func makeArticle(barcode: String, rows: [Row]) throws {
         let article = Article(db: db!)
-        article.decode(row: rows[0])
+        
+        var r = rows[0]
+        r.columns = Array(r.columns.dropFirst(r.columns.count - 11))
+        article.decode(row: r)
         article._attributeValues = rows.map({ row -> ArticleAttributeValue in
+            var r = row
+            r.columns = Array(r.columns.dropFirst(r.columns.count - 3))
             let a = ArticleAttributeValue()
-            a.decode(row: row)
+            a.decode(row: r)
             return a
         })
         self._articles = [article]
@@ -258,6 +269,10 @@ class Product: PostgresTable, PostgresJson {
                            params: [param],
                            orderby: ["ArticleAttributeValue.articleAttributeValueId"],
                            joins: [brandJoin, articleJoin, articleAttributeJoin])
+        
+        db = try ZenPostgres.shared.connect()
+        defer { db?.disconnect() }
+
         let rows = try self.sqlRows(sql)
         if rows.count == 0 { return }
         

@@ -40,8 +40,16 @@ class ProductAttribute: PostgresTable, Codable, Equatable {
         productAttributeId = (try? row.columns[0].int()) ?? 0
         productId = (try? row.columns[1].int()) ?? 0
         attributeId = (try? row.columns[2].int()) ?? 0
-        _ = row.columns.dropFirst(3)
-		_attribute.decode(row: row)
+
+        let count = row.columns.count
+        if count > 5 {
+            var r = row;
+            r.columns = Array(r.columns.dropFirst(3))
+            _attribute.decode(row: r)
+        } else if count == 5 {
+            _attribute.decode(row: row)
+        }
+
         do {
             try makeAttributeValues()
         } catch {
