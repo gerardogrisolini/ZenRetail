@@ -11,7 +11,7 @@ import ZenNIOSSL
 import ZenNIOH2
 import ZenSMTP
 import ZenPostgres
-
+import PostgresClientKit
 
 public class ZenRetail {
     static var config: Configuration!
@@ -73,7 +73,6 @@ public class ZenRetail {
 
     public func stop() {
         try? zenSMTP?.close()
-        try? zenPostgres?.close()
     }
 
     private func setup() {
@@ -129,20 +128,18 @@ public class ZenRetail {
     }
     
     private func setupDatabase() throws {
+        var configuration = PostgresClientKit.ConnectionConfiguration()
+        configuration.host = ZenRetail.config.postgresHost
+        configuration.port = ZenRetail.config.postgresPort
+        configuration.database = ZenRetail.config.postgresDatabase
+        configuration.user = ZenRetail.config.postgresUsername
+        configuration.credential = .md5Password(password: ZenRetail.config.postgresPassword)
         
-        let config = PostgresConfig(
-            host: ZenRetail.config.postgresHost,
-            port: ZenRetail.config.postgresPort,
-            tls: false,
-            username: ZenRetail.config.postgresUsername,
-            password: ZenRetail.config.postgresPassword,
-            database: ZenRetail.config.postgresDatabase
-        )
-        zenPostgres = try ZenPostgres(config: config)
+        zenPostgres = try ZenPostgres(config: configuration)
     }
  
     private func createTables() throws {
-        let db = try ZenPostgres.shared.connectAsync()
+        let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
 
         let settings = Settings(db: db)

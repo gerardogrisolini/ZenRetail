@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 
 
@@ -37,14 +37,14 @@ class Store: PostgresTable, PostgresJson {
         self.tableIndexes.append("storeName")
     }
     
-    override func decode(row: PostgresRow) {
-        storeId = row.column("storeId")?.int ?? 0
-        storeName = row.column("storeName")?.string ?? ""
-        storeAddress = row.column("storeAddress")?.string ?? ""
-        storeCity = row.column("storeCity")?.string ?? ""
-        storeCountry = row.column("storeCountry")?.string ?? ""
-        storeZip = row.column("storeZip")?.string ?? ""
-        storeCreated = row.column("storeCreated")?.int ?? 0
-        storeUpdated = row.column("storeUpdated")?.int ?? 0
+    override func decode(row: Row) {
+        storeId = (try? row.columns[0].int()) ?? 0
+        storeName = (try? row.columns[1].string()) ?? ""
+        storeAddress = (try? row.columns[2].string()) ?? ""
+        storeCity = (try? row.columns[3].string()) ?? ""
+        storeCountry = (try? row.columns[4].string()) ?? ""
+        storeZip = (try? row.columns[5].string()) ?? ""
+        storeCreated = (try? row.columns[6].int()) ?? 0
+        storeUpdated = (try? row.columns[7].int()) ?? 0
     }
 }

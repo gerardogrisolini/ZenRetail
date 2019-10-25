@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 
 
@@ -36,13 +36,13 @@ class Device: PostgresTable, Codable {
         self.tableIndexes.append("deviceName")
     }
     
-    override func decode(row: PostgresRow) {
-		deviceId = row.column("deviceId")?.int ?? 0
-		idStore = row.column("idStore")?.int ?? 0
-		deviceName = row.column("deviceName")?.string ?? ""
-		deviceToken = row.column("deviceToken")?.string ?? ""
-		deviceCreated = row.column("deviceCreated")?.int ?? 0
-		deviceUpdated = row.column("deviceUpdated")?.int ?? 0
+    override func decode(row: Row) {
+		deviceId = (try? row.columns[0].int()) ?? 0
+		idStore = (try? row.columns[1].int()) ?? 0
+		deviceName = (try? row.columns[2].string()) ?? ""
+		deviceToken = (try? row.columns[3].string()) ?? ""
+		deviceCreated = (try? row.columns[4].int()) ?? 0
+		deviceUpdated = (try? row.columns[5].int()) ?? 0
         if idStore > 0 {
 		    _store.decode(row: row)
         }
@@ -53,7 +53,7 @@ class Device: PostgresTable, Codable {
         let sql = querySQL(
             whereclause: "deviceToken = $1 AND deviceName = $2",
             params: [token, name],
-            cursor: Cursor(limit: 1, offset: 0)
+            cursor: CursorConfig(limit: 1, offset: 0)
         )
         let rows = try sqlRows(sql)
         if let row = rows.first {
@@ -61,7 +61,7 @@ class Device: PostgresTable, Codable {
         } else {
             deviceName = name
             deviceToken = token
-            try save()
+            _ = try save()
         }
 	}
 }

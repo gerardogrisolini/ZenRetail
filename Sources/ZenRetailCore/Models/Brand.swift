@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 
 
@@ -34,21 +34,21 @@ class Brand: PostgresTable, Codable {
         self.tableIndexes.append("brandName")
     }
 
-    override func decode(row: PostgresRow) {
-        brandId = row.column("brandId")?.int ?? 0
-        brandName = row.column("brandName")?.string ?? ""
+    override func decode(row: Row) {
+        brandId = (try? row.columns[0].int()) ?? 0
+        brandName = (try? row.columns[1].string()) ?? ""
         let decoder = JSONDecoder()
-        if let descriptions = row.column("brandDescription")?.data {
+        if let descriptions = row.columns[2].data {
             brandDescription = try! decoder.decode([Translation].self, from: descriptions)
         }
-        if let media = row.column("brandMedia")?.data {
+        if let media = row.columns[3].data {
             brandMedia = try! decoder.decode(Media.self, from: media)
         }
-        if let seo = row.column("brandSeo")?.data {
+        if let seo = row.columns[4].data {
             brandSeo = try! decoder.decode(Seo.self, from: seo)
         }
-        brandCreated = row.column("brandCreated")?.int ?? 0
-        brandUpdated = row.column("brandUpdated")?.int ?? 0
+        brandCreated = (try? row.columns[5].int()) ?? 0
+        brandUpdated = (try? row.columns[6].int()) ?? 0
     }
 
     required init(from decoder: Decoder) throws {

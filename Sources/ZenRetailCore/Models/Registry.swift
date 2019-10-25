@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 
 
@@ -54,28 +54,28 @@ class Registry: PostgresTable, PostgresJson {
         self.tableIndexes.append("registryEmail")
     }
 
-    override func decode(row: PostgresRow) {
-		registryId = row.column("registryId")?.int ?? 0
-		registryName = row.column("registryName")?.string ?? ""
-		registryEmail = row.column("registryEmail")?.string ?? ""
-        registryPassword = row.column("registryPassword")?.string ?? ""
-		registryPhone = row.column("registryPhone")?.string ?? ""
-		registryAddress = row.column("registryAddress")?.string ?? ""
-		registryCity = row.column("registryCity")?.string ?? ""
-		registryZip = row.column("registryZip")?.string ?? ""
-        registryProvince = row.column("registryProvince")?.string ?? ""
-        registryCountry = row.column("registryCountry")?.string ?? ""
-		registryFiscalCode = row.column("registryFiscalCode")?.string ?? ""
-		registryVatNumber = row.column("registryVatNumber")?.string ?? ""
-		registryCreated = row.column("registryCreated")?.int ?? 0
-		registryUpdated = row.column("registryUpdated")?.int ?? 0
+    override func decode(row: Row) {
+		registryId = (try? row.columns[0].int()) ?? 0
+		registryName = (try? row.columns[1].string()) ?? ""
+		registryEmail = (try? row.columns[2].string()) ?? ""
+        registryPassword = (try? row.columns[3].string()) ?? ""
+		registryPhone = (try? row.columns[4].string()) ?? ""
+		registryAddress = (try? row.columns[5].string()) ?? ""
+		registryCity = (try? row.columns[6].string()) ?? ""
+		registryZip = (try? row.columns[7].string()) ?? ""
+        registryProvince = (try? row.columns[8].string()) ?? ""
+        registryCountry = (try? row.columns[9].string()) ?? ""
+		registryFiscalCode = (try? row.columns[10].string()) ?? ""
+		registryVatNumber = (try? row.columns[11].string()) ?? ""
+		registryCreated = (try? row.columns[12].int()) ?? 0
+		registryUpdated = (try? row.columns[13].int()) ?? 0
 	}
 
     func get(email: String) throws {
         let sql = querySQL(
             whereclause: "registryEmail = $1",
             params: [email],
-            cursor: Cursor(limit: 1, offset: 0)
+            cursor: CursorConfig(limit: 1, offset: 0)
         )
         let rows = try self.sqlRows(sql)
         if rows.count == 0 {

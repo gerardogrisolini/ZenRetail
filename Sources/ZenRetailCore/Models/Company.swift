@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 
 class Company: Codable {
@@ -58,12 +58,12 @@ class Company: Codable {
     public var shippingExpress : Bool = false
 
     func create() throws {
-        let db = try ZenPostgres.shared.connectAsync()
+        let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
         return try create(db: db)
     }
     
-    func create(db: PostgresConnection) throws {
+    func create(db: Connection) throws {
         let encoder = JSONEncoder()
         let settings = Settings(db: db)
         let rows: [Settings] = try settings.query()
@@ -87,12 +87,12 @@ class Company: Codable {
     }
 
     func save() throws {
-        let db = try ZenPostgres.shared.connectAsync()
+        let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
         return try save(db: db)
     }
 
-    func save(db: PostgresConnection) throws {
+    func save(db: Connection) throws {
         let encoder = JSONEncoder()
         let settings = Settings(db: db)
         let mirror = Mirror(reflecting: self)
@@ -112,12 +112,12 @@ class Company: Codable {
     }
     
     func select() throws {
-        let db = try ZenPostgres.shared.connectAsync()
+        let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
         return try select(db: db)
     }
 
-    func select(db: PostgresConnection) throws {
+    func select(db: Connection) throws {
         let decoder = JSONDecoder()
         let settings = Settings(db: db)
         let rows: [Settings] = try settings.query()

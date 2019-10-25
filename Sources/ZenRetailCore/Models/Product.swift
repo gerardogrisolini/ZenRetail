@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 
 
@@ -42,7 +42,6 @@ class Product: PostgresTable, PostgresJson {
         case brandId
         case productCode
         case productName
-        //case productType
         case productTax
         case productUm
         case productPrice = "price"
@@ -65,41 +64,41 @@ class Product: PostgresTable, PostgresJson {
         self.tableIndexes.append("productName")
     }
     
-    override func decode(row: PostgresRow) {
-        productId = row.column("productId")?.int ?? 0
-        brandId = row.column("brandId")?.int ?? 0
-        productCode = row.column("productCode")?.string ?? ""
-        productName = row.column("productName")?.string ?? ""
-        //productType = row.column("producttype")?.string ?? ""
-        productUm = row.column("productUm")?.string ?? ""
+    override func decode(row: Row) {
+        productId = (try? row.columns[0].int()) ?? 0
+        brandId = (try? row.columns[1].int()) ?? 0
+        productCode = (try? row.columns[2].string()) ?? ""
+        productName = (try? row.columns[3].string()) ?? ""
+        productUm = (try? row.columns[4].string()) ?? ""
         let decoder = JSONDecoder()
-        if let price = row.column("productPrice")?.data {
-            productPrice = try! decoder.decode(Price.self, from: price)
-        }
-        if let discount = row.column("productDiscount")?.data {
-            productDiscount = try! decoder.decode(Discount.self, from: discount)
-        }
-        if let packaging = row.column("productPackaging")?.data {
-            productPackaging = try! decoder.decode(Packaging.self, from: packaging)
-        }
-        if let tax = row.column("productTax")?.data {
+        if let tax = row.columns[5].data {
             productTax = try! decoder.decode(Tax.self, from: tax)
         }
-        if let descriptions = row.column("productDescription")?.data {
-            productDescription = try! decoder.decode([Translation].self, from: descriptions)
+        if let price = row.columns[6].data {
+            productPrice = try! decoder.decode(Price.self, from: price)
         }
-        if let media = row.column("productMedia")?.data {
-            productMedia = try! decoder.decode([Media].self, from: media)
-        }
-        if let seo = row.column("productSeo")?.data {
+        if let seo = row.columns[7].data {
             productSeo = try! decoder.decode(Seo.self, from: seo)
         }
-        productIsActive = row.column("productIsActive")?.boolean ?? false
-        productIsValid = row.column("productIsValid")?.boolean ?? false
-        productCreated = row.column("productCreated")?.int ?? 0
-        productUpdated = row.column("productUpdated")?.int ?? 0
-        productAmazonUpdated = row.column("productAmazonUpdated")?.int ?? 0
-		_brand.decode(row: row)
+        if let discount = row.columns[8].data {
+            productDiscount = try! decoder.decode(Discount.self, from: discount)
+        }
+        if let packaging = row.columns[9].data {
+            productPackaging = try! decoder.decode(Packaging.self, from: packaging)
+        }
+        if let descriptions = row.columns[10].data {
+            productDescription = try! decoder.decode([Translation].self, from: descriptions)
+        }
+        if let media = row.columns[11].data {
+            productMedia = try! decoder.decode([Media].self, from: media)
+        }
+        productIsActive = (try? row.columns[12].bool()) ?? false
+        productIsValid = (try? row.columns[13].bool()) ?? false
+        productCreated = (try? row.columns[14].int()) ?? 0
+        productUpdated = (try? row.columns[15].int()) ?? 0
+        productAmazonUpdated = (try? row.columns[16].int()) ?? 0
+        _ = row.columns.dropFirst(17)
+        _brand.decode(row: row)
     }
     
     func rows(sql: String, barcodes: Bool, storeIds: String = "0") throws -> [Product] {
@@ -224,7 +223,7 @@ class Product: PostgresTable, PostgresJson {
 		)
 	}
 
-	func makeArticle(barcode: String, rows: [PostgresRow]) throws {
+	func makeArticle(barcode: String, rows: [Row]) throws {
         let article = Article(db: db!)
         article.decode(row: rows[0])
         article._attributeValues = rows.map({ row -> ArticleAttributeValue in

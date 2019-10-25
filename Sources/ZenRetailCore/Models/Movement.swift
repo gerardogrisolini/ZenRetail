@@ -8,7 +8,7 @@
 //
 
 import Foundation
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 
 
@@ -68,33 +68,34 @@ class Movement: PostgresTable, Codable {
         super.init()
     }
     
-    override func decode(row: PostgresRow) {
-        movementId = row.column("movementId")?.int ?? 0
-        movementNumber = row.column("movementNumber")?.int ?? 0
-        movementDate = row.column("movementDate")?.int ?? 0
-        movementDesc = row.column("movementDesc")?.string  ?? ""
-        movementNote = row.column("movementNote")?.string  ?? ""
-        movementStatus = row.column("movementStatus")?.string ?? ""
-        movementUser = row.column("movementUser")?.string  ?? ""
-        movementDevice = row.column("movementDevice")?.string  ?? ""
+    override func decode(row: Row) {
+        movementId = (try? row.columns[0].int()) ?? 0
+        idInvoice = (try? row.columns[1].int()) ?? 0
+        movementNumber = (try? row.columns[2].int()) ?? 0
+        movementDate = (try? row.columns[3].int()) ?? 0
+        movementDesc = (try? row.columns[4].string())  ?? ""
+        movementNote = (try? row.columns[5].string()) ?? ""
+        movementStatus = (try? row.columns[6].string()) ?? ""
+        movementUser = (try? row.columns[7].string()) ?? ""
+        movementDevice = (try? row.columns[8].string()) ?? ""
         let decoder = JSONDecoder()
-        if let store = row.column("movementStore")?.data {
+        if let store = row.columns[9].data {
             movementStore = try! decoder.decode(Store.self, from: store)
         }
-        if let causal = row.column("movementCausal")?.data {
+        if let causal = row.columns[10].data {
             movementCausal = try! decoder.decode(Causal.self, from: causal)
         }
-        if let registry = row.column("movementRegistry")?.data {
+        if let registry = row.columns[11].data {
             movementRegistry = try! decoder.decode(Registry.self, from: registry)
         }
-        if let registry = row.column("movementTags")?.data {
-            movementTags = try! decoder.decode([Tag].self, from: registry)
+        if let tags = row.columns[12].data {
+            movementTags = try! decoder.decode([Tag].self, from: tags)
         }
-        movementPayment = row.column("movementPayment")?.string ?? ""
-        movementShipping = row.column("movementShipping")?.string ?? ""
-        movementShippingCost = row.column("movementsShippingCost")?.double ?? 0
-        movementAmount = row.column("movementAmount")?.double ?? 0
-        movementUpdated = row.column("movementUpdated")?.int ?? 0
+        movementPayment = (try? row.columns[13].string()) ?? ""
+        movementShipping = (try? row.columns[14].string()) ?? ""
+        movementShippingCost = (try? row.columns[15].double()) ?? 0
+        movementAmount = (try? row.columns[16].double()) ?? 0
+        movementUpdated = (try? row.columns[17].int()) ?? 0
     }
     
     required init(from decoder: Decoder) throws {
@@ -149,12 +150,12 @@ class Movement: PostgresTable, Codable {
             sql += " WHERE \"movementDevice\" = '\(movementDevice)' AND to_char(to_timestamp(\"movementDate\" + extract(epoch from timestamp '2001-01-01 00:00:00')), 'YYYY-MM-DD') = '\(movementDate.formatDate(format: "yyyy-MM-dd"))'"
         }
         let getCount = try self.sqlRows(sql)
-        self.movementNumber = (getCount.first?.column("counter")?.int ?? 0) + (self.movementCausal.causalIsPos ? 1 : 1000)
+        self.movementNumber = (try getCount.first?.columns[0].int() ?? 0) + (self.movementCausal.causalIsPos ? 1 : 1000)
     }
     
     func getAmount() throws {
         let sql = "SELECT SUM(\"movementArticleQuantity\" * \"movementArticlePrice\") AS amount FROM \"MovementArticle\" WHERE \"movementId\" = \(movementId)"
         let getCount = try self.sqlRows(sql)
-        self.movementAmount = getCount.first?.column("amount")?.double ?? 0
+        self.movementAmount = (try getCount.first?.columns[0].double() ?? 0)
     }
 }

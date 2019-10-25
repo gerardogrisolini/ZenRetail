@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 
 /// Provides the Account structure for Perfect Turnstile
@@ -49,14 +49,14 @@ class User : PostgresTable, Codable {
         self.tableIndexes.append(contentsOf: ["uniqueID", "username", "email"])
     }
     
-    override func decode(row: PostgresRow) {
-        uniqueID = row.column("uniqueID")?.string ?? ""
-        username = row.column("username")?.string ?? ""
-        password = row.column("password")?.string ?? ""
-        firstname = row.column("firstname")?.string ?? ""
-        lastname = row.column("lastname")?.string ?? ""
-        email = row.column("email")?.string ?? ""
-        isAdmin = row.column("isAdmin")?.boolean ?? false
+    override func decode(row: Row) {
+        uniqueID = (try? row.columns[0].string()) ?? ""
+        username = (try? row.columns[1].string()) ?? ""
+        password = (try? row.columns[2].string()) ?? ""
+        firstname = (try? row.columns[3].string()) ?? ""
+        lastname = (try? row.columns[4].string()) ?? ""
+        email = (try? row.columns[5].string()) ?? ""
+        isAdmin = (try? row.columns[6].bool()) ?? false
     }
 
     /// Shortcut to store the id
@@ -93,7 +93,7 @@ VALUES ('\(uniqueID)','\(username)','\(password)','\(firstname)','\(lastname)','
     /// Returns a true / false depending on if the username exits in the database.
     func exists(_ un: String) -> Bool {
         do {
-            let sql = querySQL(whereclause: "username = $1", params: [un], cursor: Cursor(limit: 1, offset: 0))
+            let sql = querySQL(whereclause: "username = $1", params: [un], cursor: CursorConfig(limit: 1, offset: 0))
             let rows = try sqlRows(sql)
             if rows.count == 1 {
                 decode(row: rows.first!)
@@ -108,11 +108,11 @@ VALUES ('\(uniqueID)','\(username)','\(password)','\(firstname)','\(lastname)','
     }
 
 	func setAdmin() throws {
-        let rows: [User] = try query(whereclause: "isAdmin = $1", params: [true], cursor: Cursor(limit: 1, offset: 0))
+        let rows: [User] = try query(whereclause: "isAdmin = $1", params: [true], cursor: CursorConfig(limit: 1, offset: 0))
         if rows.count == 0 {
             if exists("admin") {
                 isAdmin = true
-                try save()
+                _ = try save()
             } else {
                 uniqueID = UUID().uuidString
                 firstname = "Administrator"

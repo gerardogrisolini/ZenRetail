@@ -6,7 +6,7 @@
 //  Copyright © 2017 Gerardo Grisolini. All rights reserved.
 //
 
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 
 
@@ -35,10 +35,10 @@ class StatisticItem: PostgresTable, Codable {
         super.init()
     }
     
-    override func decode(row: PostgresRow) {
-        id = row.column("id")?.int ?? 0
-        label = row.column("label")?.string ?? ""
-        value = row.column("value")?.double ?? 0
+    override func decode(row: Row) {
+        id = (try? row.columns[0].int()) ?? 0
+        label = (try? row.columns[1].string()) ?? ""
+        value = (try? row.columns[2].double()) ?? 0
     }
 }
 

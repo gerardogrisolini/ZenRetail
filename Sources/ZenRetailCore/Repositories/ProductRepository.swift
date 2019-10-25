@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 import ZenNIO
 import SwiftGD
@@ -73,13 +73,13 @@ struct ProductRepository : ProductProtocol {
     }
     
 	func get(id: Int) throws -> Product {
-        let db = try ZenPostgres.shared.connectAsync()
+        let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
         
         let items: [Product] = try Product(db: db).query(
             whereclause: "Product.productId = $1",
             params: [String(id)],
-            cursor: Cursor(limit: 1, offset: 0),
+            cursor: CursorConfig(limit: 1, offset: 0),
             joins: [self.getJoin()]
         )
         if items.count == 0 {
@@ -96,7 +96,7 @@ struct ProductRepository : ProductProtocol {
 	}
 
     func get(barcode: String) throws -> Product {
-        let db = try ZenPostgres.shared.connectAsync()
+        let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
 
         let item = Product(db: db)
@@ -111,7 +111,7 @@ struct ProductRepository : ProductProtocol {
     }
     
     func add(item: Product) throws {
-        let db = try ZenPostgres.shared.connectAsync()
+        let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
         
         item.db = db
@@ -137,7 +137,7 @@ struct ProductRepository : ProductProtocol {
             var category = Category(db: db)
             let categories: [Category] = try category.query(
                 whereclause: "categoryName = $1", params: [c._category.categoryName],
-                cursor: Cursor(limit: 1, offset: 0)
+                cursor: CursorConfig(limit: 1, offset: 0)
             )
             if categories.count == 1 {
                 category = categories.first!
@@ -210,7 +210,7 @@ struct ProductRepository : ProductProtocol {
     func update(id: Int, item: Product) throws {
         let current = try get(id: id)
 
-        let db = try ZenPostgres.shared.connectAsync()
+        let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
 
         current.db = db
@@ -366,7 +366,7 @@ struct ProductRepository : ProductProtocol {
     }
     
     func sync(item: Product) throws -> Product {
-        let db = try ZenPostgres.shared.connectAsync()
+        let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
 
         item.db = db
@@ -476,7 +476,7 @@ struct ProductRepository : ProductProtocol {
     }
     
     func syncImport(item: Product) throws -> Result {
-        let db = try ZenPostgres.shared.connectAsync()
+        let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
 
         let result = try (ZenIoC.shared.resolve() as ArticleProtocol).build(productId: item.productId)
@@ -513,7 +513,7 @@ GROUP BY a."articleId" HAVING count(b."attributeValueId") = \(item._attributes.c
     }
 
     func delete(id: Int) throws {
-        let db = try ZenPostgres.shared.connectAsync()
+        let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
 
         let item = Product(db: db)

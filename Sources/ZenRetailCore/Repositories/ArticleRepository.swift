@@ -8,7 +8,7 @@
 
 import Foundation
 import ZenPostgres
-import PostgresNIO
+import PostgresClientKit
 
 struct ArticleRepository : ArticleProtocol {
 
@@ -16,11 +16,11 @@ struct ArticleRepository : ArticleProtocol {
         let article = Article()
         let sql = "SELECT COALESCE(MAX(\"articleNumber\"),0) AS counter FROM \"\(article.table)\" WHERE \"productId\" = \(productId)";
         let getCount = try article.sqlRows(sql)
-        return (getCount.first?.column("counter")?.int ?? 0) + 1
+        return (try getCount.first?.columns[0].int() ?? 0) + 1
     }
 
     func build(productId: Int) throws -> Result {
-        let db = try ZenPostgres.shared.connectAsync()
+        let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
 
         var result = Result()
@@ -198,12 +198,12 @@ struct ArticleRepository : ArticleProtocol {
     }
     
     func get(productId: Int, storeIds: String) throws -> [Article] {
-        let db = try ZenPostgres.shared.connectAsync()
+        let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
         return try get(db: db, productId: productId, storeIds: storeIds)
     }
 
-    func get(db: PostgresConnection, productId: Int, storeIds: String) throws -> [Article] {
+    func get(db: Connection, productId: Int, storeIds: String) throws -> [Article] {
         let items = Article(db: db)
 		items._storeIds = storeIds
 		return try items.query(whereclause: "productId = $1",
@@ -222,7 +222,7 @@ struct ArticleRepository : ArticleProtocol {
     }
     
     func getStock(productId: Int, storeIds: String, tagId: Int) throws -> ArticleForm {
-        let db = try ZenPostgres.shared.connectAsync()
+        let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
 
         var header = [String]()
@@ -309,7 +309,7 @@ struct ArticleRepository : ArticleProtocol {
 	}
 	
     func getGrouped(productId: Int) throws -> [GroupItem] {
-        let db = try ZenPostgres.shared.connectAsync()
+        let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
 
         var rows = [GroupItem]()
@@ -338,7 +338,7 @@ struct ArticleRepository : ArticleProtocol {
     }
     
     func addGroup(item: Article) throws -> GroupItem {
-        let db = try ZenPostgres.shared.connectAsync()
+        let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
 
         item.db = db
@@ -358,7 +358,7 @@ struct ArticleRepository : ArticleProtocol {
     }
 
     func update(id: Int, item: Article) throws {
-        let db = try ZenPostgres.shared.connectAsync()
+        let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
         
         let item = Article(db: db)

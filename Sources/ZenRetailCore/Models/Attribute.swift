@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 
 
@@ -30,14 +30,14 @@ class Attribute: PostgresTable, Codable {
         self.tableIndexes.append("attributeName")
     }
 
-    override func decode(row: PostgresRow) {
-        attributeId = row.column("attributeId")?.int ?? 0
-        attributeName = row.column("attributeName")?.string ?? ""
-        if let translates = row.column("attributeTranslates")?.data {
+    override func decode(row: Row) {
+        attributeId = (try? row.columns[0].int()) ?? 0
+        attributeName = (try? row.columns[1].string()) ?? ""
+        if let translates = row.columns[2].data {
             attributeTranslates = try! JSONDecoder().decode([Translation].self, from: translates)
         }
-        attributeCreated = row.column("attributeCreated")?.int ?? 0
-        attributeUpdated = row.column("attributeUpdated")?.int ?? 0
+        attributeCreated = (try? row.columns[3].int()) ?? 0
+        attributeUpdated = (try? row.columns[4].int()) ?? 0
     }
 
     required init(from decoder: Decoder) throws {
@@ -61,23 +61,22 @@ class Attribute: PostgresTable, Codable {
         item.attributeName = name
         item.attributeCreated = Int.now()
         item.attributeUpdated = Int.now()
-        try item.save {
-            id in item.attributeId = id as! Int
+        try item.save { id in
+            item.attributeId = id as! Int
         }
+        
         if name == "None" {
             let value = AttributeValue(db: db!)
             value.attributeId = item.attributeId
             value.attributeValueName = name
             value.attributeValueCreated = Int.now()
             value.attributeValueUpdated = Int.now()
-            try value.save {
-                id in value.attributeValueId = id as! Int
-            }
+            try value.save()
         }
     }
 
     func setupMarketplace() throws {
-        let rows: [Attribute] = try query(cursor: Cursor(limit: 1, offset: 0))
+        let rows: [Attribute] = try query(cursor: CursorConfig(limit: 1, offset: 0))
         if rows.count == 0 {
             try addAttribute(name: "None")
             try addAttribute(name: "Material")

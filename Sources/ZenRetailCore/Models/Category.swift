@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 import ZenMWS
 
@@ -36,22 +36,22 @@ class Category: PostgresTable, Codable {
         self.tableIndexes.append("categoryName")
     }
 
-    override func decode(row: PostgresRow) {
-        categoryId = row.column("categoryId")?.int ?? 0
-        categoryIsPrimary = row.column("categoryIsPrimary")?.boolean ?? true
-        categoryName = row.column("categoryName")?.string ?? ""
+    override func decode(row: Row) {
+        categoryId = (try? row.columns[0].int()) ?? 0
+        categoryIsPrimary = (try? row.columns[1].bool()) ?? true
+        categoryName = (try? row.columns[2].string()) ?? ""
         let decoder = JSONDecoder()
-        if let translates = row.column("categoryDescription")?.data {
+        if let translates = row.columns[3].data {
             categoryDescription = try! decoder.decode([Translation].self, from: translates)
         }
-        if let media = row.column("categoryMedia")?.data {
+        if let media = row.columns[4].data {
             categoryMedia = try! decoder.decode(Media.self, from: media)
         }
-        if let seo = row.column("categorySeo")?.data {
+        if let seo = row.columns[5].data {
             categorySeo = try! decoder.decode(Seo.self, from: seo)
         }
-        categoryCreated = row.column("categoryCreated")?.int ?? 0
-        categoryUpdated = row.column("categoryUpdated")?.int ?? 0
+        categoryCreated = (try? row.columns[6].int()) ?? 0
+        categoryUpdated = (try? row.columns[7].int()) ?? 0
     }
     
     required init(from decoder: Decoder) throws {
@@ -91,11 +91,11 @@ class Category: PostgresTable, Codable {
         }
         item.categoryCreated = Int.now()
         item.categoryUpdated = Int.now()
-        try item.save()
+        _ = try item.save()
     }
     
     func setupMarketplace() throws {
-        let rows: [Category] = try query(cursor: Cursor(limit: 1, offset: 0))
+        let rows: [Category] = try query(cursor: CursorConfig(limit: 1, offset: 0))
         if rows.count == 0 {
             for item in ClothingType.allCases {
                 if item != .jewelry {

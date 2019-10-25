@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 
 
@@ -33,23 +33,23 @@ class MwsRequest : PostgresTable, Codable {
         super.init()
     }
     
-    override func decode(row: PostgresRow) {
-        id = row.column("id")?.int ?? 0
-        requestSku = row.column("requestSku")?.string ?? ""
-        requestXml = row.column("requestXml")?.string ?? ""
-        request = row.column("request")?.int ?? 0
-        requestParent = row.column("requestParent")?.int ?? 0
+    override func decode(row: Row) {
+        id = (try? row.columns[0].int()) ?? 0
+        requestSku = (try? row.columns[1].string()) ?? ""
+        requestXml = (try? row.columns[2].string()) ?? ""
+        request = (try? row.columns[3].int()) ?? 0
+        requestParent = (try? row.columns[4].int()) ?? 0
         
-        requestSubmissionId = row.column("requestSubmissionId")?.string ?? ""
-        requestCreatedAt = row.column("requestCreatedAt")?.int ?? 0
-        requestSubmittedAt = row.column("requestSubmittedAt")?.int ?? 0
-        requestCompletedAt = row.column("requestCompletedAt")?.int ?? 0
+        requestSubmissionId = (try? row.columns[5].string()) ?? ""
+        requestCreatedAt = (try? row.columns[6].int()) ?? 0
+        requestSubmittedAt = (try? row.columns[7].int()) ?? 0
+        requestCompletedAt = (try? row.columns[8].int()) ?? 0
         
-        messagesProcessed = row.column("messagesProcessed")?.int ?? 0
-        messagesSuccessful = row.column("messagesSuccessful")?.int ?? 0
-        messagesWithError = row.column("messagesWithError")?.int ?? 0
-        messagesWithWarning = row.column("messagesWithWarning")?.int ?? 0
-        errorDescription = row.column("errorDescription")?.string ?? ""
+        messagesProcessed = (try? row.columns[9].int()) ?? 0
+        messagesSuccessful = (try? row.columns[10].int()) ?? 0
+        messagesWithError = (try? row.columns[11].int()) ?? 0
+        messagesWithWarning = (try? row.columns[12].int()) ?? 0
+        errorDescription = (try? row.columns[13].string()) ?? ""
     }
     
     public func currentRequests() throws -> [MwsRequest] {
@@ -67,6 +67,6 @@ class MwsRequest : PostgresTable, Codable {
     public func lastRequest() throws -> Int {
         let sql = "SELECT COALESCE(MAX(\"requestCreatedAt\"),0) AS counter FROM \"\(table)\""
         let getCount = try self.sqlRows(sql)
-        return getCount.first?.column("counter")?.int ?? 0
+        return (try? getCount.first?.columns[0].int()) ?? 0
     }
 }

@@ -6,7 +6,7 @@
 //å
 
 import Foundation
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 
 
@@ -41,16 +41,17 @@ class Basket: PostgresTable, Codable {
         super.init()
     }
 
-    override func decode(row: PostgresRow) {
-        basketId = row.column("basketId")?.int ?? 0
-        registryId = row.column("registryId")?.int ?? 0
-        basketBarcode = row.column("basketBarcode")?.string ?? ""
-        basketQuantity = Double(row.column("basketQuantity")?.float ?? 0)
-        basketPrice = Double(row.column("basketPrice")?.float ?? 0)
-        basketUpdated = row.column("basketUpdated")?.int ?? 0
-        if let product = row.column("basketProduct")?.data {
+    override func decode(row: Row) {
+        basketId = (try? row.columns[0].int()) ?? 0
+        registryId = (try? row.columns[1].int()) ?? 0
+        basketBarcode = (try? row.columns[2].string()) ?? ""
+        if let product = row.columns[3].data {
             basketProduct = try! JSONDecoder().decode(Product.self, from: product)
         }
+        basketQuantity = (try? row.columns[4].double()) ?? 0
+        basketPrice = (try? row.columns[5].double()) ?? 0
+        basketUpdated = (try? row.columns[6].int()) ?? 0
+        _ = row.columns.dropFirst(7)
         _registry.decode(row: row)
     }
     

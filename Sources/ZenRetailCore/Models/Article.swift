@@ -7,9 +7,8 @@
 //
 
 import Foundation
-import PostgresNIO
 import ZenPostgres
-
+import PostgresClientKit
 
 class Article: PostgresTable, Codable {
     
@@ -38,19 +37,19 @@ class Article: PostgresTable, Codable {
         case _attributeValues = "attributeValues"
     }
 
-    override func decode(row: PostgresRow) {
-        articleId = row.column("articleId")?.int ?? 0
-        productId = row.column("productId")?.int ?? 0
-        articleNumber = row.column("articleNumber")?.int ?? 0
-        if let barcodes = row.column("articleBarcodes")?.data {
+    override func decode(row: Row) {
+        articleId = (try? row.columns[0].int()) ?? 0
+        productId = (try? row.columns[1].int()) ?? 0
+        articleNumber = (try? row.columns[2].int()) ?? 0
+        if let barcodes = row.columns[3].data {
             articleBarcodes = try! JSONDecoder().decode([Barcode].self, from: barcodes)
         }
-        if let packaging = row.column("articlePackaging")?.data {
+        if let packaging = row.columns[4].data {
             articlePackaging = try! JSONDecoder().decode(Packaging.self, from: packaging)
         }
-        articleIsValid = row.column("articleIsValid")?.boolean ?? true
-        articleCreated = row.column("articleCreated")?.int ?? 0
-        articleUpdated = row.column("articleUpdated")?.int ?? 0
+        articleIsValid = (try? row.columns[5].bool()) ?? true
+        articleCreated = (try? row.columns[6].int()) ?? 0
+        articleUpdated = (try? row.columns[7].int()) ?? 0
         
         do {
             _attributeValues = try ArticleAttributeValue(db: db!).query(

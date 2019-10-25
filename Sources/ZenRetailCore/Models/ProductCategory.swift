@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 
 
@@ -28,10 +28,11 @@ class ProductCategory: PostgresTable, Codable {
         super.init()
     }
     
-    override func decode(row: PostgresRow) {
-        productCategoryId = row.column("productCategoryId")?.int ?? 0
-        productId = row.column("productId")?.int ?? 0
-        categoryId = row.column("categoryId")?.int ?? 0
+    override func decode(row: Row) {
+        productCategoryId = (try? row.columns[0].int()) ?? 0
+        productId = (try? row.columns[1].int()) ?? 0
+        categoryId = (try? row.columns[2].int()) ?? 0
+        _ = row.columns.dropFirst(3)
         _category.decode(row:row)
     }
     

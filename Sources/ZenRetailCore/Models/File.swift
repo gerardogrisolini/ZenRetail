@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 import ZenNIO
 
@@ -84,7 +84,7 @@ class File: PostgresTable, Codable {
         super.init()
     }
     
-    override func decode(row: PostgresRow) {
+    override func decode(row: Row) {
         fileId = row.column("fileId")?.int ?? 0
         fileName = row.column("fileName")?.string ?? ""
         fileContentType = row.column("fileContentType")?.string ?? ""

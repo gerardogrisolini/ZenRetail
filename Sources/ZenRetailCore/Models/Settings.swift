@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 
 
@@ -20,9 +20,9 @@ class Settings: PostgresTable {
         self.tableIndexes.append("key")
     }
     
-    override func decode(row: PostgresRow) {
-        id = row.column("id")?.int ?? 0
-        key = row.column("key")?.string ?? ""
-        value = row.column("value")?.string ?? ""
+    override func decode(row: Row) {
+        id = (try? row.columns[0].int()) ?? 0
+        key = (try? row.columns[1].string()) ?? ""
+        value = (try? row.columns[2].string()) ?? ""
     }
 }

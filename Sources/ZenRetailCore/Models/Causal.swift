@@ -6,7 +6,7 @@
 //
 //
 
-import PostgresNIO
+import PostgresClientKit
 import ZenPostgres
 
 
@@ -34,67 +34,67 @@ class Causal: PostgresTable, PostgresJson {
         self.tableIndexes.append("causalName")
     }
     
-    override func decode(row: PostgresRow) {
-        causalId  = row.column("causalId")?.int ?? 0
-        causalName = row.column("causalName")?.string ?? ""
-        causalQuantity = row.column("causalQuantity")?.int ?? 0
-        causalBooked = row.column("causalBooked")?.int ?? 0
-        causalIsPos = row.column("causalIsPos")?.boolean ?? false
-        causalCreated = row.column("causalCreated")?.int ?? 0
-        causalUpdated = row.column("causalUpdated")?.int ?? 0
+    override func decode(row: Row) {
+        causalId  = (try? row.columns[0].int()) ?? 0
+        causalName = (try? row.columns[1].string()) ?? ""
+        causalQuantity = (try? row.columns[2].int()) ?? 0
+        causalBooked = (try? row.columns[2].int()) ?? 0
+        causalIsPos = (try? row.columns[4].bool()) ?? false
+        causalCreated = (try? row.columns[5].int()) ?? 0
+        causalUpdated = (try? row.columns[6].int()) ?? 0
     }
 
     func setupDefaults() throws {
-        let rows: [Causal] = try self.query(cursor: Cursor(limit: 1, offset: 0))
+        let rows: [Causal] = try self.query(cursor: CursorConfig(limit: 1, offset: 0))
         if rows.count == 0 {
             let inventory = Causal(db: db!)
             inventory.causalName = "Warehouse load"
             inventory.causalQuantity = 1
             inventory.causalIsPos = false
             inventory.causalUpdated = Int.now()
-            try inventory.save()
+            _ = try inventory.save()
 
             let discharge = Causal(db: db!)
             discharge.causalName = "Warehouse discharge"
             discharge.causalQuantity = -1
             discharge.causalIsPos = false
             discharge.causalUpdated = Int.now()
-            try discharge.save()
+            _ = try discharge.save()
 
             let stockIn = Causal(db: db!)
             stockIn.causalName = "Stock positive correction"
             stockIn.causalQuantity = 1
             stockIn.causalIsPos = false
             stockIn.causalUpdated = Int.now()
-            try stockIn.save()
+            _ = try stockIn.save()
 
             let stockOut = Causal(db: db!)
             stockOut.causalName = "Stock negative correction"
             stockOut.causalQuantity = -1
             stockOut.causalIsPos = false
             stockOut.causalUpdated = Int.now()
-            try stockOut.save()
+            _ = try stockOut.save()
 
             let bookedIn = Causal(db: db!)
             bookedIn.causalName = "Booked positive correction"
             bookedIn.causalBooked = 1
             bookedIn.causalIsPos = false
             bookedIn.causalUpdated = Int.now()
-            try bookedIn.save()
+            _ = try bookedIn.save()
 
             let bookedOut = Causal(db: db!)
             bookedOut.causalName = "Booked negative correction"
             bookedOut.causalBooked = -1
             bookedOut.causalIsPos = false
             bookedOut.causalUpdated = Int.now()
-            try bookedOut.save()
+            _ = try bookedOut.save()
 
             let receipt = Causal(db: db!)
             receipt.causalName = "Receipt"
             receipt.causalQuantity = -1
             receipt.causalIsPos = true
             receipt.causalUpdated = Int.now()
-            try receipt.save()
+            _ = try receipt.save()
 
             let cutomer = Causal(db: db!)
             cutomer.causalName = "Customer order"
@@ -102,20 +102,20 @@ class Causal: PostgresTable, PostgresJson {
             cutomer.causalBooked = 1
             cutomer.causalIsPos = false
             cutomer.causalUpdated = Int.now()
-            try cutomer.save()
+            _ = try cutomer.save()
 
             let causalOrder = Causal(db: db!)
             causalOrder.causalName = "Supplier order"
             causalOrder.causalQuantity = 1
             causalOrder.causalIsPos = false
             causalOrder.causalUpdated = Int.now()
-            try causalOrder.save()
+            _ = try causalOrder.save()
 
             let barcode = Causal(db: db!)
             barcode.causalName = "Print barcodes"
             barcode.causalIsPos = false
             barcode.causalUpdated = Int.now()
-            try barcode.save()
+            _ = try barcode.save()
         }
     }
 }
