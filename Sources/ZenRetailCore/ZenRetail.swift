@@ -78,15 +78,15 @@ public class ZenRetail {
     private func setup() {
         ZenRetail.config = loadConfiguration()
         
-        if let serverName = ProcessInfo.processInfo.environment["HOST"] {
-            ZenRetail.config.serverName = serverName
-        }
-        if let portString = ProcessInfo.processInfo.environment["PORT"] {
-            ZenRetail.config.serverPort = Int(portString)!
-        }
-        if let databaseUrl = ProcessInfo.processInfo.environment["DATABASE_URL"] {
-            parseConnectionString(databaseUrl: databaseUrl)
-        }
+//        if let serverName = ProcessInfo.processInfo.environment["HOST"] {
+//            ZenRetail.config.serverName = serverName
+//        }
+//        if let portString = ProcessInfo.processInfo.environment["PORT"] {
+//            ZenRetail.config.serverPort = Int(portString)!
+//        }
+//        if let databaseUrl = ProcessInfo.processInfo.environment["DATABASE_URL"] {
+//            parseConnectionString(databaseUrl: databaseUrl)
+//        }
     }
     
     private func setupSmtp() throws {
