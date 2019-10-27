@@ -72,7 +72,8 @@ public class AngularController {
         return { req, resp in
             var data: Data?
             
-            if let agent = req.head.headers["User-Agent"].first?.lowercased(),
+            let header = ZenRetail.zenNIO.http == .v1 ? "User-Agent" : "user-agent";
+            if let agent = req.head.headers[header].first?.lowercased(),
                 agent.contains("googlebot") || agent.contains("adsbot")
                 || agent.contains("bingbot") || agent.contains("msnbot") {
                 data = self.getContent(request: req)
@@ -92,8 +93,8 @@ public class AngularController {
     
     func getContent(request: HttpRequest) -> Data? {
         var country = "EN"
-        let herader = ZenRetail.zenNIO.httpProtocol == .v1 ? "Accept-Language" : "accept-language";
-        if let language = request.head.headers[herader].first {
+        let header = ZenRetail.zenNIO.http == .v1 ? "Accept-Language" : "accept-language";
+        if let language = request.head.headers[header].first {
             country = language[...language.index(language.startIndex, offsetBy: 1)].uppercased()
         }
         

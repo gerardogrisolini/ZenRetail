@@ -149,7 +149,6 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                     registry.registryId = id as! Int
                 }
                 
-                
                 let base64 = UUID().uuidString.data(using: .utf8)!.base64EncodedString()
                 request.session!.token = Token(bearer: base64)
                 request.session!.uniqueID = registry.registryId.description

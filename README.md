@@ -130,5 +130,3 @@ systemctl start zenretail.service
 systemctl status zenretail.service
 systemctl stop zenretail.service
 ```
-
-
