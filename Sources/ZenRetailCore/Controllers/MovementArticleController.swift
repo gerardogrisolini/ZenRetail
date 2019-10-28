@@ -25,57 +25,65 @@ class MovementArticleController {
     }
     
     func movementArticlesHandlerGET(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let id: Int = request.getParam("id") else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let id: Int = request.getParam("id") else {
+                    throw HttpError.badRequest
+                }
+                let items = try self.movementRepository.get(movementId: id)
+                try response.send(json:items)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let items = try self.movementRepository.get(movementId: id)
-            try response.send(json:items)
-            response.completed()
-        } catch {
-			response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func movementArticleHandlerPOST(request: HttpRequest, response: HttpResponse) {
-       	do {
-            guard let price: String = request.getParam("price"),
-                let data = request.bodyData else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let price: String = request.getParam("price"),
+                    let data = request.bodyData else {
+                    throw HttpError.badRequest
+                }
+                let item = try JSONDecoder().decode(MovementArticle.self, from: data)
+                try self.movementRepository.add(item: item, price: price)
+                try response.send(json:item)
+                response.completed( .created)
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let item = try JSONDecoder().decode(MovementArticle.self, from: data)
-			try self.movementRepository.add(item: item, price: price)
-            try response.send(json:item)
-            response.completed( .created)
-        } catch {
-			response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func movementArticleHandlerPUT(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let id: Int = request.getParam("id"),
-                let data = request.bodyData else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let id: Int = request.getParam("id"),
+                    let data = request.bodyData else {
+                    throw HttpError.badRequest
+                }
+                let item = try JSONDecoder().decode(MovementArticle.self, from: data)
+                try self.movementRepository.update(id: id, item: item)
+                try response.send(json:item)
+                response.completed( .accepted)
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let item = try JSONDecoder().decode(MovementArticle.self, from: data)
-            try self.movementRepository.update(id: id, item: item)
-            try response.send(json:item)
-            response.completed( .accepted)
-        } catch {
-			response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func movementArticleHandlerDELETE(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let id: Int = request.getParam("id") else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let id: Int = request.getParam("id") else {
+                    throw HttpError.badRequest
+                }
+                try self.movementRepository.delete(id: id)
+                response.completed( .noContent)
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            try self.movementRepository.delete(id: id)
-            response.completed( .noContent)
-        } catch {
-			response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
 }

@@ -24,100 +24,114 @@ class TagGroupController {
     }
     
     func tagsHandlerGET(request: HttpRequest, response: HttpResponse) {
-        do {
-            let items = try self.repository.getAll()
-            try response.send(json:items)
-            response.completed()
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+        request.eventLoop.execute {
+            do {
+                let items = try self.repository.getAll()
+                try response.send(json:items)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            }
         }
     }
     
     func tagAllHandlerGET(request: HttpRequest, response: HttpResponse) {
-        do {
-            let items = try self.repository.getAll()
-            for item in items {
-                item._values = try self.repository.getValues(id: item.tagGroupId)
-            }
-            try response.send(json:items)
-            response.completed()
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-        }
-    }
-
-    func tagHandlerGET(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let id :String = request.getParam("id") else {
-                throw HttpError.badRequest
-            }
-            if id == "all" {
+        request.eventLoop.execute {
+            do {
                 let items = try self.repository.getAll()
                 for item in items {
                     item._values = try self.repository.getValues(id: item.tagGroupId)
                 }
                 try response.send(json:items)
-            } else {
-                let item = try self.repository.get(id: Int(id)!)
-                try response.send(json:item)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            response.completed()
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+        }
+    }
+
+    func tagHandlerGET(request: HttpRequest, response: HttpResponse) {
+        request.eventLoop.execute {
+            do {
+                guard let id :String = request.getParam("id") else {
+                    throw HttpError.badRequest
+                }
+                if id == "all" {
+                    let items = try self.repository.getAll()
+                    for item in items {
+                        item._values = try self.repository.getValues(id: item.tagGroupId)
+                    }
+                    try response.send(json:items)
+                } else {
+                    let item = try self.repository.get(id: Int(id)!)
+                    try response.send(json:item)
+                }
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            }
         }
     }
     
     func tagValueHandlerGET(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let id: Int = request.getParam("id") else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let id: Int = request.getParam("id") else {
+                    throw HttpError.badRequest
+                }
+                let item = try self.repository.getValues(id: id)
+                try response.send(json:item)
+                response.completed( .created)
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let item = try self.repository.getValues(id: id)
-            try response.send(json:item)
-            response.completed( .created)
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func tagHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let data = request.bodyData else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let data = request.bodyData else {
+                    throw HttpError.badRequest
+                }
+                let item = try JSONDecoder().decode(TagGroup.self, from: data)
+                try self.repository.add(item: item)
+                try response.send(json:item)
+                response.completed( .created)
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let item = try JSONDecoder().decode(TagGroup.self, from: data)
-            try self.repository.add(item: item)
-            try response.send(json:item)
-            response.completed( .created)
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func tagHandlerPUT(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let id: Int = request.getParam("id"),
-                let data = request.bodyData else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let id: Int = request.getParam("id"),
+                    let data = request.bodyData else {
+                    throw HttpError.badRequest
+                }
+                let item = try JSONDecoder().decode(TagGroup.self, from: data)
+                try self.repository.update(id: id, item: item)
+                try response.send(json:item)
+                response.completed( .accepted)
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let item = try JSONDecoder().decode(TagGroup.self, from: data)
-            try self.repository.update(id: id, item: item)
-            try response.send(json:item)
-            response.completed( .accepted)
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func tagHandlerDELETE(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let id: Int = request.getParam("id") else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let id: Int = request.getParam("id") else {
+                    throw HttpError.badRequest
+                }
+                try self.repository.delete(id: id)
+                response.completed( .noContent)
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            try self.repository.delete(id: id)
-            response.completed( .noContent)
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
 }

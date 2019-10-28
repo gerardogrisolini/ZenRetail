@@ -25,74 +25,84 @@ class DeviceController {
 	}
 	
     func devicesHandlerGET(request: HttpRequest, response: HttpResponse) {
-        if !request.isAuthenticated() {
-            response.completed(.unauthorized)
-            return
-        }
+        request.eventLoop.execute {
+            if !request.isAuthenticated() {
+                response.completed(.unauthorized)
+                return
+            }
 
-		do {
-            let date: Int = request.getParam("date") ?? 0
-			let items = try self.repository.getAll(date: date)
-			try response.send(json:items)
-			response.completed()
-		} catch {
-			response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-		}
+            do {
+                let date: Int = request.getParam("date") ?? 0
+                let items = try self.repository.getAll(date: date)
+                try response.send(json:items)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            }
+        }
 	}
 	
 	func deviceHandlerGET(request: HttpRequest, response: HttpResponse) {
-		do {
-            guard let id: Int = request.getParam("id") else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let id: Int = request.getParam("id") else {
+                    throw HttpError.badRequest
+                }
+                let item = try self.repository.get(id: id)
+                try response.send(json:item)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-			let item = try self.repository.get(id: id)
-			try response.send(json:item)
-			response.completed()
-		} catch {
-			response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-		}
+        }
 	}
 	
 	func deviceHandlerPOST(request: HttpRequest, response: HttpResponse) {
-		do {
-            guard let data = request.bodyData else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let data = request.bodyData else {
+                    throw HttpError.badRequest
+                }
+                let item = try JSONDecoder().decode(Device.self, from: data)
+                item.idStore = item._store.storeId
+                try self.repository.add(item: item)
+                try response.send(json:item)
+                response.completed( .created)
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let item = try JSONDecoder().decode(Device.self, from: data)
-            item.idStore = item._store.storeId
-            try self.repository.add(item: item)
-            try response.send(json:item)
-			response.completed( .created)
-		} catch {
-			response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-		}
+        }
 	}
 	
 	func deviceHandlerPUT(request: HttpRequest, response: HttpResponse) {
-		do {
-            guard let id: Int = request.getParam("id"),
-                let data = request.bodyData else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let id: Int = request.getParam("id"),
+                    let data = request.bodyData else {
+                    throw HttpError.badRequest
+                }
+                let item = try JSONDecoder().decode(Device.self, from: data)
+                item.idStore = item._store.storeId
+                try self.repository.update(id: id, item: item)
+                try response.send(json:item)
+                response.completed( .accepted)
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-			let item = try JSONDecoder().decode(Device.self, from: data)
-            item.idStore = item._store.storeId
-            try self.repository.update(id: id, item: item)
-			try response.send(json:item)
-			response.completed( .accepted)
-		} catch {
-			response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-		}
+        }
 	}
 	
 	func deviceHandlerDELETE(request: HttpRequest, response: HttpResponse) {
-		do {
-            guard let id: Int = request.getParam("id") else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let id: Int = request.getParam("id") else {
+                    throw HttpError.badRequest
+                }
+                try self.repository.delete(id: id)
+                response.completed( .noContent)
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-			try self.repository.delete(id: id)
-			response.completed( .noContent)
-		} catch {
-			response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-		}
+        }
 	}
 }

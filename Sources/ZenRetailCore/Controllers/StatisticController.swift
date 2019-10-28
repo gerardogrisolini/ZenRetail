@@ -23,64 +23,74 @@ class StatisticController {
     }
 
     func statisticDeviceHandlerGET(request: HttpRequest, response: HttpResponse) {
-        do {
-            let items = try self.repository.getDevices()
-            try response.send(json:items)
-            response.completed()
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+        request.eventLoop.execute {
+            do {
+                let items = try self.repository.getDevices()
+                try response.send(json:items)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            }
         }
     }
 
     func statisticCategoryHandlerGET(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let year: Int = request.getParam("year") else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let year: Int = request.getParam("year") else {
+                    throw HttpError.badRequest
+                }
+                let items = try self.repository.getCategories(year: year)
+                try response.send(json:items)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let items = try self.repository.getCategories(year: year)
-            try response.send(json:items)
-            response.completed()
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-       }
+        }
     }
 
     func statisticCategoryformonthHandlerGET(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let year: Int = request.getParam("year") else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let year: Int = request.getParam("year") else {
+                    throw HttpError.badRequest
+                }
+                let items = try self.repository.getCategoriesForMonth(year: year)
+                try response.send(json:items)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let items = try self.repository.getCategoriesForMonth(year: year)
-            try response.send(json:items)
-            response.completed()
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
 
     func statisticProductHandlerGET(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let year: Int = request.getParam("year") else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let year: Int = request.getParam("year") else {
+                    throw HttpError.badRequest
+                }
+                let items = try self.repository.getProducts(year: year)
+                try response.send(json:items)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let items = try self.repository.getProducts(year: year)
-            try response.send(json:items)
-            response.completed()
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
 
     func statisticProductformonthHandlerGET(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let year: Int = request.getParam("year") else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let year: Int = request.getParam("year") else {
+                    throw HttpError.badRequest
+                }
+                let items = try self.repository.getProductsForMonth(year: year)
+                try response.send(json:items)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let items = try self.repository.getProductsForMonth(year: year)
-            try response.send(json:items)
-            response.completed()
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
 }

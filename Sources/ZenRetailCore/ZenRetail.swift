@@ -7,9 +7,11 @@
 
 import Foundation
 import ZenNIO
+import ZenNIOSSL
 import ZenSMTP
 import ZenPostgres
 import PostgresClientKit
+
 
 public class ZenRetail {
     static var config: Configuration!

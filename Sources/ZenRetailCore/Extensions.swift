@@ -261,7 +261,6 @@ extension ClothingType : EnumCollection { }
 extension Product {
     
     func productFeed() -> ProductFeed {
-        
         var messages: [ProductMessage] = [ProductMessage]()
         
         let material = self._attributes.first(where: { $0._attribute.attributeName == "Material" })?._attributeValues.first?._attributeValue.attributeValueName

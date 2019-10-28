@@ -31,138 +31,158 @@ class ArticleController {
     }
     
     func articleBuildHandlerGET(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let id: Int = request.getParam("id") else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let id: Int = request.getParam("id") else {
+                    throw HttpError.badRequest
+                }
+                let result = try self.repository.build(productId: id)
+                try response.send(json: result)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let result = try self.repository.build(productId: id)
-            try response.send(json: result)
-            response.completed()
-        } catch {
-			response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func articleGroupHandlerGET(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let id: Int = request.getParam("id") else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let id: Int = request.getParam("id") else {
+                    throw HttpError.badRequest
+                }
+                let items = try self.repository.getGrouped(productId: id)
+                try response.send(json: items)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let items = try self.repository.getGrouped(productId: id)
-            try response.send(json: items)
-            response.completed()
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func productArticleHandlerGET(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let id: Int = request.getParam("id") else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let id: Int = request.getParam("id") else {
+                    throw HttpError.badRequest
+                }
+                let item = try self.repository.get(productId: id, storeIds: "0")
+                try response.send(json: item)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let item = try self.repository.get(productId: id, storeIds: "0")
-            try response.send(json: item)
-            response.completed()
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func articleStockHandlerGET(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let id: Int = request.getParam("id"),
-                let storeIds: String = request.getParam("storeids") else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let id: Int = request.getParam("id"),
+                    let storeIds: String = request.getParam("storeids") else {
+                    throw HttpError.badRequest
+                }
+                let tagId: Int = request.getParam("tagid") ?? 0
+                let item = try self.repository.getStock(productId: id, storeIds: storeIds, tagId: tagId)
+                try response.send(json: item)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let tagId: Int = request.getParam("tagid") ?? 0
-            let item = try self.repository.getStock(productId: id, storeIds: storeIds, tagId: tagId)
-            try response.send(json: item)
-            response.completed()
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func articleHandlerGET(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let id: Int = request.getParam("id") else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let id: Int = request.getParam("id") else {
+                    throw HttpError.badRequest
+                }
+                if let item = self.repository.get(id: id) {
+                    try response.send(json: item)
+                    response.completed()
+                } else {
+                    response.completed(.notFound)
+                }
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            if let item = self.repository.get(id: id) {
-                try response.send(json: item)
-                response.completed()
-            } else {
-                response.completed(.notFound)
-            }
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func articleHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let data = request.bodyData else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let data = request.bodyData else {
+                    throw HttpError.badRequest
+                }
+                let item = try JSONDecoder().decode(Article.self, from: data)
+                let group = try self.repository.addGroup(item: item)
+                try response.send(json: group)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let item = try JSONDecoder().decode(Article.self, from: data)
-            let group = try self.repository.addGroup(item: item)
-            try response.send(json: group)
-            response.completed()
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func articleHandlerPUT(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let id: Int = request.getParam("id"), let data = request.bodyData else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let id: Int = request.getParam("id"), let data = request.bodyData else {
+                    throw HttpError.badRequest
+                }
+                let item = try JSONDecoder().decode(Article.self, from: data)
+                try self.repository.update(id: id, item: item)
+                try response.send(json: item)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let item = try JSONDecoder().decode(Article.self, from: data)
-            try self.repository.update(id: id, item: item)
-            try response.send(json: item)
-            response.completed()
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func articleHandlerDELETE(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let id: Int = request.getParam("id") else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let id: Int = request.getParam("id") else {
+                    throw HttpError.badRequest
+                }
+                try self.repository.delete(id: id)
+                response.completed(.noContent)
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            try self.repository.delete(id: id)
-            response.completed(.noContent)
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func articleAttributeValueHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let data = request.bodyData else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let data = request.bodyData else {
+                    throw HttpError.badRequest
+                }
+                let item = try JSONDecoder().decode(ArticleAttributeValue.self, from: data)
+                try self.repository.addAttributeValue(item: item)
+                try response.send(json: item)
+                response.completed(.created)
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let item = try JSONDecoder().decode(ArticleAttributeValue.self, from: data)
-            try self.repository.addAttributeValue(item: item)
-            try response.send(json: item)
-            response.completed(.created)
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func articleAttributeValueHandlerDELETE(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let id: Int = request.getParam("id") else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let id: Int = request.getParam("id") else {
+                    throw HttpError.badRequest
+                }
+                try self.repository.removeAttributeValue(id: id)
+                response.completed(.noContent)
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            try self.repository.removeAttributeValue(id: id)
-            response.completed(.noContent)
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
 }

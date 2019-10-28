@@ -70,30 +70,32 @@ public class AngularController {
 
     func angularHandler(webapi: Bool = true) -> HttpHandler {
         return { req, resp in
-            var data: Data?
-            
-            let header = ZenRetail.zenNIO.http == .v1 ? "User-Agent" : "user-agent";
-            if let agent = req.head.headers[header].first?.lowercased(),
-                agent.contains("googlebot") || agent.contains("adsbot")
-                || agent.contains("bingbot") || agent.contains("msnbot") {
-                data = self.getContent(request: req)
-            } else {
-                data = FileManager.default.contents(atPath: webapi ? "./webroot/admin/index.html" : "./webroot/index.html")
+            req.eventLoop.execute {
+                var data: Data?
+                
+                let header = ZenNIO.http == .v1 ? "User-Agent" : "user-agent";
+                if let agent = req.head.headers[header].first?.lowercased(),
+                    agent.contains("googlebot") || agent.contains("adsbot")
+                    || agent.contains("bingbot") || agent.contains("msnbot") {
+                    data = self.getContent(request: req)
+                } else {
+                    data = FileManager.default.contents(atPath: webapi ? "./webroot/admin/index.html" : "./webroot/index.html")
+                }
+                
+                guard let content = data else {
+                    resp.completed( .notFound)
+                    return
+                }
+                resp.addHeader(.contentType, value: "text/html")
+                resp.send(data: content)
+                resp.completed()
             }
-            
-            guard let content = data else {
-                resp.completed( .notFound)
-                return
-            }
-            resp.addHeader(.contentType, value: "text/html")
-            resp.send(data: content)
-            resp.completed()
         }
     }
     
     func getContent(request: HttpRequest) -> Data? {
         var country = "EN"
-        let header = ZenRetail.zenNIO.http == .v1 ? "Accept-Language" : "accept-language";
+        let header = ZenNIO.http == .v1 ? "Accept-Language" : "accept-language";
         if let language = request.head.headers[header].first {
             country = language[...language.index(language.startIndex, offsetBy: 1)].uppercased()
         }

@@ -39,45 +39,49 @@ public class AmazonController: NSObject {
     }
     
     func mwsConfigHandlerPUT(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let data = request.bodyData else {
-                throw HttpError.badRequest
+        request.eventLoop.execute {
+            do {
+                guard let data = request.bodyData else {
+                    throw HttpError.badRequest
+                }
+                let amazon = try JSONDecoder().decode(Amazon.self, from: data)
+                try amazon.save()
+                
+                self.config = Config(
+                    endpoint: amazon.endpoint,
+                    marketplaceId: amazon.marketplaceId,
+                    sellerId: amazon.sellerId,
+                    accessKey: amazon.accessKey,
+                    secretKey: amazon.secretKey,
+                    authToken: amazon.authToken,
+                    userAgent: amazon.userAgent
+                )
+                
+                try response.send(json: self.config)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let amazon = try JSONDecoder().decode(Amazon.self, from: data)            
-            try amazon.save()
-            
-            config = Config(
-                endpoint: amazon.endpoint,
-                marketplaceId: amazon.marketplaceId,
-                sellerId: amazon.sellerId,
-                accessKey: amazon.accessKey,
-                secretKey: amazon.secretKey,
-                authToken: amazon.authToken,
-                userAgent: amazon.userAgent
-            )
-            
-            try response.send(json:config)
-            response.completed()
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
 
     func mwsHandlerGET(request: HttpRequest, response: HttpResponse) {
-        let data: [MwsRequest]
-        do {
-            let mwsRequest = MwsRequest()
-            if let start: Int = request.getParam("start"),
-                let finish: Int = request.getParam("finish") {
-                data = try mwsRequest.rangeRequests(startDate: start, finishDate: finish)
-            } else {
-                data = try mwsRequest.currentRequests()
+        request.eventLoop.execute {
+            let data: [MwsRequest]
+            do {
+                let mwsRequest = MwsRequest()
+                if let start: Int = request.getParam("start"),
+                    let finish: Int = request.getParam("finish") {
+                    data = try mwsRequest.rangeRequests(startDate: start, finishDate: finish)
+                } else {
+                    data = try mwsRequest.currentRequests()
+                }
+                
+                try response.send(json:data)
+                response.completed()
+            } catch {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            
-            try response.send(json:data)
-            response.completed()
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
@@ -144,7 +148,6 @@ public class AmazonController: NSObject {
     }
 
     func callBack(request: RequestFeed) {
-        
         do {
             let mwsRequest = MwsRequest()
             try mwsRequest.get("requestId", request.requestId)
