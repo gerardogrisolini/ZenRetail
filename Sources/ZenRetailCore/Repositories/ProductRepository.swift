@@ -30,12 +30,24 @@ struct ProductRepository : ProductProtocol {
         return types
     }
 
-    internal func getJoin() -> DataSourceJoin {
-		return DataSourceJoin(
-			table: "Brand",
-			onCondition: "Product.brandId = Brand.brandId",
-			direction: .INNER
-		)
+    internal func defaultJoins() -> [DataSourceJoin] {
+        return [
+            DataSourceJoin(
+                table: "Brand",
+                onCondition: "Product.brandId = Brand.brandId",
+                direction: .INNER
+            ),
+            DataSourceJoin(
+                table: "ProductCategory",
+                onCondition: "Product.productId = ProductCategory.productId",
+                direction: .LEFT
+            ),
+            DataSourceJoin(
+                table: "Category",
+                onCondition: "ProductCategory.categoryId = Category.categoryId",
+                direction: .INNER
+            )
+        ]
 	}
 		
 	func getAll(date: Int) throws -> [Product] {
@@ -43,7 +55,7 @@ struct ProductRepository : ProductProtocol {
         let sql = obj.querySQL(
 			whereclause: "productUpdated > $1", params: [date],
 			orderby: ["Product.productId"],
-			joins: [self.getJoin()]
+			joins: defaultJoins()
 		)
 
         return try obj.rows(sql: sql, barcodes: date > 0)
@@ -55,18 +67,15 @@ struct ProductRepository : ProductProtocol {
             onCondition: "Product.productId = Publication.productId",
             direction: .INNER
         )
-        let brand = DataSourceJoin(
-            table: "Brand",
-            onCondition: "Product.brandId = Brand.brandId",
-            direction: .INNER
-        )
+        var joins = defaultJoins()
+        joins.append(publication)
         
         let obj = Product()
         let sql = obj.querySQL(
             whereclause: "Product.productUpdated > Product.productAmazonUpdated AND Product.productAmazonUpdated > $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2",
             params: [0, Int.now()],
             orderby: ["Product.productUpdated"],
-            joins: [publication, brand]
+            joins: joins
         )
         
         return try obj.rows(sql: sql, barcodes: true, storeIds: "")
@@ -76,19 +85,32 @@ struct ProductRepository : ProductProtocol {
         let db = try ZenPostgres.shared.connect()
         defer { db.disconnect() }
         
-        let items: [Product] = try Product(db: db).query(
+        let item = Product(db: db)
+        let sql = item.querySQL(
             whereclause: "Product.productId = $1",
             params: [String(id)],
             cursor: CursorConfig(limit: 1, offset: 0),
-            joins: [self.getJoin()]
+            joins: defaultJoins()
         )
-        if items.count == 0 {
-            throw ZenError.recordNotFound
+ 
+        let rows = try item.sqlRows(sql)
+        if rows.count == 0 { throw ZenError.recordNotFound }
+
+        let groups = rows.groupBy { row -> Int in
+            try! row.columns[0].int()
         }
         
-        let item = items.first!
-        item.db = db
-        try item.makeCategories()
+        for group in groups {
+            item.decode(row: group.value.first!)
+            
+            for var cat in group.value {
+                let productCategory = ProductCategory()
+                cat.columns = Array(cat.columns.dropFirst(24))
+                productCategory.decode(row: cat)
+                item._categories.append(productCategory)
+            }
+        }
+
         try item.makeAttributes()
 		try item.makeArticles()
 		

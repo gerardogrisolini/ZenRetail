@@ -3,8 +3,11 @@ import ZenNIO
 @testable import ZenRetailCore
 
 final class ZenRetailTests: XCTestCase {
-
+    
+    var zenRetail = ZenRetail()
+    
     override func setUp() {
+        XCTAssertNoThrow(try zenRetail.setupDatabase())
     }
     
     override func tearDown() {
@@ -19,8 +22,14 @@ final class ZenRetailTests: XCTestCase {
         XCTAssertNotNil(pdf)
     }
     
+    func testGetProduct() {
+        let repository = EcommerceRepository()
+        XCTAssertNoThrow(try repository.getProduct(name: "gaia"))
+    }
+    
 
     static var allTests = [
         ("testPhantomjs", testPhantomjs),
+        ("testGetProduct", testGetProduct),
     ]
 }

@@ -50,11 +50,11 @@ class ProductAttribute: PostgresTable, Codable, Equatable {
             _attribute.decode(row: row)
         }
 
-        do {
-            try makeAttributeValues()
-        } catch {
-            print(error)
-        }
+//        do {
+//            try makeAttributeValues()
+//        } catch {
+//            print(error)
+//        }
     }
     
     required init(from decoder: Decoder) throws {

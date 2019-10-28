@@ -52,6 +52,31 @@ struct EcommerceRepository : EcommerceProtocol {
         return setting
     }
 
+    internal func defaultJoins() -> [DataSourceJoin] {
+        return [
+            DataSourceJoin(
+                table: "Brand",
+                onCondition: "Product.brandId = Brand.brandId",
+                direction: .INNER
+            ),
+            DataSourceJoin(
+                table: "ProductCategory",
+                onCondition: "Product.productId = ProductCategory.productId",
+                direction: .LEFT
+            ),
+            DataSourceJoin(
+                table: "Category",
+                onCondition: "ProductCategory.categoryId = Category.categoryId",
+                direction: .INNER
+            ),
+            DataSourceJoin(
+                table: "Publication",
+                onCondition: "Product.productId = Publication.productId",
+                direction: .INNER
+            )
+        ]
+    }
+    
     func getCategories() throws -> [Category] {
         let category = DataSourceJoin(
             table: "ProductCategory",
@@ -101,46 +126,24 @@ struct EcommerceRepository : EcommerceProtocol {
     
     
     func getProductsFeatured() throws -> [Product] {
-        let publication = DataSourceJoin(
-            table: "Publication",
-            onCondition: "Product.productId = Publication.productId",
-            direction: .INNER
-        )
-        let brand = DataSourceJoin(
-            table: "Brand",
-            onCondition: "Product.brandId = Brand.brandId",
-            direction: .INNER
-        )
-        
         let obj = Product()
         let sql = obj.querySQL(
             whereclause: "Publication.publicationFeatured = $1 AND Product.productIsActive = $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2",
             params: [true, Int.now()],
             orderby: ["Publication.publicationStartAt DESC"],
-            joins: [publication, brand]
+            joins: defaultJoins()
         )
         
         return try obj.rows(sql: sql, barcodes: false)
     }
     
     func getProductsNews() throws -> [Product] {
-        let publication = DataSourceJoin(
-            table: "Publication",
-            onCondition: "Product.productId = Publication.productId",
-            direction: .INNER
-        )
-        let brand = DataSourceJoin(
-            table: "Brand",
-            onCondition: "Product.brandId = Brand.brandId",
-            direction: .INNER
-        )
-        
         let obj = Product()
         let sql = obj.querySQL(
             whereclause: "Publication.publicationNew = $1 AND Product.productIsActive = $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2",
             params: [true, Int.now()],
             orderby: ["Publication.publicationStartAt DESC"],
-            joins: [publication, brand]
+            joins: defaultJoins()
         )
         
         return try obj.rows(sql: sql, barcodes: false)
@@ -150,10 +153,12 @@ struct EcommerceRepository : EcommerceProtocol {
         let obj = Product()
         let now = Int.now()
         let sql = """
-SELECT "Product".*, "Publication".*, "Brand".*
+SELECT "Product".*, "Brand".*, "ProductCategory".*, "Category".*, "Publication".*
 FROM "Product"
-INNER JOIN "Publication" ON "Product"."productId" = "Publication"."productId"
 INNER JOIN "Brand" ON "Product"."brandId" = "Brand"."brandId"
+LEFT JOIN "ProductCategory" ON "Product"."productId" = "ProductCategory"."productId"
+INNER JOIN "Category" ON "ProductCategory"."categoryId" = "Category"."categoryId"
+INNER JOIN "Publication" ON "Product"."productId" = "Publication"."productId"
 WHERE "Product"."productIsActive" = 'true'
 AND ("Product"."productDiscount" ->> 'discountStartAt')::int <= \(now)
 AND ("Product"."productDiscount" ->> 'discountFinishAt')::int >= \(now)
@@ -170,49 +175,19 @@ ORDER BY "Publication"."publicationStartAt" DESC
             whereclause: "Brand.brandSeo ->> $1 = $2 AND Publication.publicationStartAt <= $3 AND Publication.publicationFinishAt >= $3 AND Product.productIsActive = $4",
             params: ["permalink", brand, Int.now(), true],
             orderby: ["Product.productName"],
-            joins:  [
-                DataSourceJoin(
-                    table: "Publication",
-                    onCondition: "Product.productId = Publication.productId",
-                    direction: .INNER),
-                DataSourceJoin(
-                    table: "Brand",
-                    onCondition: "Product.brandId = Brand.brandId",
-                    direction: .INNER)
-            ]
+            joins: defaultJoins()
         )
         
         return try obj.rows(sql: sql, barcodes: false)
     }
     
     func getProducts(category: String) throws -> [Product] {
-        let publication = DataSourceJoin(
-            table: "Publication",
-            onCondition: "Product.productId = Publication.productId",
-            direction: .INNER
-        )
-        let brand = DataSourceJoin(
-            table: "Brand",
-            onCondition: "Product.brandId = Brand.brandId",
-            direction: .INNER
-        )
-        let productCategories = DataSourceJoin(
-            table: "ProductCategory",
-            onCondition: "Product.productId = ProductCategory.productId",
-            direction: .LEFT
-        )
-        let Category = DataSourceJoin(
-            table: "Category",
-            onCondition: "ProductCategory.categoryId = Category.categoryId",
-            direction: .INNER
-        )
-
         let obj = Product()
         let sql = obj.querySQL(
             whereclause: "Category.categorySeo ->> $1 = $2 AND Publication.publicationStartAt <= $3 AND Publication.publicationFinishAt >= $3 AND Product.productIsActive = $4",
             params: ["permalink", category, Int.now(), true],
             orderby: ["Product.productName"],
-            joins:  [publication, brand, productCategories, Category]
+            joins: defaultJoins()
         )
         
         return try obj.rows(sql: sql, barcodes: false)
@@ -223,16 +198,7 @@ ORDER BY "Publication"."publicationStartAt" DESC
         let sql = obj.querySQL(
             whereclause: "LOWER(Product.productName) LIKE $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2 AND Product.productIsActive = $3",
             params: ["%\(text.lowercased())%", Int.now(), true],
-            joins:  [
-                DataSourceJoin(
-                    table: "Publication",
-                    onCondition: "Product.productId = Publication.productId",
-                    direction: .INNER),
-                DataSourceJoin(
-                    table: "Brand",
-                    onCondition: "Product.brandId = Brand.brandId",
-                    direction: .INNER)
-            ]
+            joins: defaultJoins()
         )
         
         return try obj.rows(sql: sql, barcodes: false)
@@ -246,23 +212,27 @@ ORDER BY "Publication"."publicationStartAt" DESC
         let sql = item.querySQL(
             whereclause: "Product.productSeo ->> $1 = $2",
             params: ["permalink", name],
-            cursor: CursorConfig(limit: 1, offset: 0),
-            joins: [
-                DataSourceJoin(
-                    table: "Brand",
-                    onCondition: "Product.brandId = Brand.brandId",
-                    direction: .INNER
-                )
-            ]
+            joins: defaultJoins()
         )
         
         let rows = try item.sqlRows(sql)
-        if rows.count == 0 {
-            throw ZenError.recordNotFound
+        if rows.count == 0 { throw ZenError.recordNotFound }
+        
+        let groups = rows.groupBy { row -> Int in
+            try! row.columns[0].int()
         }
         
-        item.decode(row: rows.first!)
-        try item.makeCategories()
+        for group in groups {
+            item.decode(row: group.value.first!)
+            
+            for var cat in group.value {
+                let productCategory = ProductCategory()
+                cat.columns = Array(cat.columns.dropFirst(24))
+                productCategory.decode(row: cat)
+                item._categories.append(productCategory)
+            }
+        }
+        
         try item.makeAttributes()
         try item.makeArticles()
         

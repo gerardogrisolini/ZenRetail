@@ -51,6 +51,7 @@ class Article: PostgresTable, Codable {
         articleCreated = (try? row.columns[6].int()) ?? 0
         articleUpdated = (try? row.columns[7].int()) ?? 0
         
+        /*
         do {
             // TODO: change for optimization
             _attributeValues = try ArticleAttributeValue(db: db!).query(
@@ -76,6 +77,7 @@ class Article: PostgresTable, Codable {
         } catch {
             print(error)
         }
+        */
     }
 
     required init() {

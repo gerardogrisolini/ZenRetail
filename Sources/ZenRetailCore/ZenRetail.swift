@@ -120,7 +120,7 @@ public class ZenRetail {
         ZenRetail.config.postgresDatabase = url[index...].description
     }
     
-    private func setupDatabase() throws {
+    public func setupDatabase() throws {
         var configuration = PostgresClientKit.ConnectionConfiguration()
         configuration.host = ZenRetail.config.postgresHost
         configuration.port = ZenRetail.config.postgresPort

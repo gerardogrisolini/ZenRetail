@@ -111,21 +111,30 @@ class Product: PostgresTable, PostgresJson {
         
         var results = [Product]()
         let rows = try self.sqlRows(sql)
-        if rows.count == 0 { return results }
-
-        for i in 0..<rows.count {
-            let row = Product(db: db!)
-            row.decode(row: rows[i])
-			
-            try row.makeCategories();
-			
-			if barcodes {
-				try row.makeAttributes();
-				try row.makeArticles(storeIds);
-			}
-			
-			results.append(row)
+ 
+        let groups = rows.groupBy { row -> Int in
+            try! row.columns[0].int()
         }
+        
+        for group in groups {
+            let row = Product()
+            row.decode(row: group.value.first!)
+            
+            for var cat in group.value {
+                let productCategory = ProductCategory()
+                cat.columns = Array(cat.columns.dropFirst(24))
+                productCategory.decode(row: cat)
+                row._categories.append(productCategory)
+            }
+            
+            if barcodes {
+                try row.makeAttributes();
+                try row.makeArticles(storeIds);
+            }
+
+            results.append(row)
+        }
+        
         return results
     }
 
@@ -176,19 +185,19 @@ class Product: PostgresTable, PostgresJson {
         try container.encode(productUpdated, forKey: .productUpdated)
     }
 
-	func makeCategories() throws {
-		let categoryJoin = DataSourceJoin(
-            table: "Category",
-            onCondition: "ProductCategory.categoryId = Category.categoryId"
-        )
-		
-        self._categories = try ProductCategory(db: db!).query(
-			whereclause: "ProductCategory.productId = $1",
-			params: [self.productId],
-			orderby: ["Category.categoryId"],
-			joins: [categoryJoin]
-		)
-	}
+//	func makeCategories() throws {
+//		let categoryJoin = DataSourceJoin(
+//            table: "Category",
+//            onCondition: "ProductCategory.categoryId = Category.categoryId"
+//        )
+//
+//        self._categories = try ProductCategory(db: db!).query(
+//			whereclause: "ProductCategory.productId = $1",
+//			params: [self.productId],
+//			orderby: ["Category.categoryId"],
+//			joins: [categoryJoin]
+//		)
+//	}
 
     func addDefaultAttributes() throws {
         let productAttribute = ProductAttribute()
@@ -205,28 +214,88 @@ class Product: PostgresTable, PostgresJson {
     }
     
     func makeAttributes() throws {
-		let attributeJoin = DataSourceJoin(
+        let attributeJoin = DataSourceJoin(
             table: "Attribute",
-            onCondition: "ProductAttribute.attributeId = Attribute.attributeId"
+            onCondition: "ProductAttribute.attributeId = Attribute.attributeId",
+            direction: .INNER
         )
-		
+        let productAttributeValueJoin = DataSourceJoin(
+            table: "ProductAttributeValue",
+            onCondition: "ProductAttribute.productAttributeId = ProductAttributeValue.productAttributeId",
+            direction: .LEFT
+        )
+        let attributeValueJoin = DataSourceJoin(
+            table: "AttributeValue",
+            onCondition: "ProductAttributeValue.attributeValueId = AttributeValue.attributeValueId",
+            direction: .INNER
+        )
+
         let productAttribute = ProductAttribute(db: db!)
-		self._attributes = try productAttribute.query(
+		let sql = productAttribute.querySQL(
 			whereclause: "ProductAttribute.productId = $1",
 			params: [self.productId],
-			orderby: ["ProductAttribute.productAttributeId"],
-			joins: [attributeJoin]
+            orderby: ["ProductAttribute.productAttributeId", "ProductAttributeValue.attributeValueId"],
+			joins: [attributeJoin, productAttributeValueJoin, attributeValueJoin]
 		)
+        
+        let rows = try productAttribute.sqlRows(sql)
+        let groups = rows.groupBy { row -> Int in
+            try! row.columns[0].int()
+        }
+        
+        for group in groups {
+            let pa = ProductAttribute()
+            pa.decode(row: group.value.first!)
+            for var att in group.value {
+                att.columns = Array(att.columns.dropFirst(8))
+                
+                let productAttributeValue = ProductAttributeValue()
+                productAttributeValue.decode(row: att)
+
+                pa._attributeValues.append(productAttributeValue)
+            }
+            _attributes.append(pa)
+        }
 	}
 
     func makeArticles(_ storeIds: String = "0") throws {
-		let article = Article(db: db!)
+        let articleAttributeJoin = DataSourceJoin(
+            table: "ArticleAttributeValue",
+            onCondition: "Article.articleId = ArticleAttributeValue.articleId",
+            direction: .LEFT
+        )
+
+        let article = Article(db: db!)
         article._storeIds = storeIds
-		self._articles = try article.query(
+		
+        let sql = article.querySQL(
 			whereclause: "productId = $1",
 			params: [self.productId],
-			orderby: ["articleId"]
+            orderby: ["Article.articleId", "ArticleAttributeValue.articleId"],
+            joins: [articleAttributeJoin]
 		)
+        
+        let rows = try article.sqlRows(sql)
+//        if rows.count == 0 {
+//            throw ZenError.recordNotFound
+//        }
+        let groups = rows.groupBy { row -> Int in
+            try! row.columns[0].int()
+        }
+        
+        for group in groups {
+            let article = Article()
+            article.decode(row: group.value.first!)
+            for var art in group.value {
+                art.columns = Array(art.columns.dropFirst(7))
+                
+                let attributeValue = ArticleAttributeValue()
+                attributeValue.decode(row: art)
+
+                article._attributeValues.append(attributeValue)
+            }
+            _articles.append(article)
+        }
 	}
 
 	func makeArticle(barcode: String, rows: [Row]) throws {
@@ -251,6 +320,16 @@ class Product: PostgresTable, PostgresJson {
             onCondition: "Product.brandId = Brand.brandId",
             direction: .INNER
         )
+        let productCategoryJoin = DataSourceJoin(
+            table: "ProductCategory",
+            onCondition: "Product.productId = ProductCategory.productId",
+            direction: .LEFT
+        )
+        let categoryJoin = DataSourceJoin(
+            table: "Category",
+            onCondition: "ProductCategory.categoryId = Category.categoryId",
+            direction: .INNER
+        )
         let articleJoin = DataSourceJoin(
             table: "Article",
             onCondition: "Product.productId = Article.productId",
@@ -268,16 +347,35 @@ class Product: PostgresTable, PostgresJson {
         let sql = querySQL(whereclause: "Article.articleBarcodes @> $1",
                            params: [param],
                            orderby: ["ArticleAttributeValue.articleAttributeValueId"],
-                           joins: [brandJoin, articleJoin, articleAttributeJoin])
+                           joins: [
+                            brandJoin,
+                            productCategoryJoin,
+                            categoryJoin,
+                            articleJoin,
+                            articleAttributeJoin
+                           ])
         
         db = try ZenPostgres.shared.connect()
         defer { db?.disconnect() }
 
         let rows = try self.sqlRows(sql)
-        if rows.count == 0 { return }
+        if rows.count == 0 { throw ZenError.recordNotFound }
+
+        let groups = rows.groupBy { row -> Int in
+            try! row.columns[0].int()
+        }
         
-        self.decode(row: rows[0])
-        try self.makeCategories()
+        for group in groups {
+            decode(row: group.value.first!)
+            
+            for var cat in group.value {
+                let productCategory = ProductCategory()
+                cat.columns = Array(cat.columns.dropFirst(24))
+                productCategory.decode(row: cat)
+                _categories.append(productCategory)
+            }
+        }
+        
         try self.makeAttributes()
         try self.makeArticle(barcode: barcode, rows: rows)
     }
