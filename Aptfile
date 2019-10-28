@@ -1,1 +1,7 @@
+clang
+libicu-dev
+libcurl4-openssl-dev
+libpython2.7
+libssl-dev
+uuid-dev
 gd

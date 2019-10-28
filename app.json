@@ -1,0 +1,41 @@
+{
+  "name": "ZenRetail",
+  "scripts": {
+  },
+  "env": {
+    "HOST": {
+      "required": true
+    },
+    "LANG": {
+      "required": true
+    },
+    "LC_ALL": {
+      "required": true
+    },
+    "LD_LIBRARY_PATH": {
+      "required": true
+    },
+    "PATH": {
+      "required": true
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1
+    }
+  },
+  "addons": [
+    "heroku-postgresql"
+  ],
+  "buildpacks": [
+    {
+      "url": "https://github.com/heroku/heroku-buildpack-apt.git"
+    },
+    {
+      "url": "https://github.com/stomita/heroku-buildpack-phantomjs.git"
+    },
+    {
+      "url": "https://github.com/kylef/heroku-buildpack-swift.git"
+    }
+  ]
+}
