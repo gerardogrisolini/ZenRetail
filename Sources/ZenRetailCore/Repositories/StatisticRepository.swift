@@ -133,7 +133,11 @@ AND a."movementStatus" = 'Completed'
         }
         
         let dateFormatter: DateFormatter = DateFormatter()
+        #if os(Linux)
+        let months = dateFormatter.shortMonthSymbols
+        #else
         let months = dateFormatter.shortMonthSymbols!
+        #endif
         for i in 0..<12 {
             result.labels[i] = months[i]
             for e in 0..<lenght {
