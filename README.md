@@ -4,7 +4,7 @@
 # ZenRetail - RMS
 
 Retail Management System and e-Commerce
-developed with Swift 5, Angular 7 and PostgreSQL 11.
+developed with Swift, Angular and PostgreSQL .
 
 #### Under active development. Please do not use.
 
@@ -36,21 +36,7 @@ sudo tar xvjf phantomjs-2.1.1-linux-x86_64.tar.bz2 -C /usr/local/share/
 sudo ln -s /usr/local/share/phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/local/bin/
 ```
 
-## Setup - Xcode
-
-* If you want to regenerate the xcode project
-* In terminal, navigate to the directory and execute
-
-```
-swift package generate-xcodeproj
-```
-
-* Open `ZenRetail.xcodeproj`
-
-To run this project from Xcode, edit the Scheme, Under "Options" for "run", check "Use custom working directory" and choose the project's working directory. After doing this, the project can be run from within Xcode.
-
-
-## Angular 7 - Terminal
+## Angular - Terminal
 
 Steps for the development UI:
 
@@ -100,7 +86,7 @@ Buildpack:
 ```
 https://github.com/heroku/heroku-buildpack-apt.git
 https://github.com/stomita/heroku-buildpack-phantomjs.git
-https://github.com/kylef/heroku-buildpack-swift.git
+https://github.com/vapor-community/heroku-buildpack.git
 ```
 
 ## Install on linux as service
