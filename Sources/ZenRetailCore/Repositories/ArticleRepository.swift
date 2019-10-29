@@ -29,16 +29,16 @@ struct ArticleRepository : ArticleProtocol {
         try product.get(productId)
 
         // Get product attributes
-		let join = DataSourceJoin(
-            table: "Attribute",
-            onCondition: "ProductAttribute.attributeId = Attribute.attributeId"
-        )
-
 		var productAttributes: [ProductAttribute] = try ProductAttribute(db: db).query(
             whereclause: "ProductAttribute.productId = $1",
             params: [productId],
             orderby: ["ProductAttribute.productAttributeId"],
-            joins: [join]
+            joins: [
+                DataSourceJoin(
+                    table: "Attribute",
+                    onCondition: "ProductAttribute.attributeId = Attribute.attributeId"
+                )
+            ]
         )
         
         // Add defaults attribute and value if empty
@@ -69,6 +69,7 @@ struct ArticleRepository : ArticleProtocol {
         // Create matrix indexes
         var indexes = [[Int]]()
         for attribute in productAttributes {
+            try attribute.makeAttributeValues()
             let count = attribute._attributeValues.count - 1
             if count == -1 {
                 throw ZenError.error("Not values found for attribute: \(attribute._attribute.attributeName)")

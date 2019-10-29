@@ -10,9 +10,10 @@ import PostgresClientKit
 import ZenPostgres
 import ZenNIO
 
-enum MediaType: String, Codable {
+enum MediaType: String {
     case thumb
     case media
+    case csv
 }
 
 //class File {
@@ -74,7 +75,7 @@ class File: PostgresTable, Codable {
     public var fileId : Int = 0
     public var fileName : String = ""
     public var fileContentType : String = ""
-    public var fileType : MediaType = .media
+    public var fileType : String = ""
     public var fileData : String = ""
     public var fileSize : Int = 0
     public var fileCreated : Int = Int.now()
@@ -87,7 +88,7 @@ class File: PostgresTable, Codable {
         fileId = (try? row.columns[0].int()) ?? 0
         fileName = (try? row.columns[1].string()) ?? ""
         fileContentType = (try? row.columns[2].string()) ?? ""
-        fileType = MediaType(rawValue: (try? row.columns[3].string()) ?? "media")!
+        fileType = (try? row.columns[3].string()) ?? "media"
         fileData = (try? row.columns[4].string()) ?? ""
         fileSize = (try? row.columns[5].int()) ?? 0
         fileCreated = (try? row.columns[6].int()) ?? 0
@@ -126,9 +127,10 @@ class File: PostgresTable, Codable {
             if files.count == 0 {
                 if let data = FileManager.default.contents(atPath: "./Assets/\(fileName)") {
                     let file = File()
-                    _ = try file.getData(filename: fileName, size: .media)
+                    //_ = try file.getData(filename: fileName, size: fileName.hasSuffix(".csv") ? .csv : .media)
                     file.fileName = fileName
                     file.fileContentType = fileName.hasSuffix(".csv") ? "text/csv" : "image/png"
+                    file.fileType = fileName.hasSuffix(".csv") ? MediaType.csv.rawValue : MediaType.media.rawValue
                     file.setData(data: data)
                     try file.save()
                 }

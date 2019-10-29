@@ -128,8 +128,10 @@ public class ZenRetail {
         configuration.port = ZenRetail.config.postgresPort
         configuration.database = ZenRetail.config.postgresDatabase
         configuration.user = ZenRetail.config.postgresUsername
-        configuration.credential = .md5Password(password: ZenRetail.config.postgresPassword)
-        
+        configuration.ssl = false
+        if !ZenRetail.config.postgresPassword.isEmpty {
+            configuration.credential = .md5Password(password: ZenRetail.config.postgresPassword)
+        }
         zenPostgres = try ZenPostgres(config: configuration)
     }
  
