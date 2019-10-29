@@ -35,7 +35,7 @@
       "url": "https://github.com/stomita/heroku-buildpack-phantomjs.git"
     },
     {
-      "url": "https://github.com/kylef/heroku-buildpack-swift.git"
+      "url": "https://github.com/vapor-community/heroku-buildpack.git"
     }
   ]
 }
