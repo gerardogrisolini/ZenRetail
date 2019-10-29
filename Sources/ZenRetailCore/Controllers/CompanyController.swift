@@ -21,18 +21,18 @@ class CompanyController {
         router.post("/api/medias", handler: uploadMediasHandlerPOST)
         router.post("/api/email", handler: emailHandlerPOST)
         
-        router.get("/media/:filename", handler: {
-            request, response in
-            self.getFile(request, response, .media)
-        })
-        router.get("/thumb/:filename", handler: {
-            request, response in
-            self.getFile(request, response, .thumb)
-        })
-        router.get("/csv/:filename", handler: {
-            request, response in
-            self.getFile(request, response, .csv)
-        })
+//        router.get("/media/:filename", handler: {
+//            request, response in
+//            self.getFile(request, response, .media)
+//        })
+//        router.get("/thumb/:filename", handler: {
+//            request, response in
+//            self.getFile(request, response, .thumb)
+//        })
+//        router.get("/csv/:filename", handler: {
+//            request, response in
+//            self.getFile(request, response, .csv)
+//        })
     }
     
     func companyHandlerGET(request: HttpRequest, response: HttpResponse) {
@@ -63,66 +63,68 @@ class CompanyController {
             }
         }
 	}
-    
-    fileprivate func getFile(_ request: HttpRequest, _ response: HttpResponse, _ size: MediaType) {
-        let file = File()
-        if let filename: String = request.getParam("filename") {
-            if let data = try? file.getData(filename: filename, size: size) {
-                response.addHeader(.contentType, value: file.fileContentType)
-                response.send(data: data)
-                response.completed()
-                return
-            }
-        }
-
-        response.completed( .notFound)
-    }
  
+//    fileprivate func getFile(_ request: HttpRequest, _ response: HttpResponse, _ size: MediaType) {
+//        let file = File()
+//        if let filename: String = request.getParam("filename") {
+//            if let data = try? file.getData(filename: filename, size: size) {
+//                response.addHeader(.contentType, value: file.fileContentType)
+//                response.send(data: data)
+//                response.completed()
+//                return
+//            }
+//        }
+//
+//        response.completed( .notFound)
+//    }
+
+//    fileprivate func saveFiles(_ fileName: String, _ data: Data) throws -> Media {
+//        let media = Media()
+//        media.contentType = fileName.contentType
+//        media.name = fileName != "logo.png" && fileName != "header.png" ? fileName.uniqueName() : fileName
+//
+//        let db = try ZenPostgres.shared.connect()
+//        defer { db.disconnect() }
+//
+//        let big = File(db: db)
+//        big.fileName = media.name
+//        big.fileType = fileName.hasSuffix(".csv") ? MediaType.csv.rawValue : MediaType.media.rawValue
+//        big.fileContentType = media.contentType
+//        big.setData(data: data)
+//        try big.save()
+//
+//        if fileName.contentType.hasPrefix("image/"), let thumb = try Image(data: data).resizedTo(width: 380) {
+//            let small = File(db: db)
+//            small.fileName = media.name
+//            small.fileType = MediaType.thumb.rawValue
+//            small.fileContentType = media.contentType
+//            small.setData(data: try thumb.export())
+//            try small.save()
+//        }
+//
+//        return media
+//    }
+
     fileprivate func saveFiles(_ fileName: String, _ data: Data) throws -> Media {
         let media = Media()
         media.contentType = fileName.contentType
         media.name = fileName != "logo.png" && fileName != "header.png" ? fileName.uniqueName() : fileName
         
-        let db = try ZenPostgres.shared.connect()
-        defer { db.disconnect() }
-        
-        let big = File(db: db)
+        let big = File()
         big.fileName = media.name
-        big.fileType = fileName.hasSuffix(".csv") ? MediaType.csv.rawValue : MediaType.media.rawValue
         big.fileContentType = media.contentType
         big.setData(data: data)
         try big.save()
         
         if fileName.contentType.hasPrefix("image/"), let thumb = try Image(data: data).resizedTo(width: 380) {
-//            let url = URL(fileURLWithPath: "\(ZenNIO.htdocsPath)/thumb/\(media.name)")
-//            if !thumb.write(to: url, quality: 75, allowOverwrite: true) {
-//                throw HttpError.systemError(0, "file thumb not saved")
-//            }
-            
-            let small = File(db: db)
-            small.fileName = media.name
-            small.fileType = MediaType.thumb.rawValue
-            small.fileContentType = media.contentType
-            small.setData(data: try thumb.export())
-            try small.save()
+            let url = URL(fileURLWithPath: "\(ZenNIO.htdocsPath)/thumb/\(media.name)")
+            if !thumb.write(to: url, quality: 75, allowOverwrite: true) {
+                throw HttpError.systemError(0, "file thumb not saved")
+            }
         }
 
         return media
     }
-    
-//    fileprivate func saveFile(_ fileName: String, _ data: Data) throws -> Media {
-//        let media = Media()
-//        media.contentType = fileName.contentType
-//        media.name = fileName.uniqueName()
-//
-//        let big = File()
-//        big.fileName = media.name
-//        big.fileContentType = media.contentType
-//        big.setData(data: data)
-//        try big.save()
-//
-//        return media
-//    }
 
     func uploadMediaHandlerPOST(request: HttpRequest, response: HttpResponse) {
         request.eventLoop.execute {

@@ -369,22 +369,22 @@ struct ProductRepository : ProductProtocol {
         
         let big = File()
         big.fileName = media.name
-        big.fileType = MediaType.media.rawValue
+        //big.fileType = MediaType.media.rawValue
         big.fileContentType = media.contentType
         big.setData(data: data)
         try big.save()
         
         if let thumb = try Image(data: data).resizedTo(width: 380) {
-//            let url = URL(fileURLWithPath: "\(ZenNIO.htdocsPath)/thumb/\(media.name)")
-//            if !thumb.write(to: url, quality: 75, allowOverwrite: true) {
-//                throw HttpError.systemError(0, "file thumb not saved")
-//            }
-            let small = File()
-            small.fileName = media.name
-            small.fileType = MediaType.thumb.rawValue
-            small.fileContentType = media.contentType
-            small.setData(data: try thumb.export())
-            try small.save()
+            let url = URL(fileURLWithPath: "\(ZenNIO.htdocsPath)/thumb/\(media.name)")
+            if !thumb.write(to: url, quality: 75, allowOverwrite: true) {
+                throw HttpError.systemError(0, "file thumb not saved")
+            }
+//            let small = File()
+//            small.fileName = media.name
+//            small.fileType = MediaType.thumb.rawValue
+//            small.fileContentType = media.contentType
+//            small.setData(data: try thumb.export())
+//            try small.save()
         }
     }
     
