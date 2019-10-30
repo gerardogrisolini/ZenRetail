@@ -9,12 +9,8 @@ let package = Package(
         .macOS(.v10_14)
     ],
     products: [
-        .library(
-            name: "ZenRetailCore",
-            targets: ["ZenRetailCore"]),
-        .executable(
-            name: "ZenRetail",
-            targets: ["ZenRetail"]),
+        .library(name: "ZenRetailCore", targets: ["ZenRetailCore"]),
+        .executable(name: "ZenRetail", targets: ["ZenRetail"]),
     ],
     dependencies: [
         .package(url: "https://github.com/gerardogrisolini/ZenNIO.git", .branch("master")),

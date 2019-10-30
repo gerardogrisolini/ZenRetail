@@ -1,3 +1,7 @@
 import ZenRetailCore
 
-try ZenRetail().start()
+do {
+    try ZenRetail().start()
+} catch {
+    print(error)
+}
