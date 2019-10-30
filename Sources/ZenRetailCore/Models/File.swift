@@ -133,29 +133,29 @@ class File: PostgresTable, Codable {
         }
     }
 
-    func importStaticFiles() throws {
-        let types = ["media", "thumb"]
-            for type in types {
-            let fileNames = try FileManager.default.contentsOfDirectory(atPath: "./webroot/\(type)")
-            for fileName in fileNames {
-                let files: [File] = try self.query(
-                    whereclause: "fileName = $1 AND fileType = $2",
-                    params: [fileName, type],
-                    cursor: CursorConfig(limit: 1, offset: 0)
-                )
-                if files.count == 0 {
-                    if let data = FileManager.default.contents(atPath: "./webroot/\(type)/\(fileName)") {
-                        let file = File(db: db!)
-                        file.fileName = fileName
-                        file.fileContentType = fileName.hasSuffix(".csv") ? "text/csv" : "image/png"
-                        file.fileType = type
-                        file.setData(data: data)
-                        try file.save()
-                    }
-                }
-            }
-        }
-    }
+//    func importStaticFiles() throws {
+//        let types = ["media", "thumb"]
+//            for type in types {
+//            let fileNames = try FileManager.default.contentsOfDirectory(atPath: "./webroot/\(type)")
+//            for fileName in fileNames {
+//                let files: [File] = try self.query(
+//                    whereclause: "fileName = $1 AND fileType = $2",
+//                    params: [fileName, type],
+//                    cursor: CursorConfig(limit: 1, offset: 0)
+//                )
+//                if files.count == 0 {
+//                    if let data = FileManager.default.contents(atPath: "./webroot/\(type)/\(fileName)") {
+//                        let file = File(db: db!)
+//                        file.fileName = fileName
+//                        file.fileContentType = fileName.hasSuffix(".csv") ? "text/csv" : "image/png"
+//                        file.fileType = type
+//                        file.setData(data: data)
+//                        try file.save()
+//                    }
+//                }
+//            }
+//        }
+//    }
     
     override func save() throws {
         let text = """

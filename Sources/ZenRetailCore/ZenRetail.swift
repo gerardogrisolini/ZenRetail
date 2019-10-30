@@ -146,7 +146,7 @@ public class ZenRetail {
         let file = File(db: db)
         try file.create()
         try file.setupShippingCost()
-        try file.importStaticFiles()
+        //try file.importStaticFiles()
         let user = User(db: db)
         try user.create()
         try user.setAdmin()
