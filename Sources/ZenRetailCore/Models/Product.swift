@@ -106,9 +106,9 @@ class Product: PostgresTable, PostgresJson {
     }
     
     func rows(sql: String, barcodes: Bool, storeIds: String = "0") throws -> [Product] {
-        db = try ZenPostgres.shared.connect()
-        defer { db?.disconnect() }
-        
+        let db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db) }
+
         var results = [Product]()
         let rows = try self.sqlRows(sql)
  
@@ -355,8 +355,8 @@ class Product: PostgresTable, PostgresJson {
                             articleAttributeJoin
                            ])
         
-        db = try ZenPostgres.shared.connect()
-        defer { db?.disconnect() }
+        db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db!) }
 
         let rows = try self.sqlRows(sql)
         if rows.count == 0 { throw ZenError.recordNotFound }

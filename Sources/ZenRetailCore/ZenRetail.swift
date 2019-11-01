@@ -123,21 +123,22 @@ public class ZenRetail {
     }
     
     public func setupDatabase() throws {
-        var configuration = PostgresClientKit.ConnectionConfiguration()
-        configuration.host = ZenRetail.config.postgresHost
-        configuration.port = ZenRetail.config.postgresPort
-        configuration.database = ZenRetail.config.postgresDatabase
-        configuration.user = ZenRetail.config.postgresUsername
-        configuration.ssl = false
-        if !ZenRetail.config.postgresPassword.isEmpty {
-            configuration.credential = .md5Password(password: ZenRetail.config.postgresPassword)
-        }
-        zenPostgres = try ZenPostgres(config: configuration)
+        let config = PostgresConfig(
+            host: ZenRetail.config.postgresHost,
+            port: ZenRetail.config.postgresPort,
+            tls: ZenRetail.config.postgresTsl,
+            username: ZenRetail.config.postgresUsername,
+            password: ZenRetail.config.postgresPassword,
+            database: ZenRetail.config.postgresDatabase,
+            maximumConnections: ZenRetail.config.postgresMaxConn
+        )
+
+        zenPostgres = try ZenPostgres(config: config)
     }
  
     private func createTables() throws {
-        let db = try ZenPostgres.shared.connect()
-        defer { db.disconnect() }
+        let db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db) }
 
         let settings = Settings(db: db)
         try settings.create()

@@ -83,8 +83,8 @@ class CompanyController {
         media.contentType = fileName.contentType
         media.name = fileName != "logo.png" && fileName != "header.png" ? fileName.uniqueName() : fileName
 
-        let db = try ZenPostgres.shared.connect()
-        defer { db.disconnect() }
+        let db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db) }
 
         let big = File(db: db)
         big.fileName = media.name

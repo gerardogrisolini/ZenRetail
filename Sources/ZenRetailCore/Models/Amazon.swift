@@ -34,8 +34,8 @@ class Amazon: Codable {
     }
     
     func save() throws {
-        let db = try ZenPostgres.shared.connect()
-        defer { db.disconnect() }
+        let db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db) }
 
         let settings = Settings(db: db)
         let mirror = Mirror(reflecting: self)

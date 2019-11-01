@@ -20,8 +20,8 @@ struct ArticleRepository : ArticleProtocol {
     }
 
     func build(productId: Int) throws -> Result {
-        let db = try ZenPostgres.shared.connect()
-        defer { db.disconnect() }
+        let db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db) }
 
         var result = Result()
         
@@ -199,8 +199,8 @@ struct ArticleRepository : ArticleProtocol {
     }
     
     func get(productId: Int, storeIds: String) throws -> [Article] {
-        let db = try ZenPostgres.shared.connect()
-        defer { db.disconnect() }
+        let db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db) }
         return try get(db: db, productId: productId, storeIds: storeIds)
     }
 
@@ -223,8 +223,8 @@ struct ArticleRepository : ArticleProtocol {
     }
     
     func getStock(productId: Int, storeIds: String, tagId: Int) throws -> ArticleForm {
-        let db = try ZenPostgres.shared.connect()
-        defer { db.disconnect() }
+        let db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db) }
 
         var header = [String]()
 		var body = [[ArticleItem]]()
@@ -310,8 +310,8 @@ struct ArticleRepository : ArticleProtocol {
 	}
 	
     func getGrouped(productId: Int) throws -> [GroupItem] {
-        let db = try ZenPostgres.shared.connect()
-        defer { db.disconnect() }
+        let db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db) }
 
         var rows = [GroupItem]()
         let articles: [Article] = try Article(db: db)
@@ -339,8 +339,8 @@ struct ArticleRepository : ArticleProtocol {
     }
     
     func addGroup(item: Article) throws -> GroupItem {
-        let db = try ZenPostgres.shared.connect()
-        defer { db.disconnect() }
+        let db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db) }
 
         item.db = db
         
@@ -359,9 +359,9 @@ struct ArticleRepository : ArticleProtocol {
     }
 
     func update(id: Int, item: Article) throws {
-        let db = try ZenPostgres.shared.connect()
-        defer { db.disconnect() }
-        
+        let db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db) }
+
         let item = Article(db: db)
         try item.get(id)
         

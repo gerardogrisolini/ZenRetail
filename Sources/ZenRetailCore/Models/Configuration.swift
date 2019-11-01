@@ -21,20 +21,24 @@ class Configuration: Codable {
     var postgresUsername: String
     var postgresPassword: String
     var postgresPort: Int
-
+    var postgresTsl: Bool
+    var postgresMaxConn: Int
+    
     init() {
-        self.serverName = "localhost"
-        self.serverPort = 8888
-        self.sslCert = "" //cert.crt
-        self.sslKey = "" //key.pem
-        self.httpVersion = 1
-        self.documentRoot = "webroot"
+        serverName = "localhost"
+        serverPort = 8888
+        sslCert = "" //cert.crt
+        sslKey = "" //key.pem
+        httpVersion = 1
+        documentRoot = "webroot"
         
-        self.postgresHost = "localhost"
-        self.postgresDatabase = "zenretail"
-        self.postgresUsername = "postgres"
-        self.postgresPassword = "zBnwEe8QDR"
-        self.postgresPort = 5432
+        postgresHost = "localhost"
+        postgresDatabase = "zenretail"
+        postgresUsername = "postgres"
+        postgresPassword = "zBnwEe8QDR"
+        postgresPort = 5432
+        postgresTsl = false
+        postgresMaxConn = 20
     }
     
     var serverUrl: String {

@@ -205,8 +205,8 @@ ORDER BY "Publication"."publicationStartAt" DESC
     }
 
     func getProduct(name: String) throws -> Product {
-        let db = try ZenPostgres.shared.connect()
-        defer { db.disconnect() }
+        let db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db) }
 
         let item = Product(db: db)
         let sql = item.querySQL(
@@ -253,8 +253,8 @@ ORDER BY "Publication"."publicationStartAt" DESC
     }
     
     func addBasket(item: Basket) throws {
-        let db = try ZenPostgres.shared.connect()
-        defer { db.disconnect() }
+        let db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db) }
 
         let items: [Basket] = try Basket(db: db).query(whereclause: "registryId = $1", params: [item.registryId])
         let basket = items.first(where: { $0.basketBarcode == item.basketBarcode})
@@ -274,8 +274,8 @@ ORDER BY "Publication"."publicationStartAt" DESC
     }
     
     func updateBasket(id: Int, item: Basket) throws {
-        let db = try ZenPostgres.shared.connect()
-        defer { db.disconnect() }
+        let db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db) }
 
         let current = Basket(db: db)
         try current.get(id)
@@ -350,8 +350,8 @@ ORDER BY "Publication"."publicationStartAt" DESC
     func addOrder(registryId: Int, order: OrderModel) throws -> Movement {
         let repository = ZenIoC.shared.resolve() as MovementProtocol
         
-        let db = try ZenPostgres.shared.connect()
-        defer { db.disconnect() }
+        let db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db) }
 
         let items: [Basket] = try Basket(db: db).query(whereclause: "registryId = $1", params: [registryId])
         if items.count == 0 {

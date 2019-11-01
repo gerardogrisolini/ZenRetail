@@ -58,8 +58,8 @@ class Company: Codable {
     public var shippingExpress : Bool = false
 
     func create() throws {
-        let db = try ZenPostgres.shared.connect()
-        defer { db.disconnect() }
+        let db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db) }
         return try create(db: db)
     }
     
@@ -87,8 +87,8 @@ class Company: Codable {
     }
 
     func save() throws {
-        let db = try ZenPostgres.shared.connect()
-        defer { db.disconnect() }
+        let db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db) }
         return try save(db: db)
     }
 
@@ -112,8 +112,8 @@ class Company: Codable {
     }
     
     func select() throws {
-        let db = try ZenPostgres.shared.connect()
-        defer { db.disconnect() }
+        let db = try ZenPostgres.pool.connect()
+        defer { ZenPostgres.pool.disconnect(db) }
         return try select(db: db)
     }
 
