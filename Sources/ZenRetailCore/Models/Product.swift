@@ -220,10 +220,10 @@ class Product: PostgresTable, PostgresJson {
         
         let rows = try productAttribute.sqlRows(sql)
         let groups = rows.groupBy { row -> Int in
-            row.column("productId")!.int!
+            row.column("productAttributeId")!.int!
         }
         
-        for group in groups {
+        for group in groups.sorted(by: { $0.key < $1.key }) {
             let pa = ProductAttribute()
             pa.decode(row: group.value.first!)
             for att in group.value {
@@ -236,14 +236,14 @@ class Product: PostgresTable, PostgresJson {
 	}
 
     func makeArticles(_ storeIds: String = "0") throws {
+        let article = Article(db: db!)
+        article._storeIds = storeIds
+
         let articleAttributeJoin = DataSourceJoin(
             table: "ArticleAttributeValue",
             onCondition: "Article.articleId = ArticleAttributeValue.articleId",
             direction: .LEFT
         )
-
-        let article = Article(db: db!)
-        article._storeIds = storeIds
 		
         let sql = article.querySQL(
 			whereclause: "productId = $1",
@@ -314,16 +314,17 @@ class Product: PostgresTable, PostgresJson {
         let param = """
 '[{"barcode": "\(barcode)"}]'::jsonb
 """
-        let sql = querySQL(whereclause: "Article.articleBarcodes @> $1",
-                           params: [param],
-                           orderby: ["ArticleAttributeValue.articleAttributeValueId"],
-                           joins: [
-                            brandJoin,
-                            productCategoryJoin,
-                            categoryJoin,
-                            articleJoin,
-                            articleAttributeJoin
-                           ])
+        let sql = querySQL(
+            whereclause: "Article.articleBarcodes @> $1",
+            params: [param],
+            orderby: ["ArticleAttributeValue.articleAttributeValueId"],
+            joins: [
+                brandJoin,
+                productCategoryJoin,
+                categoryJoin,
+                articleJoin,
+                articleAttributeJoin
+            ])
         
         db = try ZenPostgres.pool.connect()
         defer { ZenPostgres.pool.disconnect(db!) }
