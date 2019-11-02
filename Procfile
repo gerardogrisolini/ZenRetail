@@ -1,1 +1,1 @@
-web: ZenRetail --workers 1 --bind 0.0.0.0:$PORT
+web: ZenRetail --workers 2 --bind 0.0.0.0:$PORT
