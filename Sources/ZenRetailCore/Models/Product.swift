@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresClientKit
+import PostgresNIO
 import ZenPostgres
 
 
@@ -64,45 +64,26 @@ class Product: PostgresTable, PostgresJson {
         self.tableIndexes.append("productName")
     }
     
-    override func decode(row: Row) {
-        productId = (try? row.columns[0].int()) ?? 0
-        brandId = (try? row.columns[1].int()) ?? 0
-        productCode = (try? row.columns[2].string()) ?? ""
-        productName = (try? row.columns[3].string()) ?? ""
-        productUm = (try? row.columns[4].string()) ?? ""
-        let decoder = JSONDecoder()
-        if let tax = row.columns[5].data {
-            productTax = try! decoder.decode(Tax.self, from: tax)
-        }
-        if let price = row.columns[6].data {
-            productPrice = try! decoder.decode(Price.self, from: price)
-        }
-        if let seo = row.columns[7].data {
-            productSeo = try! decoder.decode(Seo.self, from: seo)
-        }
-        if let discount = row.columns[8].data {
-            productDiscount = try! decoder.decode(Discount.self, from: discount)
-        }
-        if let packaging = row.columns[9].data {
-            productPackaging = try! decoder.decode(Packaging.self, from: packaging)
-        }
-        if let descriptions = row.columns[10].data {
-            productDescription = try! decoder.decode([Translation].self, from: descriptions)
-        }
-        if let media = row.columns[11].data {
-            productMedia = try! decoder.decode([Media].self, from: media)
-        }
-        productIsActive = (try? row.columns[12].bool()) ?? false
-        productIsValid = (try? row.columns[13].bool()) ?? false
-        productCreated = (try? row.columns[14].int()) ?? 0
-        productUpdated = (try? row.columns[15].int()) ?? 0
-        productAmazonUpdated = (try? row.columns[16].int()) ?? 0
-
-        if row.columns.count > 17 {
-            var r = row;
-            r.columns = Array(r.columns.dropFirst(17))
-            _brand.decode(row: r)
-        }
+    override func decode(row: PostgresRow) {
+        productId = row.column("productId")?.int ?? 0
+        brandId = row.column("brandId")?.int ?? 0
+        productCode = row.column("productCode")?.string ?? ""
+        productName = row.column("productName")?.string ?? ""
+        //productType = row.column("producttype")?.string ?? ""
+        productUm = row.column("productUm")?.string ?? ""
+        productPrice = try! row.column("productPrice")?.jsonb(as: Price.self) ?? productPrice
+        productDiscount = try! row.column("productDiscount")?.jsonb(as: Discount.self) ?? productDiscount
+        productPackaging = try! row.column("productPackaging")?.jsonb(as: Packaging.self) ?? productPackaging
+        productTax = try! row.column("productTax")?.jsonb(as: Tax.self) ?? productTax
+        productDescription = try! row.column("productDescription")?.jsonb(as: [Translation].self) ?? productDescription
+        productMedia = try! row.column("productMedia")?.jsonb(as: [Media].self) ?? productMedia
+        productSeo = try! row.column("productSeo")?.jsonb(as: Seo.self) ?? productSeo
+        productIsActive = row.column("productIsActive")?.bool ?? false
+        productIsValid = row.column("productIsValid")?.bool ?? false
+        productCreated = row.column("productCreated")?.int ?? 0
+        productUpdated = row.column("productUpdated")?.int ?? 0
+        productAmazonUpdated = row.column("productAmazonUpdated")?.int ?? 0
+        _brand.decode(row: row)
     }
     
     func rows(sql: String, barcodes: Bool, storeIds: String = "0") throws -> [Product] {
@@ -113,16 +94,15 @@ class Product: PostgresTable, PostgresJson {
         let rows = try self.sqlRows(sql)
  
         let groups = rows.groupBy { row -> Int in
-            try! row.columns[0].int()
+            row.column("productId")!.int!
         }
         
         for group in groups {
             let row = Product()
             row.decode(row: group.value.first!)
             
-            for var cat in group.value {
+            for cat in group.value {
                 let productCategory = ProductCategory()
-                cat.columns = Array(cat.columns.dropFirst(24))
                 productCategory.decode(row: cat)
                 row._categories.append(productCategory)
             }
@@ -240,18 +220,15 @@ class Product: PostgresTable, PostgresJson {
         
         let rows = try productAttribute.sqlRows(sql)
         let groups = rows.groupBy { row -> Int in
-            try! row.columns[0].int()
+            row.column("productId")!.int!
         }
         
         for group in groups {
             let pa = ProductAttribute()
             pa.decode(row: group.value.first!)
-            for var att in group.value {
-                att.columns = Array(att.columns.dropFirst(8))
-                
+            for att in group.value {
                 let productAttributeValue = ProductAttributeValue()
                 productAttributeValue.decode(row: att)
-
                 pa._attributeValues.append(productAttributeValue)
             }
             _attributes.append(pa)
@@ -280,35 +257,28 @@ class Product: PostgresTable, PostgresJson {
 //            throw ZenError.recordNotFound
 //        }
         let groups = rows.groupBy { row -> Int in
-            try! row.columns[0].int()
+            row.column("articleId")!.int!
         }
         
         for group in groups {
             let article = Article()
             article.decode(row: group.value.first!)
-            for var art in group.value {
-                art.columns = Array(art.columns.dropFirst(7))
-                
+            for art in group.value {
                 let attributeValue = ArticleAttributeValue()
                 attributeValue.decode(row: art)
-
                 article._attributeValues.append(attributeValue)
             }
             _articles.append(article)
         }
 	}
 
-	func makeArticle(barcode: String, rows: [Row]) throws {
+	func makeArticle(barcode: String, rows: [PostgresRow]) throws {
         let article = Article(db: db!)
         
-        var r = rows[0]
-        r.columns = Array(r.columns.dropFirst(r.columns.count - 11))
-        article.decode(row: r)
+        article.decode(row: rows[0])
         article._attributeValues = rows.map({ row -> ArticleAttributeValue in
-            var r = row
-            r.columns = Array(r.columns.dropFirst(r.columns.count - 3))
             let a = ArticleAttributeValue()
-            a.decode(row: r)
+            a.decode(row: row)
             return a
         })
         self._articles = [article]
@@ -362,15 +332,14 @@ class Product: PostgresTable, PostgresJson {
         if rows.count == 0 { throw ZenError.recordNotFound }
 
         let groups = rows.groupBy { row -> Int in
-            try! row.columns[0].int()
+            row.column("productId")!.int!
         }
         
         for group in groups {
             decode(row: group.value.first!)
             
-            for var cat in group.value {
+            for cat in group.value {
                 let productCategory = ProductCategory()
-                cat.columns = Array(cat.columns.dropFirst(24))
                 productCategory.decode(row: cat)
                 _categories.append(productCategory)
             }

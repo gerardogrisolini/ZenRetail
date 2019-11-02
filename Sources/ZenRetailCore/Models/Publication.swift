@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresClientKit
+import PostgresNIO
 import ZenPostgres
 
 
@@ -42,13 +42,13 @@ class Publication: PostgresTable, Codable {
         super.init()
     }
     
-    override func decode(row: Row) {
-        publicationId = (try? row.columns[0].int()) ?? 0
-        productId = (try? row.columns[1].int()) ?? 0
-		publicationFeatured = (try? row.columns[2].bool()) ?? false
-        publicationStartAt = (try? row.columns[3].int()) ?? 0
-        publicationFinishAt = (try? row.columns[4].int()) ?? 0
-		publicationUpdated = (try? row.columns[5].int()) ?? 0
+    override func decode(row: PostgresRow) {
+        publicationId = row.column("publicationId")?.int ?? 0
+        productId = row.column("productId")?.int ?? 0
+        publicationFeatured = row.column("publicationFeatured")?.bool ?? false
+        publicationStartAt = row.column("publicationStartAt")?.int ?? 0
+        publicationFinishAt = row.column("publicationFinishAt")?.int ?? 0
+        publicationUpdated = row.column("publicationUpdated")?.int ?? 0
     }
     
     required init(from decoder: Decoder) throws {

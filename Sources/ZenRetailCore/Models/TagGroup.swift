@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import PostgresClientKit
+import PostgresNIO
 import ZenPostgres
 
 
@@ -33,14 +33,12 @@ class TagGroup: PostgresTable, Codable {
         self.tableIndexes.append("tagGroupName")
     }
     
-    override func decode(row: Row) {
-        tagGroupId = (try? row.columns[0].int()) ?? 0
-        tagGroupName = (try? row.columns[1].string()) ?? ""
-        if let translates = row.columns[2].data {
-            tagGroupTranslates = try! JSONDecoder().decode([Translation].self, from: translates)
-        }
-        tagGroupCreated = (try? row.columns[3].int()) ?? 0
-        tagGroupUpdated = (try? row.columns[4].int()) ?? 0
+    override func decode(row: PostgresRow) {
+        tagGroupId = row.column("tagGroupId")?.int ?? 0
+        tagGroupName = row.column("tagGroupName")?.string ?? ""
+        tagGroupTranslates = try! row.column("tagGroupTranslates")?.jsonb(as: [Translation].self) ?? tagGroupTranslates
+        tagGroupCreated = row.column("tagGroupCreated")?.int ?? 0
+        tagGroupUpdated = row.column("tagGroupUpdated")?.int ?? 0
     }
     
     required init(from decoder: Decoder) throws {
@@ -64,7 +62,7 @@ class TagGroup: PostgresTable, Codable {
         let rows: [TagGroup] = try self.query(
             whereclause: "tagGroupName = $1",
             params: ["Marketplace"],
-            cursor: CursorConfig(limit: 1, offset: 0)
+            cursor: Cursor(limit: 1, offset: 0)
         )
         if rows.count == 0 {
             self.tagGroupId = 0

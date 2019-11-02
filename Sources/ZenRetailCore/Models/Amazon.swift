@@ -6,8 +6,8 @@
 //
 
 import Foundation
+import PostgresNIO
 import ZenPostgres
-import PostgresClientKit
 
 class Amazon: Codable {
     
@@ -19,7 +19,7 @@ class Amazon: Codable {
     public var authToken: String = ""
     public var userAgent: String = "ZenRetail/1.0 (Language=Swift/5.0)"
     
-    func create(db: Connection) throws {
+    func create(db: PostgresConnection) throws {
         let settings = Settings(db: db)
         let rows: [Settings] = try settings.query()
         if rows.count == 30 {

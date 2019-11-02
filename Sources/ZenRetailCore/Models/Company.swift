@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresClientKit
+import PostgresNIO
 import ZenPostgres
 
 class Company: Codable {
@@ -63,7 +63,7 @@ class Company: Codable {
         return try create(db: db)
     }
     
-    func create(db: Connection) throws {
+    func create(db: PostgresConnection) throws {
         let encoder = JSONEncoder()
         let settings = Settings(db: db)
         let rows: [Settings] = try settings.query()
@@ -92,7 +92,7 @@ class Company: Codable {
         return try save(db: db)
     }
 
-    func save(db: Connection) throws {
+    func save(db: PostgresConnection) throws {
         let encoder = JSONEncoder()
         let settings = Settings(db: db)
         let mirror = Mirror(reflecting: self)
@@ -117,7 +117,7 @@ class Company: Codable {
         return try select(db: db)
     }
 
-    func select(db: Connection) throws {
+    func select(db: PostgresConnection) throws {
         let decoder = JSONDecoder()
         let settings = Settings(db: db)
         let rows: [Settings] = try settings.query()

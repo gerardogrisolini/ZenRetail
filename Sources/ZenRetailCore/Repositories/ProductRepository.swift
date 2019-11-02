@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresClientKit
+import PostgresNIO
 import ZenPostgres
 import ZenNIO
 import SwiftGD
@@ -89,7 +89,6 @@ struct ProductRepository : ProductProtocol {
         let sql = item.querySQL(
             whereclause: "Product.productId = $1",
             params: [String(id)],
-            cursor: CursorConfig(limit: 1, offset: 0),
             joins: defaultJoins()
         )
  
@@ -97,15 +96,14 @@ struct ProductRepository : ProductProtocol {
         if rows.count == 0 { throw ZenError.recordNotFound }
 
         let groups = rows.groupBy { row -> Int in
-            try! row.columns[0].int()
+            row.column("productId")!.int!
         }
         
         for group in groups {
             item.decode(row: group.value.first!)
             
-            for var cat in group.value {
+            for cat in group.value {
                 let productCategory = ProductCategory()
-                cat.columns = Array(cat.columns.dropFirst(24))
                 productCategory.decode(row: cat)
                 item._categories.append(productCategory)
             }
@@ -159,7 +157,7 @@ struct ProductRepository : ProductProtocol {
             var category = Category(db: db)
             let categories: [Category] = try category.query(
                 whereclause: "categoryName = $1", params: [c._category.categoryName],
-                cursor: CursorConfig(limit: 1, offset: 0)
+                cursor: Cursor(limit: 1, offset: 0)
             )
             if categories.count == 1 {
                 category = categories.first!

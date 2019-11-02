@@ -6,7 +6,7 @@
 //
 //
 
-import PostgresClientKit
+import PostgresNIO
 import ZenPostgres
 
 
@@ -47,7 +47,7 @@ struct MovementRepository : MovementProtocol {
     }
     
     func getAll() throws -> [Movement] {
-        return try Movement().query(cursor: CursorConfig(limit: 1000, offset: 0))
+        return try Movement().query(cursor: Cursor(limit: 1000, offset: 0))
     }
     
     func getAll(device: String, user: String, date: Int) throws -> [Movement] {
@@ -90,20 +90,19 @@ ORDER BY name, oper
         if items.count > 0 {
             for i in 0...items.count - 1 {
                 
-                let row = items[i]
-                whouse.id = (try? row.columns[0].int()) ?? 0
-                whouse.sku = (try? row.columns[1].string()) ?? ""
-                whouse.name = (try? row.columns[2].string()) ?? ""
-                let oper = (try? row.columns[3].string()) ?? ""
+                let item = items[i]
+                whouse.id = item.column("id")?.int ?? 0
+                whouse.sku = item.column("sku")?.string ?? ""
+                whouse.name = item.column("name")?.string ?? ""
+                let oper = item.column("oper")?.string ?? ""
                 if oper == "1" {
-                    whouse.loaded = (try? row.columns[4].double()) ?? 0
+                    whouse.loaded = item.column("value")?.double ?? 0
                 } else {
-                    whouse.unloaded = (try? row.columns[4].double()) ?? 0
+                    whouse.unloaded = item.column("value")?.double ?? 0
                 }
-                
+
                 let nextIndex = i + 1
-                let id = try items[nextIndex].columns[0].int()
-                if nextIndex == items.count || id != whouse.id {
+                if nextIndex == items.count || items[nextIndex].column("id")?.int != whouse.id {
                     whouse.stock = whouse.loaded - whouse.unloaded
                     whouses.append(whouse)
                     whouse = Whouse()
@@ -310,7 +309,7 @@ ORDER BY "MovementArticle"."movementArticleId"
                 let stocks: [Stock] = try stock.query(
                     whereclause: "articleId = $1 AND storeId = $2",
                     params: [ articleId, storeId ],
-                    cursor: CursorConfig(limit: 1, offset: 0))
+                    cursor: Cursor(limit: 1, offset: 0))
                 
                 if (stocks.count == 1) {
                     stock = stocks.first!
@@ -349,7 +348,7 @@ ORDER BY "MovementArticle"."movementArticleId"
     }
     
     func clone(sourceId: Int) throws -> Movement {
-        let item = try self.get(id: sourceId)!
+        let item = (try self.get(id: sourceId))!
         item.movementId = 0
         item.movementNumber = 0
         item.movementDate = Int.now()

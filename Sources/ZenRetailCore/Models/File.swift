@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import PostgresClientKit
+import PostgresNIO
 import ZenPostgres
 import ZenNIO
 
@@ -76,21 +76,21 @@ class File: PostgresTable, Codable {
     public var fileName : String = ""
     public var fileContentType : String = ""
     public var fileType : String = "media"
-    public var fileData : Data = Data()
+    public var fileData : [UInt8] = [UInt8]()
     public var fileSize : Int = 0
     public var fileCreated : Int = Int.now()
 
-    override func decode(row: Row) {
-        fileId = (try? row.columns[0].int()) ?? fileId
-        fileName = (try? row.columns[1].string()) ?? fileName
-        fileContentType = (try? row.columns[2].string()) ?? fileContentType
-        fileType = (try? row.columns[3].string()) ?? fileType
-        fileData = (try? row.columns[4].byteA().data) ?? fileData
-        fileSize = (try? row.columns[5].int()) ?? fileSize
-        fileCreated = (try? row.columns[6].int()) ?? fileCreated
+    override func decode(row: PostgresRow) {
+        fileId = row.column("fileId")?.int ?? 0
+        fileName = row.column("fileName")?.string ?? ""
+        fileContentType = row.column("fileContentType")?.string ?? ""
+        fileType = row.column("fileType")?.string ?? fileType
+        fileData = row.column("fileData")?.bytes ?? fileData
+        fileSize = row.column("fileSize")?.int ?? 0
+        fileCreated = row.column("fileCreated")?.int ?? 0
     }
 
-    func getData(filename: String, size: MediaType) throws -> Data? {
+    func getData(filename: String, size: MediaType) throws -> [UInt8]? {
 //        var name = filename
 //        if let index = name.firstIndex(of: "?") {
 //            name = name[name.startIndex...name.index(before: index)].description
@@ -99,16 +99,16 @@ class File: PostgresTable, Codable {
         let files: [File] = try query(
             whereclause: "fileName = $1 AND fileType = $2",
             params: [filename, size.rawValue],
-            cursor: CursorConfig(limit: 1, offset: 0)
+            cursor: Cursor(limit: 1, offset: 0)
         )
         if files.count > 0 {
-            return files.first!.fileData
+            return files[0].fileData
         }
         return nil
     }
     
     func setData(data: Data) {
-        fileData = data
+        fileData = [UInt8](data)
         fileSize = data.count
     }
 
@@ -118,7 +118,7 @@ class File: PostgresTable, Codable {
             let files: [File] = try self.query(
                 whereclause: "fileName = $1",
                 params: [fileName],
-                cursor: CursorConfig(limit: 1, offset: 0)
+                cursor: Cursor(limit: 1, offset: 0)
             )
             if files.count == 0 {
                 if let data = FileManager.default.contents(atPath: "./Assets/\(fileName)") {
@@ -141,7 +141,7 @@ class File: PostgresTable, Codable {
 //                let files: [File] = try self.query(
 //                    whereclause: "fileName = $1 AND fileType = $2",
 //                    params: [fileName, type],
-//                    cursor: CursorConfig(limit: 1, offset: 0)
+//                    cursor: Cursor(limit: 1, offset: 0)
 //                )
 //                if files.count == 0 {
 //                    if let data = FileManager.default.contents(atPath: "./webroot/\(type)/\(fileName)") {
@@ -158,21 +158,42 @@ class File: PostgresTable, Codable {
 //    }
     
     override func save() throws {
-        let text = """
+        let sql = """
 INSERT INTO "File" ("fileName", "fileContentType", "fileType", "fileData", "fileSize", "fileCreated")
 VALUES ($1, $2, $3, $4, $5, $6)
 """
-        let statement = try db!.prepareStatement(text: text)
-        defer { statement.close() }
-        let cursor = try statement.execute(parameterValues: [
-            fileName,
-            fileContentType,
-            fileType,
-            PostgresByteA(data: fileData),
-            fileSize,
-            fileCreated
-        ])
-        cursor.close()
+        let postgresData = [
+            PostgresData(string: fileName),
+            PostgresData(string: fileContentType),
+            PostgresData(string: fileType),
+            PostgresData(bytes: fileData),
+            PostgresData(int: fileSize),
+            PostgresData(int: fileCreated)
+        ]
+        
+        guard let db = db else {
+            throw ZenError.connectionNotFound
+        }
+        
+        var error: Error?
+        let semaphore = DispatchSemaphore(value: 0)
+        let query = db.query(sql, postgresData)
+        
+        query.whenComplete { result in
+            switch result {
+            case .success(_):
+                error = nil
+            case .failure(let err):
+                error = err
+            }
+            semaphore.signal()
+        }
+
+        semaphore.wait()
+        
+        if let error = error {
+            throw error
+        }
     }
 }
 

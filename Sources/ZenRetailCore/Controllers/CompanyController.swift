@@ -70,7 +70,7 @@ class CompanyController {
             if let filename: String = request.getParam("filename"),
                 let data = try? file.getData(filename: filename, size: size) {
                     response.addHeader(.contentType, value: file.fileContentType)
-                    response.send(data: data)
+                    response.send(data: Data(data))
                     response.completed()
             } else {
                 response.completed( .notFound)

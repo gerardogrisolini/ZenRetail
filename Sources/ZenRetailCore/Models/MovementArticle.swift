@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresClientKit
+import PostgresNIO
 import ZenPostgres
 
 
@@ -41,17 +41,15 @@ class MovementArticle: PostgresTable, Codable {
         super.init()
     }
     
-    override func decode(row: Row) {
-        movementArticleId = (try? row.columns[0].int()) ?? 0
-        movementId = (try? row.columns[1].int()) ?? 0
-        movementArticleBarcode = (try? row.columns[2].string()) ?? ""
-        if let product = row.columns[3].data {
-            movementArticleProduct = try! JSONDecoder().decode(Product.self, from: product)
-        }
-        movementArticleQuantity = (try? row.columns[4].double()) ?? 0
-        movementArticleDelivered = (try? row.columns[5].double()) ?? 0
-        movementArticlePrice = (try? row.columns[6].double()) ?? 0
-		movementArticleUpdated = (try? row.columns[7].int()) ?? 0
+    override func decode(row: PostgresRow) {
+        movementArticleId = row.column("movementArticleId")?.int ?? 0
+        movementId = row.column("movementId")?.int ?? 0
+        movementArticleBarcode = row.column("movementArticleBarcode")?.string ?? ""
+        movementArticleQuantity = row.column("movementArticleQuantity")?.double ?? 0
+        movementArticleDelivered = row.column("movementArticleDelivered")?.double ?? 0
+        movementArticlePrice = row.column("movementArticlePrice")?.double ?? 0
+        movementArticleUpdated = row.column("movementArticleUpdated")?.int ?? 0
+        movementArticleProduct = try! row.column("movementArticleProduct")?.jsonb(as: Product.self) ?? movementArticleProduct
     }
     
     required init(from decoder: Decoder) throws {

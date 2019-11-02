@@ -14,7 +14,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/gerardogrisolini/ZenNIO.git", .branch("master")),
-        .package(url: "https://github.com/gerardogrisolini/ZenPostgres.git", .branch("master")),
+        .package(url: "https://github.com/gerardogrisolini/ZenPostgres.git", .branch("swift-nio")),
         .package(url: "https://github.com/gerardogrisolini/ZenSMTP.git", .branch("master")),
         .package(url: "https://github.com/gerardogrisolini/ZenMWS.git", .branch("master")),
         .package(url: "https://github.com/gerardogrisolini/ZenEBAY.git", .branch("master")),

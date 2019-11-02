@@ -8,7 +8,7 @@
 
 import Foundation
 import ZenPostgres
-import PostgresClientKit
+import PostgresNIO
 
 struct ArticleRepository : ArticleProtocol {
 
@@ -16,7 +16,7 @@ struct ArticleRepository : ArticleProtocol {
         let article = Article()
         let sql = "SELECT COALESCE(MAX(\"articleNumber\"),0) AS counter FROM \"\(article.table)\" WHERE \"productId\" = \(productId)";
         let getCount = try article.sqlRows(sql)
-        return (try getCount.first?.columns[0].int() ?? 0) + 1
+        return (getCount.first?.column("counter")?.int ?? 0) + 1
     }
 
     func build(productId: Int) throws -> Result {
@@ -204,7 +204,7 @@ struct ArticleRepository : ArticleProtocol {
         return try get(db: db, productId: productId, storeIds: storeIds)
     }
 
-    func get(db: Connection, productId: Int, storeIds: String) throws -> [Article] {
+    func get(db: PostgresConnection, productId: Int, storeIds: String) throws -> [Article] {
         let items = Article(db: db)
 		items._storeIds = storeIds
 		return try items.query(whereclause: "productId = $1",

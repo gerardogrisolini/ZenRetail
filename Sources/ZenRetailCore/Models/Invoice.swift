@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresClientKit
+import PostgresNIO
 import ZenPostgres
 
 
@@ -40,16 +40,14 @@ class Invoice: PostgresTable, Codable {
         super.init()
     }
     
-    override func decode(row: Row) {
-		invoiceId = (try? row.columns[0].int()) ?? 0
-		invoiceNumber = (try? row.columns[1].int()) ?? 0
-		invoiceDate = (try? row.columns[2].int()) ?? 0
-		if let registry = row.columns[3].data {
-            invoiceRegistry = try! JSONDecoder().decode(Registry.self, from: registry)
-        }
-		invoicePayment = (try? row.columns[4].string()) ?? ""
-		invoiceNote = (try? row.columns[5].string()) ?? ""
-		invoiceUpdated = (try? row.columns[6].int()) ?? 0
+    override func decode(row: PostgresRow) {
+        invoiceId = row.column("invoiceId")?.int ?? 0
+        invoiceNumber = row.column("invoiceNumber")?.int ?? 0
+        invoiceDate = row.column("invoiceDate")?.int ?? 0
+        invoiceRegistry = try! row.column("invoiceRegistry")?.jsonb(as: Registry.self) ?? invoiceRegistry
+        invoicePayment = row.column("invoicePayment")?.string ?? ""
+        invoiceNote = row.column("invoiceNote")?.string ?? ""
+        invoiceUpdated = row.column("invoiceUpdated")?.int ?? 0
 
         let sql = """
 SELECT SUM(a."movementArticleQuantity" * a."movementArticlePrice") AS amount
@@ -59,7 +57,7 @@ WHERE b."invoiceId" = \(invoiceId)
 """
         do {
             let getCount = try self.sqlRows(sql)
-            _invoiceAmount = (try? getCount.first?.columns[0].double()) ?? 0
+            _invoiceAmount = getCount.first?.column("amount")?.double ?? 0
         } catch {
             print(error)
         }
@@ -107,6 +105,6 @@ WHERE b."invoiceId" = \(invoiceId)
 		self.invoiceNumber = 1
 		let sql = "SELECT COALESCE(MAX(\"invoiceNumber\"),0) AS counter FROM \"\(table)\" WHERE \"invoiceDate\" > \(date.timeIntervalSinceReferenceDate)"
 		let getCount = try self.sqlRows(sql)
-		self.invoiceNumber += (try? getCount.first?.columns[0].int()) ?? 0
+		self.invoiceNumber += getCount.first?.column("counter")?.int ?? 0
 	}
 }

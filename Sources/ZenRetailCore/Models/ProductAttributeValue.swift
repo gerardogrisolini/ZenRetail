@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresClientKit
+import PostgresNIO
 import ZenPostgres
 
 
@@ -32,14 +32,11 @@ class ProductAttributeValue: PostgresTable, Codable, Equatable {
         super.init()
     }
     
-    override func decode(row: Row) {
-        productAttributeValueId	= (try? row.columns[0].int()) ?? 0
-        productAttributeId = (try? row.columns[1].int()) ?? 0
-        attributeValueId = (try? row.columns[2].int()) ?? 0
-
-        var r = row;
-        r.columns = Array(r.columns.dropFirst(3))
-        _attributeValue.decode(row: r)
+    override func decode(row: PostgresRow) {
+        productAttributeValueId    = row.column("productAttributeValueId")?.int ?? 0
+        productAttributeId = row.column("productAttributeId")?.int ?? 0
+        attributeValueId = row.column("attributeValueId")?.int ?? 0
+        _attributeValue.decode(row: row)
     }
 
     required init(from decoder: Decoder) throws {

@@ -6,7 +6,7 @@
 //
 //
 
-import PostgresClientKit
+import PostgresNIO
 
 protocol ArticleProtocol {
     

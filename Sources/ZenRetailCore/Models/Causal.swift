@@ -6,7 +6,7 @@
 //
 //
 
-import PostgresClientKit
+import PostgresNIO
 import ZenPostgres
 
 
@@ -34,18 +34,18 @@ class Causal: PostgresTable, PostgresJson {
         self.tableIndexes.append("causalName")
     }
     
-    override func decode(row: Row) {
-        causalId  = (try? row.columns[0].int()) ?? 0
-        causalName = (try? row.columns[1].string()) ?? ""
-        causalQuantity = (try? row.columns[2].int()) ?? 0
-        causalBooked = (try? row.columns[2].int()) ?? 0
-        causalIsPos = (try? row.columns[4].bool()) ?? false
-        causalCreated = (try? row.columns[5].int()) ?? 0
-        causalUpdated = (try? row.columns[6].int()) ?? 0
+    override func decode(row: PostgresRow) {
+        causalId  = row.column("causalId")?.int ?? 0
+        causalName = row.column("causalName")?.string ?? ""
+        causalQuantity = row.column("causalQuantity")?.int ?? 0
+        causalBooked = row.column("causalBooked")?.int ?? 0
+        causalIsPos = row.column("causalIsPos")?.bool ?? false
+        causalCreated = row.column("causalCreated")?.int ?? 0
+        causalUpdated = row.column("causalUpdated")?.int ?? 0
     }
 
     func setupDefaults() throws {
-        let rows: [Causal] = try self.query(cursor: CursorConfig(limit: 1, offset: 0))
+        let rows: [Causal] = try self.query(cursor: Cursor(limit: 1, offset: 0))
         if rows.count == 0 {
             let inventory = Causal(db: db!)
             inventory.causalName = "Warehouse load"

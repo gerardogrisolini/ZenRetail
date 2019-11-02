@@ -17,7 +17,7 @@ struct UserRepository : UserProtocol {
     }
     
     func get(id: String) throws -> User? {
-        let rows: [User] = try User().query(whereclause: "uniqueID = $1", params: [id], cursor: CursorConfig(limit: 1, offset: 0))
+        let rows: [User] = try User().query(whereclause: "uniqueID = $1", params: [id], cursor: Cursor(limit: 1, offset: 0))
         return rows.first
     }
     

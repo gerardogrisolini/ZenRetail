@@ -10,7 +10,7 @@ import ZenNIO
 import ZenNIOSSL
 import ZenSMTP
 import ZenPostgres
-import PostgresClientKit
+import PostgresNIO
 
 
 public class ZenRetail {

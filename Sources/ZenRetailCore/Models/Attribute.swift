@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresClientKit
+import PostgresNIO
 import ZenPostgres
 
 
@@ -30,14 +30,12 @@ class Attribute: PostgresTable, Codable {
         self.tableIndexes.append("attributeName")
     }
 
-    override func decode(row: Row) {
-        attributeId = (try? row.columns[0].int()) ?? 0
-        attributeName = (try? row.columns[1].string()) ?? ""
-        if let translates = row.columns[2].data {
-            attributeTranslates = try! JSONDecoder().decode([Translation].self, from: translates)
-        }
-        attributeCreated = (try? row.columns[3].int()) ?? 0
-        attributeUpdated = (try? row.columns[4].int()) ?? 0
+    override func decode(row: PostgresRow) {
+        attributeId = row.column("attributeId")?.int ?? 0
+        attributeName = row.column("attributeName")?.string ?? ""
+        attributeTranslates = try! row.column("attributeTranslates")?.jsonb(as: [Translation].self) ?? attributeTranslates
+        attributeCreated = row.column("attributeCreated")?.int ?? 0
+        attributeUpdated = row.column("attributeUpdated")?.int ?? 0
     }
 
     required init(from decoder: Decoder) throws {
@@ -76,7 +74,7 @@ class Attribute: PostgresTable, Codable {
     }
 
     func setupMarketplace() throws {
-        let rows: [Attribute] = try query(cursor: CursorConfig(limit: 1, offset: 0))
+        let rows: [Attribute] = try query(cursor: Cursor(limit: 1, offset: 0))
         if rows.count == 0 {
             try addAttribute(name: "None")
             try addAttribute(name: "Material")

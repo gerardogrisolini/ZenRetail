@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresClientKit
+import PostgresNIO
 import ZenPostgres
 
 
@@ -37,22 +37,15 @@ class AttributeValue: PostgresTable, Codable {
         self.tableIndexes.append("attributeValueName")
     }
     
-    override func decode(row: Row) {
-        if row.columns.count != 8 { return }
-        
-        attributeValueId = (try? row.columns[0].int()) ?? 0
-		attributeId = (try? row.columns[1].int()) ?? 0
-        attributeValueCode = (try? row.columns[2].string()) ?? ""
-        attributeValueName = (try? row.columns[3].string()) ?? ""
-        let decoder = JSONDecoder()
-        if let media = row.columns[4].data {
-            attributeValueMedia = try! decoder.decode(Media.self, from: media)
-        }
-        if let translates = row.columns[5].data {
-            attributeValueTranslates = try! decoder.decode([Translation].self, from: translates)
-        }
-        attributeValueCreated = (try? row.columns[6].int()) ?? 0
-        attributeValueUpdated = (try? row.columns[7].int()) ?? 0
+    override func decode(row: PostgresRow) {
+        attributeValueId = row.column("attributeValueId")?.int ?? 0
+        attributeId = row.column("attributeId")?.int ?? 0
+        attributeValueCode = row.column("attributeValueCode")?.string ?? ""
+        attributeValueName = row.column("attributeValueName")?.string ?? ""
+        attributeValueMedia = try! row.column("attributeValueMedia")?.jsonb(as: Media.self) ?? attributeValueMedia
+        attributeValueTranslates = try! row.column("attributeValueTranslates")?.jsonb(as: [Translation].self) ?? attributeValueTranslates
+        attributeValueCreated = row.column("attributeValueCreated")?.int ?? 0
+        attributeValueUpdated = row.column("attributeValueUpdated")?.int ?? 0
     }
 
     required init(from decoder: Decoder) throws {
@@ -63,7 +56,7 @@ class AttributeValue: PostgresTable, Codable {
         attributeId = try container.decode(Int.self, forKey: .attributeId)
         attributeValueCode = try container.decode(String.self, forKey: .attributeValueCode)
         attributeValueName = try container.decode(String.self, forKey: .attributeValueName)
-        attributeValueMedia = try? container.decodeIfPresent(Media.self, forKey: .attributeValueMedia)
+        attributeValueMedia = try container.decodeIfPresent(Media.self, forKey: .attributeValueMedia)
         attributeValueTranslates = try container.decodeIfPresent([Translation].self, forKey: .attributeValueTranslates) ?? [Translation]()
     }
     

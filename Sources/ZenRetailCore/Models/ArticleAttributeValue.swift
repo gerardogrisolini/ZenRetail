@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import PostgresClientKit
+import PostgresNIO
 import ZenPostgres
 
 
@@ -26,10 +26,10 @@ class ArticleAttributeValue: PostgresTable, Codable {
         case _attributeValue = "attributeValue"
     }
     
-    override func decode(row: Row) {
-        articleAttributeValueId = (try? row.columns[0].int()) ?? 0
-        articleId = (try? row.columns[1].int()) ?? 0
-        attributeValueId = (try? row.columns[2].int()) ?? 0
+    override func decode(row: PostgresRow) {
+        articleAttributeValueId = row.column("articleAttributeValueId")?.int ?? 0
+        articleId = row.column("articleId")?.int ?? 0
+        attributeValueId = row.column("attributeValueId")?.int ?? 0
     }
     
     required init() {

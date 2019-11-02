@@ -230,15 +230,14 @@ ORDER BY "Product"."productName"
         if rows.count == 0 { throw ZenError.recordNotFound }
         
         let groups = rows.groupBy { row -> Int in
-            try! row.columns[0].int()
+            row.column("productId")!.int!
         }
         
         for group in groups {
             item.decode(row: group.value.first!)
             
-            for var cat in group.value {
+            for cat in group.value {
                 let productCategory = ProductCategory()
-                cat.columns = Array(cat.columns.dropFirst(24))
                 productCategory.decode(row: cat)
                 item._categories.append(productCategory)
             }
@@ -376,7 +375,7 @@ ORDER BY "Product"."productName"
         }
         
         var store = Store(db: db)
-        let stores: [Store] = try store.query(orderby: ["storeId"], cursor: CursorConfig(limit: 1, offset: 0))
+        let stores: [Store] = try store.query(orderby: ["storeId"], cursor: Cursor(limit: 1, offset: 0))
         if stores.count == 1 {
             store = stores.first!
         }
@@ -384,7 +383,7 @@ ORDER BY "Product"."productName"
             whereclause: "causalBooked = $1 AND causalQuantity = $2 AND causalIsPos = $3",
             params: [1, -1 , true],
             orderby: ["causalId"],
-            cursor: CursorConfig(limit: 1, offset: 0)
+            cursor: Cursor(limit: 1, offset: 0)
         )
         if causals.count == 0 {
             throw ZenError.error("no causal found")
@@ -436,7 +435,7 @@ ORDER BY "Product"."productName"
         let item = Movement()
         let items: [Movement] = try item.query(whereclause: "movementRegistry ->> $1 = $2 AND movementId = $3",
                                                params: ["registryId", registryId, id],
-                                               cursor: CursorConfig(limit: 1, offset: 0))
+                                               cursor: Cursor(limit: 1, offset: 0))
         if items.count > 0 {
             return items.first!
         }
