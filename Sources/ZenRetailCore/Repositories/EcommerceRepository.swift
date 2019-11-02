@@ -182,15 +182,26 @@ ORDER BY "Publication"."publicationStartAt" DESC
     }
     
     func getProducts(category: String) throws -> [Product] {
-        let obj = Product()
-        let sql = obj.querySQL(
-            whereclause: "Category.categorySeo ->> $1 = $2 AND Publication.publicationStartAt <= $3 AND Publication.publicationFinishAt >= $3 AND Product.productIsActive = $4",
-            params: ["permalink", category, Int.now(), true],
-            orderby: ["Product.productName"],
-            joins: defaultJoins()
-        )
-        
-        return try obj.rows(sql: sql, barcodes: false)
+        let sql = """
+SELECT "Product".*, "Brand".*, "ProductCategory".*, "Category".*, "Publication".*
+FROM "Product"
+INNER JOIN "Brand" ON "Product"."brandId" = "Brand"."brandId"
+LEFT JOIN "ProductCategory" ON "Product"."productId" = "ProductCategory"."productId"
+INNER JOIN "Category" ON "ProductCategory"."categoryId" = "Category"."categoryId"
+INNER JOIN "Publication" ON "Product"."productId" = "Publication"."productId"
+WHERE "Product"."productId" IN (
+    SELECT DISTINCT "Product"."productId"
+    FROM "Product"
+    INNER JOIN "ProductCategory" ON "Product"."productId" = "ProductCategory"."productId"
+    INNER JOIN "Category" ON "ProductCategory"."categoryId" = "Category"."categoryId"
+    WHERE "Category"."categorySeo" ->> 'permalink' = '\(category)'
+    AND "Product"."productIsActive" = true
+)
+AND "Publication"."publicationStartAt" <= \(Int.now())
+AND "Publication"."publicationFinishAt" >= \(Int.now())
+ORDER BY "Product"."productName"
+"""
+        return try Product().rows(sql: sql, barcodes: false)
     }
 
     func findProducts(text: String) throws -> [Product] {
