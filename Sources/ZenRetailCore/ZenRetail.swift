@@ -87,7 +87,15 @@ public class ZenRetail {
     private func setupSmtp() throws {
         let company = Company()
         try company.select()
-        
+
+        if let smtpUsername = ProcessInfo.processInfo.environment["SENDGRID_USERNAME"],
+            let smtpPassword = ProcessInfo.processInfo.environment["SENDGRID_PASSWORD"] {
+            company.smtpHost = "smtp.sendgrid.net"
+            company.smtpUsername = smtpUsername
+            company.smtpPassword = smtpPassword
+            try company.save()
+        }
+
         let config = ServerConfiguration(
             hostname: company.smtpHost,
             port: company.smtpSsl ? 587 : 25,
