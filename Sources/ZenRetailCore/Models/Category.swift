@@ -74,7 +74,7 @@ class Category: PostgresTable, Codable {
         translation.country = "EN"
         translation.value = description
         
-        let item = Category(db: db!)
+        let item = Category(connection: connection!)
         item.categoryName = name
         item.categoryIsPrimary = isPrimary
         item.categoryDescription.append(translation)

@@ -55,7 +55,7 @@ class Attribute: PostgresTable, Codable {
     }
 
     fileprivate func addAttribute(name: String) throws {
-        let item = Attribute(db: db!)
+        let item = Attribute(connection: connection!)
         item.attributeName = name
         item.attributeCreated = Int.now()
         item.attributeUpdated = Int.now()
@@ -64,7 +64,7 @@ class Attribute: PostgresTable, Codable {
         }
         
         if name == "None" {
-            let value = AttributeValue(db: db!)
+            let value = AttributeValue(connection: connection!)
             value.attributeId = item.attributeId
             value.attributeValueName = name
             value.attributeValueCreated = Int.now()

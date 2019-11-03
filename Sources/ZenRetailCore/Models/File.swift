@@ -122,7 +122,7 @@ class File: PostgresTable, Codable {
             )
             if files.count == 0 {
                 if let data = FileManager.default.contents(atPath: "./Assets/\(fileName)") {
-                    let file = File(db: db!)
+                    let file = File(connection: connection!)
                     file.fileName = fileName
                     file.fileContentType = fileName.hasSuffix(".csv") ? "text/csv" : "image/png"
                     file.fileType = fileName.hasSuffix(".csv") ? MediaType.csv.rawValue : MediaType.media.rawValue
@@ -145,7 +145,7 @@ class File: PostgresTable, Codable {
 //                )
 //                if files.count == 0 {
 //                    if let data = FileManager.default.contents(atPath: "./webroot/\(type)/\(fileName)") {
-//                        let file = File(db: db!)
+//                        let file = File(connection: connection!)
 //                        file.fileName = fileName
 //                        file.fileContentType = fileName.hasSuffix(".csv") ? "text/csv" : "image/png"
 //                        file.fileType = type
@@ -171,13 +171,13 @@ VALUES ($1, $2, $3, $4, $5, $6)
             PostgresData(int: fileCreated)
         ]
         
-        guard let db = db else {
+        guard let connection = connection else {
             throw ZenError.connectionNotFound
         }
         
         var error: Error?
         let semaphore = DispatchSemaphore(value: 0)
-        let query = db.query(sql, postgresData)
+        let query = connection.query(sql, postgresData)
         
         query.whenComplete { result in
             switch result {

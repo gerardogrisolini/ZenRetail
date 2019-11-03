@@ -58,19 +58,19 @@ class Company: Codable {
     public var shippingExpress : Bool = false
 
     func create() throws {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
-        return try create(db: db)
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
+        return try create(connection: connection)
     }
     
-    func create(db: PostgresConnection) throws {
+    func create(connection: PostgresConnection) throws {
         let encoder = JSONEncoder()
-        let settings = Settings(db: db)
+        let settings = Settings(connection: connection)
         let rows: [Settings] = try settings.query()
         if rows.count == 0 {
             let mirror = Mirror(reflecting: self)
             for case let (label?, value) in mirror.children {
-                let setting = Settings(db: db)
+                let setting = Settings(connection: connection)
                 setting.key = label
                 if value is [Translation] {
                     let jsonData = try encoder.encode(value as! [Translation])
@@ -87,14 +87,14 @@ class Company: Codable {
     }
 
     func save() throws {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
-        return try save(db: db)
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
+        return try save(connection: connection)
     }
 
-    func save(db: PostgresConnection) throws {
+    func save(connection: PostgresConnection) throws {
         let encoder = JSONEncoder()
-        let settings = Settings(db: db)
+        let settings = Settings(connection: connection)
         let mirror = Mirror(reflecting: self)
         for case let (label?, value) in mirror.children {
             if value is [Translation] {
@@ -111,19 +111,19 @@ class Company: Codable {
         }
     }
     
-    func update(db: PostgresConnection, key: String, value: String) throws {
-        _ = try Settings(db: db).update(cols: ["value"], params: [value], id: "key", value: key)
+    func update(connection: PostgresConnection, key: String, value: String) throws {
+        _ = try Settings(connection: connection).update(cols: ["value"], params: [value], id: "key", value: key)
     }
     
     func select() throws {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
-        return try select(db: db)
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
+        return try select(connection: connection)
     }
 
-    func select(db: PostgresConnection) throws {
+    func select(connection: PostgresConnection) throws {
         let decoder = JSONDecoder()
-        let settings = Settings(db: db)
+        let settings = Settings(connection: connection)
         let rows: [Settings] = try settings.query()
         let data = rows.reduce(into: [String: String]()) {
             $0[$1.key] = $1.value

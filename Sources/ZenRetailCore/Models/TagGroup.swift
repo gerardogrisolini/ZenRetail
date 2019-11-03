@@ -70,7 +70,7 @@ class TagGroup: PostgresTable, Codable {
             try self.save {
                 id in self.tagGroupId = id as! Int
             }
-            let tagValue = TagValue(db: db!)
+            let tagValue = TagValue(connection: connection!)
             tagValue.tagGroupId = self.tagGroupId
             tagValue.tagValueCode = "MWS"
             tagValue.tagValueName = "Amazon"

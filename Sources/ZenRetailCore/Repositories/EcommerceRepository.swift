@@ -126,10 +126,10 @@ struct EcommerceRepository : EcommerceProtocol {
     
     
     func getProductsFeatured() throws -> [Product] {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        let obj = Product(db: db)
+        let obj = Product(connection: connection)
         let sql = obj.querySQL(
             whereclause: "Publication.publicationFeatured = $1 AND Product.productIsActive = $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2",
             params: [true, Int.now()],
@@ -141,10 +141,10 @@ struct EcommerceRepository : EcommerceProtocol {
     }
     
     func getProductsNews() throws -> [Product] {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        let obj = Product(db: db)
+        let obj = Product(connection: connection)
         let sql = obj.querySQL(
             whereclause: "Publication.publicationNew = $1 AND Product.productIsActive = $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2",
             params: [true, Int.now()],
@@ -156,10 +156,10 @@ struct EcommerceRepository : EcommerceProtocol {
     }
     
     func getProductsDiscount() throws -> [Product] {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        let obj = Product(db: db)
+        let obj = Product(connection: connection)
         let now = Int.now()
         let sql = """
 SELECT "Product".*, "Brand".*, "ProductCategory".*, "Category".*, "Publication".*
@@ -179,10 +179,10 @@ ORDER BY "Publication"."publicationStartAt" DESC
     }
 
     func getProducts(brand: String) throws -> [Product] {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        let obj = Product(db: db)
+        let obj = Product(connection: connection)
         let sql = obj.querySQL(
             whereclause: "Brand.brandSeo ->> $1 = $2 AND Publication.publicationStartAt <= $3 AND Publication.publicationFinishAt >= $3 AND Product.productIsActive = $4",
             params: ["permalink", brand, Int.now(), true],
@@ -213,9 +213,9 @@ AND "Publication"."publicationStartAt" <= \(Int.now())
 AND "Publication"."publicationFinishAt" >= \(Int.now())
 ORDER BY "Product"."productName"
 """
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
-        return try Product(db: db).rows(sql: sql, barcodes: false)
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
+        return try Product(connection: connection).rows(sql: sql, barcodes: false)
     }
 
     func findProducts(text: String) throws -> [Product] {
@@ -230,10 +230,10 @@ ORDER BY "Product"."productName"
     }
 
     func getProduct(name: String) throws -> Product {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        let item = Product(db: db)
+        let item = Product(connection: connection)
         let sql = item.querySQL(
             whereclause: "Product.productSeo ->> $1 = $2",
             params: ["permalink", name],
@@ -277,10 +277,10 @@ ORDER BY "Product"."productName"
     }
     
     func addBasket(item: Basket) throws {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        let items: [Basket] = try Basket(db: db).query(whereclause: "registryId = $1", params: [item.registryId])
+        let items: [Basket] = try Basket(connection: connection).query(whereclause: "registryId = $1", params: [item.registryId])
         let basket = items.first(where: { $0.basketBarcode == item.basketBarcode})
         if let current = basket {
             current.basketQuantity += 1
@@ -298,10 +298,10 @@ ORDER BY "Product"."productName"
     }
     
     func updateBasket(id: Int, item: Basket) throws {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        let current = Basket(db: db)
+        let current = Basket(connection: connection)
         try current.get(id)
         if current.basketId == 0 {
             throw ZenError.recordNotFound
@@ -374,26 +374,26 @@ ORDER BY "Product"."productName"
     func addOrder(registryId: Int, order: OrderModel) throws -> Movement {
         let repository = ZenIoC.shared.resolve() as MovementProtocol
         
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        let items: [Basket] = try Basket(db: db).query(whereclause: "registryId = $1", params: [registryId])
+        let items: [Basket] = try Basket(connection: connection).query(whereclause: "registryId = $1", params: [registryId])
         if items.count == 0 {
             throw ZenError.recordNotFound
         }
 
-        let registry = Registry(db: db)
+        let registry = Registry(connection: connection)
         try registry.get(registryId)
         if registry.registryId == 0 {
             throw ZenError.recordNotFound
         }
         
-        var store = Store(db: db)
+        var store = Store(connection: connection)
         let stores: [Store] = try store.query(orderby: ["storeId"], cursor: Cursor(limit: 1, offset: 0))
         if stores.count == 1 {
             store = stores.first!
         }
-        let causals: [Causal] = try Causal(db: db).query(
+        let causals: [Causal] = try Causal(connection: connection).query(
             whereclause: "causalBooked = $1 AND causalQuantity = $2 AND causalIsPos = $3",
             params: [1, -1 , true],
             orderby: ["causalId"],
@@ -403,7 +403,7 @@ ORDER BY "Product"."productName"
             throw ZenError.error("no causal found")
         }
         
-        let movement = Movement(db: db)
+        let movement = Movement(connection: connection)
         movement.movementDate = Int.now()
         movement.movementStore = store
         movement.movementCausal = causals.first!
@@ -419,7 +419,7 @@ ORDER BY "Product"."productName"
         try repository.add(item: movement)
         
         for item in items {
-            let movementArticle = MovementArticle(db: db)
+            let movementArticle = MovementArticle(connection: connection)
             movementArticle.movementId = movement.movementId
             movementArticle.movementArticleBarcode = item.basketBarcode
             movementArticle.movementArticleProduct = item.basketProduct

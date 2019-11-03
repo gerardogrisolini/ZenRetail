@@ -29,10 +29,10 @@ struct MovementArticleRepository : MovementArticleProtocol {
     }
     
     func add(item: MovementArticle, price: String) throws {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        let product = Product(db: db)
+        let product = Product(connection: connection)
         try product.get(barcode: item.movementArticleBarcode)
         if product.productId == 0 {
             throw ZenError.recordNotFound

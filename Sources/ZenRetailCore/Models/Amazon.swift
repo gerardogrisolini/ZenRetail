@@ -19,13 +19,13 @@ class Amazon: Codable {
     public var authToken: String = ""
     public var userAgent: String = "ZenRetail/1.0 (Language=Swift/5.0)"
     
-    func create(db: PostgresConnection) throws {
-        let settings = Settings(db: db)
+    func create(connection: PostgresConnection) throws {
+        let settings = Settings(connection: connection)
         let rows: [Settings] = try settings.query()
         if rows.count == 30 {
             let mirror = Mirror(reflecting: self)
             for case let (label?, value) in mirror.children {
-                let setting = Settings(db: db)
+                let setting = Settings(connection: connection)
                 setting.key = label
                 setting.value = "\(value)"
                 try setting.save()
@@ -34,10 +34,10 @@ class Amazon: Codable {
     }
     
     func save() throws {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        let settings = Settings(db: db)
+        let settings = Settings(connection: connection)
         let mirror = Mirror(reflecting: self)
         for case let (label?, value) in mirror.children {
             _ = try settings.update(cols: ["value"], params: [value], id: "key", value: label)

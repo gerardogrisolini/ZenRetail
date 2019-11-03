@@ -52,7 +52,7 @@ class Article: PostgresTable, Codable {
         /*
         do {
             // TODO: change for optimization
-            _attributeValues = try ArticleAttributeValue(db: db!).query(
+            _attributeValues = try ArticleAttributeValue(connection: connection!).query(
                 whereclause: "articleId = $1",
                 params: [articleId],
                 orderby: ["articleAttributeValueId"]
@@ -65,7 +65,7 @@ class Article: PostgresTable, Codable {
                         whereclause += " AND storeId IN (\(_storeIds))"
                     }
                 }
-                let stocks: [Stock] = try Stock(db: db!).query(
+                let stocks: [Stock] = try Stock(connection: connection!).query(
                     whereclause: whereclause,
                     params: [articleId]
                 )

@@ -51,10 +51,10 @@ struct ProductRepository : ProductProtocol {
 	}
 		
 	func getAll(date: Int) throws -> [Product] {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        let obj = Product(db: db)
+        let obj = Product(connection: connection)
         let sql = obj.querySQL(
 			whereclause: "productUpdated > $1", params: [date],
 			orderby: ["Product.productId"],
@@ -85,10 +85,10 @@ struct ProductRepository : ProductProtocol {
     }
     
 	func get(id: Int) throws -> Product {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        let item = Product(db: db)
+        let item = Product(connection: connection)
         let sql = item.querySQL(
             whereclause: "Product.productId = $1",
             params: [String(id)],
@@ -119,10 +119,10 @@ struct ProductRepository : ProductProtocol {
 	}
 
     func get(barcode: String) throws -> Product {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        let item = Product(db: db)
+        let item = Product(connection: connection)
         try item.get(barcode: barcode)
         
         return item
@@ -134,13 +134,13 @@ struct ProductRepository : ProductProtocol {
     }
     
     func add(item: Product) throws {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        item.db = db
+        item.connection = connection
         
         /// Brand
-        let brand = Brand(db: db)
+        let brand = Brand(connection: connection)
         try? brand.get("brandName", item._brand.brandName)
         if brand.brandId == 0 {
             brand.brandName = item._brand.brandName
@@ -157,7 +157,7 @@ struct ProductRepository : ProductProtocol {
 
         /// Categories
         for c in item._categories.sorted(by: { $0._category.categoryIsPrimary.hashValue < $1._category.categoryIsPrimary.hashValue }) {
-            var category = Category(db: db)
+            var category = Category(connection: connection)
             let categories: [Category] = try category.query(
                 whereclause: "categoryName = $1", params: [c._category.categoryName],
                 cursor: Cursor(limit: 1, offset: 0)
@@ -207,7 +207,7 @@ struct ProductRepository : ProductProtocol {
         
         /// ProductCategories
         for c in item._categories {
-            let productCategory = ProductCategory(db: db)
+            let productCategory = ProductCategory(connection: connection)
             productCategory.productId = item.productId
             productCategory.categoryId = c.categoryId
             try productCategory.save {
@@ -233,10 +233,10 @@ struct ProductRepository : ProductProtocol {
     func update(id: Int, item: Product) throws {
         let current = try get(id: id)
 
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        current.db = db
+        current.connection = connection
         current.productCode = item.productCode
         current.productName = item.productName
         //current.productType = item.productType
@@ -247,7 +247,7 @@ struct ProductRepository : ProductProtocol {
         current.productIsActive = item.productIsActive
 
         /// Brand
-        let brand = Brand(db: db)
+        let brand = Brand(connection: connection)
         try? brand.get("brandName", item._brand.brandName)
         if brand.brandId == 0 {
             brand.brandName = item._brand.brandName
@@ -266,7 +266,7 @@ struct ProductRepository : ProductProtocol {
         /// Categories
         for c in item._categories.sorted(by: { $0._category.categoryIsPrimary.hashValue < $1._category.categoryIsPrimary.hashValue }
             ) {
-            let category = Category(db: db)
+            let category = Category(connection: connection)
             try? category.get("categoryName", c._category.categoryName)
             if category.categoryId == 0 {
                 category.categoryName = c._category.categoryName
@@ -285,13 +285,13 @@ struct ProductRepository : ProductProtocol {
         
         /// ProductCategories
         for c in current._categories {
-            c.db = db
+            c.connection = connection
             try c.delete()
         }
         for c in item._categories {
             c.productCategoryId = 0
             c.productId = id
-            c.db = db
+            c.connection = connection
             try c.save {
                 id in c.productCategoryId = id as! Int
             }
@@ -303,14 +303,14 @@ struct ProductRepository : ProductProtocol {
                 if let currentArticle = current._articles.first(where: { $0._attributeValues.count == 0 }) {
                     let currentBarcode = currentArticle.articleBarcodes.first(where: { $0.tags.count == 0 })!
                     currentBarcode.barcode = itemBarcode.barcode
-                    currentArticle.db = db
+                    currentArticle.connection = connection
                     try currentArticle.save()
                 } else {
                     itemArticle.articleIsValid = true
                     itemArticle.articleId = 0
                     itemArticle.productId = id
                     itemArticle.articleUpdated = Int.now()
-                    itemArticle.db = db
+                    itemArticle.connection = connection
                     try itemArticle.save {
                         id in itemArticle.articleId = id as! Int
                     }
@@ -390,10 +390,10 @@ struct ProductRepository : ProductProtocol {
     }
     
     func sync(item: Product) throws -> Product {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        item.db = db
+        item.connection = connection
         
         /// Fix empty attribute
         if item._attributes.count == 0 {
@@ -402,7 +402,7 @@ struct ProductRepository : ProductProtocol {
 
         /// Attributes
         for a in item._attributes {
-            let attribute = Attribute(db: db)
+            let attribute = Attribute(connection: connection)
             try? attribute.get("attributeName", a._attribute.attributeName)
             if attribute.attributeId == 0 {
                 attribute.attributeName = a._attribute.attributeName
@@ -417,7 +417,7 @@ struct ProductRepository : ProductProtocol {
 
             /// AttributeValues
             for v in a._attributeValues.sorted(by: { $0._attributeValue.attributeValueCode < $1._attributeValue.attributeValueCode }) {
-                let attributeValue = AttributeValue(db: db)
+                let attributeValue = AttributeValue(connection: connection)
                 try? attributeValue.get("attributeId\" = \(a.attributeId) AND \"attributeValueName", v._attributeValue.attributeValueName)
                 if attributeValue.attributeValueId == 0 {
                     attributeValue.attributeId = a.attributeId
@@ -436,12 +436,12 @@ struct ProductRepository : ProductProtocol {
         }
 
         /// Get current attributes and values
-        let attributes: [ProductAttribute] = try ProductAttribute(db: db).query(
+        let attributes: [ProductAttribute] = try ProductAttribute(connection: connection).query(
             whereclause: "productId = $1",
             params: [item.productId]
         )
         for a in attributes {
-            let attributeValue = ProductAttributeValue(db: db)
+            let attributeValue = ProductAttributeValue(connection: connection)
             a._attributeValues = try attributeValue.query(
                 whereclause: "productAttributeId = $1",
                 params: [a.productAttributeId]
@@ -450,7 +450,7 @@ struct ProductRepository : ProductProtocol {
 
         /// ProductAttributes
         for a in item._attributes {
-            let productAttribute = ProductAttribute(db: db)
+            let productAttribute = ProductAttribute(connection: connection)
             try? productAttribute.get("productId\" = \(item.productId) AND \"attributeId", a.attributeId)
             if productAttribute.productAttributeId == 0 {
                 productAttribute.productId = item.productId
@@ -466,7 +466,7 @@ struct ProductRepository : ProductProtocol {
             
             /// ProductAttributeValues
             for v in a._attributeValues {
-                let productAttributeValue = ProductAttributeValue(db: db)
+                let productAttributeValue = ProductAttributeValue(connection: connection)
                 try? productAttributeValue.get("productAttributeId\" = \(a.productAttributeId) AND \"attributeValueId", v.attributeValueId)
                 if productAttributeValue.productAttributeValueId == 0 {
                     productAttributeValue.productAttributeId = a.productAttributeId
@@ -486,12 +486,12 @@ struct ProductRepository : ProductProtocol {
         /// Clean attributes
         for a in attributes {
             if a.productId > 0 {
-                a.db = db
+                a.connection = connection
                 try a.delete()
                 continue
             }
             for v in a._attributeValues {
-                v.db = db
+                v.connection = connection
                 try v.delete()
             }
         }
@@ -500,15 +500,15 @@ struct ProductRepository : ProductProtocol {
     }
     
     func syncImport(item: Product) throws -> Result {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
         let result = try (ZenIoC.shared.resolve() as ArticleProtocol).build(productId: item.productId)
         
         /// Sync barcodes
         for a in item._articles.filter({ $0._attributeValues.count > 0 }) {
             let values = a._attributeValues.map({ a in a._attributeValue.attributeValueName }).joined(separator: "', '")
-            let article = Article(db: db)
+            let article = Article(connection: connection)
             let current = try article.sqlRows("""
 SELECT a.*
 FROM "Article" as a
@@ -525,7 +525,7 @@ GROUP BY a."articleId" HAVING count(b."attributeValueId") = \(item._attributes.c
         }
         
         /// Publication
-        let publication = Publication(db: db)
+        let publication = Publication(connection: connection)
         publication.productId = item.productId
         publication.publicationStartAt = "2019-01-01".DateToInt()
         publication.publicationFinishAt = "2030-12-31".DateToInt()
@@ -537,10 +537,10 @@ GROUP BY a."articleId" HAVING count(b."attributeValueId") = \(item._attributes.c
     }
 
     func delete(id: Int) throws {
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        let item = Product(db: db)
+        let item = Product(connection: connection)
         item.productId = id
         try item.delete()
 

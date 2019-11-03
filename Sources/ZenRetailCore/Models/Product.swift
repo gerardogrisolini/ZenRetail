@@ -139,7 +139,7 @@ class Product: PostgresTable, PostgresJson {
 //            onCondition: "ProductCategory.categoryId = Category.categoryId"
 //        )
 //
-//        self._categories = try ProductCategory(db: db!).query(
+//        self._categories = try ProductCategory(connection: connection!).query(
 //			whereclause: "ProductCategory.productId = $1",
 //			params: [self.productId],
 //			orderby: ["Category.categoryId"],
@@ -156,7 +156,7 @@ class Product: PostgresTable, PostgresJson {
        }
        
        for group in groups {
-           let row = Product(db: db!)
+           let row = Product(connection: connection!)
            row.decode(row: group.value.first!)
            
            for cat in group.value {
@@ -207,7 +207,7 @@ class Product: PostgresTable, PostgresJson {
             direction: .INNER
         )
 
-        let productAttribute = ProductAttribute(db: db!)
+        let productAttribute = ProductAttribute(connection: connection!)
 		let sql = productAttribute.querySQL(
 			whereclause: "ProductAttribute.productId = $1",
 			params: [self.productId],
@@ -233,7 +233,7 @@ class Product: PostgresTable, PostgresJson {
 	}
 
     func makeArticles(_ storeIds: String = "") throws {
-        let item = Article(db: db!)
+        let item = Article(connection: connection!)
 
         let join = DataSourceJoin(
             table: "ArticleAttributeValue",
@@ -297,7 +297,7 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
 	}
 
 	func makeArticle(barcode: String, rows: [PostgresRow]) throws {
-        let article = Article(db: db!)
+        let article = Article(connection: connection!)
         
         article.decode(row: rows[0])
         article._attributeValues = rows.map({ row -> ArticleAttributeValue in

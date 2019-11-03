@@ -83,10 +83,10 @@ class CompanyController {
         media.contentType = fileName.contentType
         media.name = fileName != "logo.png" && fileName != "header.png" ? fileName.uniqueName() : fileName
 
-        let db = try ZenPostgres.pool.connect()
-        defer { db.disconnect() }
+        let connection = try ZenPostgres.pool.connect()
+        defer { connection.disconnect() }
 
-        let big = File(db: db)
+        let big = File(connection: connection)
         big.fileName = media.name
         big.fileType = fileName.hasSuffix(".csv") ? MediaType.csv.rawValue : MediaType.media.rawValue
         big.fileContentType = media.contentType
@@ -94,7 +94,7 @@ class CompanyController {
         try big.save()
 
         if fileName.contentType.hasPrefix("image/"), let thumb = try Image(data: data).resizedTo(width: 380) {
-            let small = File(db: db)
+            let small = File(connection: connection)
             small.fileName = media.name
             small.fileType = MediaType.thumb.rawValue
             small.fileContentType = media.contentType

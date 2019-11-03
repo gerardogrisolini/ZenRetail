@@ -391,10 +391,10 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                 let basket = try JSONDecoder().decode(Basket.self, from: data)
                 basket.registryId = id
                 
-                let db = try ZenPostgres.pool.connect()
-                defer { db.disconnect() }
+                let connection = try ZenPostgres.pool.connect()
+                defer { connection.disconnect() }
 
-                let product = Product(db: db)
+                let product = Product(connection: connection)
                 try product.get(barcode: basket.basketBarcode)
                 if product.productId == 0 {
                     response.completed( .notFound)

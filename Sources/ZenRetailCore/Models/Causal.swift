@@ -47,56 +47,56 @@ class Causal: PostgresTable, PostgresJson {
     func setupDefaults() throws {
         let rows: [Causal] = try self.query(cursor: Cursor(limit: 1, offset: 0))
         if rows.count == 0 {
-            let inventory = Causal(db: db!)
+            let inventory = Causal(connection: connection!)
             inventory.causalName = "Warehouse load"
             inventory.causalQuantity = 1
             inventory.causalIsPos = false
             inventory.causalUpdated = Int.now()
             _ = try inventory.save()
 
-            let discharge = Causal(db: db!)
+            let discharge = Causal(connection: connection!)
             discharge.causalName = "Warehouse discharge"
             discharge.causalQuantity = -1
             discharge.causalIsPos = false
             discharge.causalUpdated = Int.now()
             _ = try discharge.save()
 
-            let stockIn = Causal(db: db!)
+            let stockIn = Causal(connection: connection!)
             stockIn.causalName = "Stock positive correction"
             stockIn.causalQuantity = 1
             stockIn.causalIsPos = false
             stockIn.causalUpdated = Int.now()
             _ = try stockIn.save()
 
-            let stockOut = Causal(db: db!)
+            let stockOut = Causal(connection: connection!)
             stockOut.causalName = "Stock negative correction"
             stockOut.causalQuantity = -1
             stockOut.causalIsPos = false
             stockOut.causalUpdated = Int.now()
             _ = try stockOut.save()
 
-            let bookedIn = Causal(db: db!)
+            let bookedIn = Causal(connection: connection!)
             bookedIn.causalName = "Booked positive correction"
             bookedIn.causalBooked = 1
             bookedIn.causalIsPos = false
             bookedIn.causalUpdated = Int.now()
             _ = try bookedIn.save()
 
-            let bookedOut = Causal(db: db!)
+            let bookedOut = Causal(connection: connection!)
             bookedOut.causalName = "Booked negative correction"
             bookedOut.causalBooked = -1
             bookedOut.causalIsPos = false
             bookedOut.causalUpdated = Int.now()
             _ = try bookedOut.save()
 
-            let receipt = Causal(db: db!)
+            let receipt = Causal(connection: connection!)
             receipt.causalName = "Receipt"
             receipt.causalQuantity = -1
             receipt.causalIsPos = true
             receipt.causalUpdated = Int.now()
             _ = try receipt.save()
 
-            let cutomer = Causal(db: db!)
+            let cutomer = Causal(connection: connection!)
             cutomer.causalName = "Customer order"
             cutomer.causalQuantity = -1
             cutomer.causalBooked = 1
@@ -104,14 +104,14 @@ class Causal: PostgresTable, PostgresJson {
             cutomer.causalUpdated = Int.now()
             _ = try cutomer.save()
 
-            let causalOrder = Causal(db: db!)
+            let causalOrder = Causal(connection: connection!)
             causalOrder.causalName = "Supplier order"
             causalOrder.causalQuantity = 1
             causalOrder.causalIsPos = false
             causalOrder.causalUpdated = Int.now()
             _ = try causalOrder.save()
 
-            let barcode = Causal(db: db!)
+            let barcode = Causal(connection: connection!)
             barcode.causalName = "Print barcodes"
             barcode.causalIsPos = false
             barcode.causalUpdated = Int.now()
