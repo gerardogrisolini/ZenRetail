@@ -244,7 +244,7 @@ ORDER BY "Product"."productName"
         }
         
         try item.makeAttributes()
-        try item.makeArticles()
+        try item.makeArticles("1")
         
         return item
     }

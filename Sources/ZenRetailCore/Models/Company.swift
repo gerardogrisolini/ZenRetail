@@ -111,6 +111,10 @@ class Company: Codable {
         }
     }
     
+    func update(db: PostgresConnection, key: String, value: String) throws {
+        _ = try settings.update(cols: ["value"], params: [value], id: "key", value: key)
+    }
+    
     func select() throws {
         let db = try ZenPostgres.pool.connect()
         defer { ZenPostgres.pool.disconnect(db) }

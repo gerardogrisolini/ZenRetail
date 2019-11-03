@@ -235,27 +235,54 @@ class Product: PostgresTable, PostgresJson {
         }
 	}
 
-    func makeArticles(_ storeIds: String = "0") throws {
-        let article = Article(db: db!)
-        article._storeIds = storeIds
+    func makeArticles(_ storeIds: String = "") throws {
+        let item = Article(db: db!)
 
-        let articleAttributeJoin = DataSourceJoin(
+        let join = DataSourceJoin(
             table: "ArticleAttributeValue",
             onCondition: "Article.articleId = ArticleAttributeValue.articleId",
             direction: .LEFT
         )
-		
-        let sql = article.querySQL(
-			whereclause: "productId = $1",
-			params: [self.productId],
-            orderby: ["Article.articleId", "ArticleAttributeValue.articleId"],
-            joins: [articleAttributeJoin]
-		)
-        
-        let rows = try article.sqlRows(sql)
-//        if rows.count == 0 {
-//            throw ZenError.recordNotFound
-//        }
+
+        let sql = storeIds.isEmpty
+            ? item.querySQL(
+                whereclause: "Article.productId = $1",
+                params: [self.productId],
+                orderby: ["Article.articleId", "ArticleAttributeValue.articleId"],
+                joins: [join]
+            )
+            : """
+SELECT "Article"."articleId",
+"Article"."productId",
+"Article"."articleNumber",
+"Article"."articleBarcodes",
+"Article"."articlePackaging",
+"Article"."articleIsValid",
+"Article"."articleCreated",
+"Article"."articleUpdated",
+"ArticleAttributeValue"."articleAttributeValueId",
+"ArticleAttributeValue"."articleId",
+"ArticleAttributeValue"."attributeValueId",
+SUM ("Stock"."stockQuantity") as stockQuantity,
+SUM ("Stock"."stockBooked") as stockBooked
+FROM "Article"
+LEFT JOIN "ArticleAttributeValue" ON "Article"."articleId" = "ArticleAttributeValue"."articleId"
+LEFT JOIN "Stock" ON "Article"."articleId" = "Stock"."articleId"
+WHERE "Article"."productId" = \(productId) AND ("Stock"."storeId" IN (\(storeIds)) OR "Stock"."storeId" IS NULL)
+GROUP BY "Article"."articleId",
+"Article"."productId",
+"Article"."articleNumber",
+"Article"."articleBarcodes",
+"Article"."articlePackaging",
+"Article"."articleIsValid",
+"Article"."articleCreated",
+"Article"."articleUpdated",
+"ArticleAttributeValue"."articleAttributeValueId",
+"ArticleAttributeValue"."articleId",
+"ArticleAttributeValue"."attributeValueId"
+ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
+"""
+        let rows = try item.sqlRows(sql)
         let groups = rows.groupBy { row -> Int in
             row.column("articleId")!.int!
         }

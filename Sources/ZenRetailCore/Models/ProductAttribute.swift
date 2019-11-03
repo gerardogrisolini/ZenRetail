@@ -41,6 +41,7 @@ class ProductAttribute: PostgresTable, Codable, Equatable {
         productId = row.column("productId")?.int ?? 0
         attributeId = row.column("attributeId")?.int ?? 0
         _attribute.decode(row: row)
+        
 //        do {
 //            try makeAttributeValues()
 //        } catch {

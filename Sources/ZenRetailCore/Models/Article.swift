@@ -21,7 +21,6 @@ class Article: PostgresTable, Codable {
     public var articleCreated : Int = Int.now()
     public var articleUpdated : Int = Int.now()
 
-	public var _storeIds : String = "0"
     public var _quantity : Double = 0
     public var _booked : Double = 0
     public var _attributeValues: [ArticleAttributeValue] = [ArticleAttributeValue]()
@@ -47,6 +46,9 @@ class Article: PostgresTable, Codable {
         articleCreated = row.column("articleCreated")?.int ?? 0
         articleUpdated = row.column("articleUpdated")?.int ?? 0
 
+        _quantity = row.column("stockQuantity")?.double ?? 0
+        _booked = row.column("stockBooked")?.double ?? 0
+        
         /*
         do {
             // TODO: change for optimization

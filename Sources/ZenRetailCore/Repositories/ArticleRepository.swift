@@ -24,7 +24,6 @@ struct ArticleRepository : ArticleProtocol {
         defer { ZenPostgres.pool.disconnect(db) }
 
         var result = Result()
-        
         let product = Product(db: db)
         try product.get(productId)
 
@@ -187,13 +186,11 @@ struct ArticleRepository : ArticleProtocol {
             throw ZenError.error("Integrity error: \(count) budgeted items and \(result.articles.count) items found")
         }
 
-        // Commit update product
+        // Commit update product and barcode counter
         product.productIsValid = true
         product.productUpdated = Int.now()
         try product.save()
-        
-        // TODO: Update only barcode counter
-        try company.save(db: db)
+        try company.update(db: db, key: "barcodeCounterPrivate", value: company.barcodeCounterPrivate)
         
         return result
     }
@@ -205,11 +202,10 @@ struct ArticleRepository : ArticleProtocol {
     }
 
     func get(db: PostgresConnection, productId: Int, storeIds: String) throws -> [Article] {
-        let items = Article(db: db)
-		items._storeIds = storeIds
-		return try items.query(whereclause: "productId = $1",
-                               params: [productId],
-                               orderby: ["articleId"])
+        let product = Product(db: db)
+        product.productId = productId
+        try product.makeArticles(storeIds)
+        return product._articles
     }
 
     func get(id: Int) -> Article? {
@@ -230,35 +226,27 @@ struct ArticleRepository : ArticleProtocol {
 		var body = [[ArticleItem]]()
 		
 		var productAttributeValues = [ProductAttributeValue]()
-		let join = DataSourceJoin(
-            table: "Attribute",
-            onCondition: "ProductAttribute.attributeId = Attribute.attributeId"
-        )
-		
-        let attributes: [ProductAttribute] = try ProductAttribute(db: db).query(
-			whereclause: "ProductAttribute.productId = $1",
-			params: [productId],
-			orderby: ["ProductAttribute.productAttributeId"],
-			joins: [join]
-		)
-		
-		let lenght = attributes.count - 1;
+        let product = Product(db: db)
+        product.productId = productId
+        try product.makeAttributes()
+        
+        let lenght = product._attributes.count - 1;
 		if (lenght > 0) {
-			for attribute in attributes {
+			for attribute in product._attributes {
 				header.append(attribute._attribute.attributeName)
 				productAttributeValues.append(contentsOf: attribute._attributeValues)
 			}
 			header.removeLast()
 			
-			for value in attributes[lenght]._attributeValues {
+			for value in product._attributes[lenght]._attributeValues {
 				header.append(value._attributeValue.attributeValueName)
 			}
 		}
 		
         let articles = try get(db: db, productId: productId, storeIds: storeIds)
 		let grouped = articles.groupBy {
-			$0._attributeValues.dropLast().reduce("") {
-				a,b in "\(a)#\(b.attributeValueId)"
+            $0._attributeValues.dropLast().reduce("") { a,b in
+                "\(a)#\(b.attributeValueId)"
 			}
 		}
 		
@@ -366,8 +354,7 @@ struct ArticleRepository : ArticleProtocol {
         try item.get(id)
         
         // TODO: check this in test
-        let itemBarcode = item.articleBarcodes.first
-        if let newBarcode = itemBarcode {
+        if let newBarcode = item.articleBarcodes.first {
             var barcode: Barcode?
             
             if newBarcode.tags.count > 0 {

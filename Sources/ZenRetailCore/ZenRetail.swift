@@ -90,10 +90,15 @@ public class ZenRetail {
 
         if let smtpUsername = ProcessInfo.processInfo.environment["SENDGRID_USERNAME"],
             let smtpPassword = ProcessInfo.processInfo.environment["SENDGRID_PASSWORD"] {
-            company.smtpHost = "smtp.sendgrid.net"
-            company.smtpUsername = smtpUsername
-            company.smtpPassword = smtpPassword
-            try company.save()
+            
+            if company.smtpHost != "smtp.sendgrid.net"
+                || smtpUsername != company.smtpUsername
+                || smtpPassword != company.smtpPassword {
+                company.smtpHost = "smtp.sendgrid.net"
+                company.smtpUsername = smtpUsername
+                company.smtpPassword = smtpPassword
+                try company.save()
+            }
         }
 
         let config = ServerConfiguration(
