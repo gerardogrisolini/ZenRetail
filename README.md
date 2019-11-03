@@ -64,7 +64,7 @@ docker pull postgres
 docker run -p 5432:5432 --name db -e POSTGRES_DB=zenretail -e POSTGRES_PASSWORD=zBnwEe8QDR -d postgres
 ```
 
-* Webretail
+* Zenretail
 
 ```
 docker build -t zenretail .
