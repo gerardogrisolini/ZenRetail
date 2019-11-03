@@ -107,7 +107,7 @@ public class AmazonController: NSObject {
     }
     
     fileprivate func startWorker() {
-        DispatchQueue.global(qos: .background).async {
+        DispatchQueue.global(qos: .utility).async {
             while(true) {
                 
                 if self.mws.isSubmitted() {
