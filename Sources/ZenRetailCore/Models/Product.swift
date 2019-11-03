@@ -85,38 +85,6 @@ class Product: PostgresTable, PostgresJson {
         productAmazonUpdated = row.column("productAmazonUpdated")?.int ?? 0
         _brand.decode(row: row)
     }
-    
-    func rows(sql: String, barcodes: Bool, storeIds: String = "0") throws -> [Product] {
-        let db = try ZenPostgres.pool.connect()
-        defer { ZenPostgres.pool.disconnect(db) }
-
-        var results = [Product]()
-        let rows = try self.sqlRows(sql)
- 
-        let groups = rows.groupBy { row -> Int in
-            row.column("productId")!.int!
-        }
-        
-        for group in groups {
-            let row = Product()
-            row.decode(row: group.value.first!)
-            
-            for cat in group.value {
-                let productCategory = ProductCategory()
-                productCategory.decode(row: cat)
-                row._categories.append(productCategory)
-            }
-            
-            if barcodes {
-                try row.makeAttributes();
-                try row.makeArticles(storeIds);
-            }
-
-            results.append(row)
-        }
-        
-        return results
-    }
 
     required init(from decoder: Decoder) throws {
         super.init()
@@ -178,6 +146,35 @@ class Product: PostgresTable, PostgresJson {
 //			joins: [categoryJoin]
 //		)
 //	}
+
+    func rows(sql: String, barcodes: Bool, storeIds: String = "0") throws -> [Product] {
+       var results = [Product]()
+       let rows = try self.sqlRows(sql)
+
+       let groups = rows.groupBy { row -> Int in
+           row.column("productId")!.int!
+       }
+       
+       for group in groups {
+           let row = Product(db: db!)
+           row.decode(row: group.value.first!)
+           
+           for cat in group.value {
+               let productCategory = ProductCategory()
+               productCategory.decode(row: cat)
+               row._categories.append(productCategory)
+           }
+           
+           if barcodes {
+               try row.makeAttributes();
+               try row.makeArticles(storeIds);
+           }
+
+           results.append(row)
+       }
+       
+       return results
+    }
 
     func addDefaultAttributes() throws {
         let productAttribute = ProductAttribute()
@@ -353,9 +350,6 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
                 articleAttributeJoin
             ])
         
-        db = try ZenPostgres.pool.connect()
-        defer { ZenPostgres.pool.disconnect(db!) }
-
         let rows = try self.sqlRows(sql)
         if rows.count == 0 { throw ZenError.recordNotFound }
 

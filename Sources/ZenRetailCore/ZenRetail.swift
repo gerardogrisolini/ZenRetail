@@ -151,7 +151,7 @@ public class ZenRetail {
  
     private func createTables() throws {
         let db = try ZenPostgres.pool.connect()
-        defer { ZenPostgres.pool.disconnect(db) }
+        defer { db.disconnect() }
 
         let settings = Settings(db: db)
         try settings.create()

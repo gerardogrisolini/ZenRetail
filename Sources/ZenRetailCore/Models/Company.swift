@@ -59,7 +59,7 @@ class Company: Codable {
 
     func create() throws {
         let db = try ZenPostgres.pool.connect()
-        defer { ZenPostgres.pool.disconnect(db) }
+        defer { db.disconnect() }
         return try create(db: db)
     }
     
@@ -88,7 +88,7 @@ class Company: Codable {
 
     func save() throws {
         let db = try ZenPostgres.pool.connect()
-        defer { ZenPostgres.pool.disconnect(db) }
+        defer { db.disconnect() }
         return try save(db: db)
     }
 
@@ -117,7 +117,7 @@ class Company: Codable {
     
     func select() throws {
         let db = try ZenPostgres.pool.connect()
-        defer { ZenPostgres.pool.disconnect(db) }
+        defer { db.disconnect() }
         return try select(db: db)
     }
 

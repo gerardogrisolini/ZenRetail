@@ -51,7 +51,10 @@ struct ProductRepository : ProductProtocol {
 	}
 		
 	func getAll(date: Int) throws -> [Product] {
-        let obj = Product()
+        let db = try ZenPostgres.pool.connect()
+        defer { db.disconnect() }
+
+        let obj = Product(db: db)
         let sql = obj.querySQL(
 			whereclause: "productUpdated > $1", params: [date],
 			orderby: ["Product.productId"],
@@ -83,7 +86,7 @@ struct ProductRepository : ProductProtocol {
     
 	func get(id: Int) throws -> Product {
         let db = try ZenPostgres.pool.connect()
-        defer { ZenPostgres.pool.disconnect(db) }
+        defer { db.disconnect() }
 
         let item = Product(db: db)
         let sql = item.querySQL(
@@ -117,7 +120,7 @@ struct ProductRepository : ProductProtocol {
 
     func get(barcode: String) throws -> Product {
         let db = try ZenPostgres.pool.connect()
-        defer { ZenPostgres.pool.disconnect(db) }
+        defer { db.disconnect() }
 
         let item = Product(db: db)
         try item.get(barcode: barcode)
@@ -132,7 +135,7 @@ struct ProductRepository : ProductProtocol {
     
     func add(item: Product) throws {
         let db = try ZenPostgres.pool.connect()
-        defer { ZenPostgres.pool.disconnect(db) }
+        defer { db.disconnect() }
 
         item.db = db
         
@@ -231,7 +234,7 @@ struct ProductRepository : ProductProtocol {
         let current = try get(id: id)
 
         let db = try ZenPostgres.pool.connect()
-        defer { ZenPostgres.pool.disconnect(db) }
+        defer { db.disconnect() }
 
         current.db = db
         current.productCode = item.productCode
@@ -388,7 +391,7 @@ struct ProductRepository : ProductProtocol {
     
     func sync(item: Product) throws -> Product {
         let db = try ZenPostgres.pool.connect()
-        defer { ZenPostgres.pool.disconnect(db) }
+        defer { db.disconnect() }
 
         item.db = db
         
@@ -498,7 +501,7 @@ struct ProductRepository : ProductProtocol {
     
     func syncImport(item: Product) throws -> Result {
         let db = try ZenPostgres.pool.connect()
-        defer { ZenPostgres.pool.disconnect(db) }
+        defer { db.disconnect() }
 
         let result = try (ZenIoC.shared.resolve() as ArticleProtocol).build(productId: item.productId)
         
@@ -535,7 +538,7 @@ GROUP BY a."articleId" HAVING count(b."attributeValueId") = \(item._attributes.c
 
     func delete(id: Int) throws {
         let db = try ZenPostgres.pool.connect()
-        defer { ZenPostgres.pool.disconnect(db) }
+        defer { db.disconnect() }
 
         let item = Product(db: db)
         item.productId = id

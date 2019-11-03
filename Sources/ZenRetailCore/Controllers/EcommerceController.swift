@@ -7,6 +7,7 @@
 
 import Foundation
 import ZenNIO
+import ZenPostgres
 
 class EcommerceController {
     
@@ -390,7 +391,10 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                 let basket = try JSONDecoder().decode(Basket.self, from: data)
                 basket.registryId = id
                 
-                let product = Product()
+                let db = try ZenPostgres.pool.connect()
+                defer { db.disconnect() }
+
+                let product = Product(db: db)
                 try product.get(barcode: basket.basketBarcode)
                 if product.productId == 0 {
                     response.completed( .notFound)

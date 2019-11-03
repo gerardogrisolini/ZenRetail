@@ -81,8 +81,17 @@ class Basket: PostgresTable, Codable {
     }
 
     func getProduct(barcode: String) throws -> Product {
-        let product = db != nil ? Product(db: db!) : Product()
+        var autoclose: Bool = false
+        if db == nil {
+            db = try ZenPostgres.pool.connect()
+            autoclose = true
+        }
+
+        let product = Product(db: db!)
         try product.get(barcode: barcode)
+
+        if autoclose { db!.disconnect() }
+        
         return product
     }
 }
