@@ -29,7 +29,7 @@ public class ZenRetail {
     }
 
     public func start() throws {
-        ZenRetail.zenNIO = ZenNIO(port: ZenRetail.config.serverPort, router: router)
+        ZenRetail.zenNIO = ZenNIO(host: "0.0.0.0", port: ZenRetail.config.serverPort, router: router)
         if !ZenRetail.config.sslCert.isEmpty {
             try ZenRetail.zenNIO.addSSL(
                 certFile: ZenRetail.config.sslCert,
