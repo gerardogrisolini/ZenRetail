@@ -112,7 +112,7 @@ class Company: Codable {
     }
     
     func update(db: PostgresConnection, key: String, value: String) throws {
-        _ = try settings.update(cols: ["value"], params: [value], id: "key", value: key)
+        _ = try Settings(db: db).update(cols: ["value"], params: [value], id: "key", value: key)
     }
     
     func select() throws {
