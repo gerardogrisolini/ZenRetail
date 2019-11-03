@@ -29,7 +29,7 @@ public class ZenRetail {
     }
 
     public func start() throws {
-        ZenRetail.zenNIO = ZenNIO(host: ZenRetail.config.serverName, port: ZenRetail.config.serverPort, router: router)
+        ZenRetail.zenNIO = ZenNIO(port: ZenRetail.config.serverPort, router: router)
         if !ZenRetail.config.sslCert.isEmpty {
             try ZenRetail.zenNIO.addSSL(
                 certFile: ZenRetail.config.sslCert,
@@ -73,8 +73,8 @@ public class ZenRetail {
     private func setup() {
         ZenRetail.config = loadConfiguration()
         
-        if let serverName = ProcessInfo.processInfo.environment["HOST"] {
-            ZenRetail.config.serverName = serverName
+        if let host = ProcessInfo.processInfo.environment["HOST"] {
+            ZenRetail.config.serverHost = host
         }
         if let portString = ProcessInfo.processInfo.environment["PORT"] {
             ZenRetail.config.serverPort = Int(portString)!

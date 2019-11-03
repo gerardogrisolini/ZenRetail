@@ -9,7 +9,7 @@ import Foundation
 import ZenNIO
 
 class Configuration: Codable {
-    var serverName: String
+    var serverHost: String
     var serverPort: Int
     let sslCert: String
     let sslKey: String
@@ -25,7 +25,7 @@ class Configuration: Codable {
     var postgresMaxConn: Int
     
     init() {
-        serverName = "localhost"
+        serverHost = "localhost"
         serverPort = 8888
         sslCert = "" //cert.crt
         sslKey = "" //key.pem
@@ -45,6 +45,6 @@ class Configuration: Codable {
         let port = serverPort != 80 && serverPort != 443
             ? ":\(serverPort)"
             : ""
-        return "\(sslCert.isEmpty ? "http" : "https")://\(serverName)\(port)"
+        return "\(sslCert.isEmpty ? "http" : "https")://\(serverHost)\(port)"
     }
 }
