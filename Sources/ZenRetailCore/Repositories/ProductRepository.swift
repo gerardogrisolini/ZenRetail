@@ -56,7 +56,7 @@ struct ProductRepository : ProductProtocol {
 
         let obj = Product(connection: connection)
         let sql = obj.querySQL(
-			whereclause: "productUpdated > $1", params: [date],
+			whereclause: "Product.productUpdated > $1", params: [date],
 			orderby: ["Product.productId"],
 			joins: defaultJoins()
 		)
