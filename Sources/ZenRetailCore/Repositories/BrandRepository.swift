@@ -6,23 +6,22 @@
 //
 //
 
+import NIO
 import ZenPostgres
 
 struct BrandRepository : BrandProtocol {
 
-    func getAll() throws -> [Brand] {
-        let items = Brand()
-        return try items.query(orderby: ["brandId"])
+    func getAll() -> EventLoopFuture<[Brand]> {
+        return Brand().queryAsync(orderby: ["brandId"])
+    }
+        
+    func get(id: Int) -> EventLoopFuture<Brand> {
+        return Brand().getAsync(id)
     }
     
-    func get(id: Int) throws -> Brand? {
-        let item = Brand()
-		try item.get(id)
-		
-        return item
-    }
-    
-    func add(item: Brand) throws {
+    func add(item: Brand) -> EventLoopFuture<Int> {
+        let promise: EventLoopPromise<Int> = ZenPostgres.pool.newPromise()
+
         if (item.brandSeo.permalink.isEmpty) {
             item.brandSeo.permalink = item.brandName.permalink()
         }
@@ -30,31 +29,41 @@ struct BrandRepository : BrandProtocol {
         item.brandDescription = item.brandDescription.filter({ !$0.value.isEmpty })
         item.brandCreated = Int.now()
         item.brandUpdated = Int.now()
-        try item.save {
-            id in item.brandId = id as! Int
-        }
-    }
-    
-    func update(id: Int, item: Brand) throws {
-        guard let current = try get(id: id) else {
-            throw ZenError.recordNotFound
+        item.saveAsync().whenComplete { result in
+            switch result {
+            case .success(let id):
+                promise.succeed(id as! Int)
+            case .failure(let err):
+                promise.fail(err)
+            }
         }
         
-        current.brandName = item.brandName
+        return promise.futureResult
+    }
+    
+    func update(id: Int, item: Brand) -> EventLoopFuture<Bool> {
+        let promise: EventLoopPromise<Bool> = ZenPostgres.pool.newPromise()
+
+        item.brandId = id
         if (item.brandSeo.permalink.isEmpty) {
             item.brandSeo.permalink = item.brandName.permalink()
         }
-        current.brandSeo.description = item.brandSeo.description.filter({ !$0.value.isEmpty })
-        current.brandDescription = item.brandDescription.filter({ !$0.value.isEmpty })
-        current.brandMedia = item.brandMedia
-        current.brandSeo = item.brandSeo
-        current.brandUpdated = Int.now()
-        try current.save()
+        item.brandUpdated = Int.now()
+        item.saveAsync().whenComplete { result in
+            switch result {
+            case .success(let id):
+                promise.succeed(id as! Int > 0)
+            case .failure(let err):
+                promise.fail(err)
+            }
+        }
+
+        return promise.futureResult
     }
     
-    func delete(id: Int) throws {
-        let item = Brand()
-        item.brandId = id
-        try item.delete()
+    func delete(id: Int) -> EventLoopFuture<Bool> {
+        return Brand().deleteAsync(id).map { count -> Bool in
+            count > 0
+        }
     }
 }

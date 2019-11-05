@@ -209,11 +209,19 @@ extension HttpRequest {
 }
 
 extension HttpResponse {
+    struct JsonError: Codable {
+        let status: Int
+        let error: String
+    }
     public func badRequest(error: String) {
         print(error)
-        self.addHeader(.contentType, value: "text/html")
-        self.send(html: error)
+        try? self.send(json: JsonError(status: 400, error: error))
         self.completed(.badRequest)
+    }
+    public func systemError(error: String) {
+        print(error)
+        try? self.send(json: JsonError(status: 500, error: error))
+        self.completed(.internalServerError)
     }
 }
 

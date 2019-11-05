@@ -6,15 +6,18 @@
 //
 //
 
+import NIO
+
 protocol BrandProtocol {
     
-    func getAll() throws -> [Brand]
+    func getAll() -> EventLoopFuture<[Brand]>
+    //func getAll() throws -> [Brand]
+
+    func get(id: Int) -> EventLoopFuture<Brand>
     
-    func get(id: Int) throws -> Brand?
+    func add(item: Brand) -> EventLoopFuture<Int>
     
-    func add(item: Brand) throws
+    func update(id: Int, item: Brand) -> EventLoopFuture<Bool>
     
-    func update(id: Int, item: Brand) throws
-    
-    func delete(id: Int) throws
+    func delete(id: Int) -> EventLoopFuture<Bool>
 }
