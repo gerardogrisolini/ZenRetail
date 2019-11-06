@@ -359,8 +359,8 @@ ORDER BY "Product"."productName"
             defer { conn.disconnect() }
 
             let current = Basket(connection: conn)
-            let query: EventLoopFuture<Basket> = current.getAsync(id)
-            query.whenSuccess { current in
+            let query = current.getAsync(id)
+            query.whenSuccess {
                 if current.basketId == 0 {
                     promise.fail(ZenError.recordNotFound)
                     return

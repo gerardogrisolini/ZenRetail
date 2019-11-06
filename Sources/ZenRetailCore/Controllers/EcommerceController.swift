@@ -32,9 +32,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
         router.get("/sitemap.xml") { request, response in
             var siteMapItems = [SitemapItem]()
 
-            let task = DispatchGroup()
-            task.notify(queue: .main) {
-                print("completed")
+            func doResponse() {
                 response.addHeader(.contentType, value: "application/xml; charset=utf-8")
                 let data = Sitemap(items: siteMapItems).xmlString.data(using: .utf8)!
                 response.send(data: data)
@@ -58,33 +56,23 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/basket", priority: 0.1))
 
             /// CATEGORIES
-            task.enter()
             let cat = self.repository.getCategories()
-            cat.whenComplete { result in
-                switch result {
-                case .success(let categories):
-                    for item in categories {
-                        siteMapItems.append(
-                            SitemapItem(
-                                url: "\(ZenRetail.config.serverUrl)/category/\(item.categorySeo?.permalink ?? "")",
-                                lastModified: Date(timeIntervalSinceReferenceDate: TimeInterval(item.categoryUpdated)),
-                                changeFrequency: .weekly,
-                                priority: 0.9
-                            )
+            cat.whenSuccess { categories in
+                for item in categories {
+                    siteMapItems.append(
+                        SitemapItem(
+                            url: "\(ZenRetail.config.serverUrl)/category/\(item.categorySeo?.permalink ?? "")",
+                            lastModified: Date(timeIntervalSinceReferenceDate: TimeInterval(item.categoryUpdated)),
+                            changeFrequency: .weekly,
+                            priority: 0.9
                         )
-                    }
-                case .failure(_): break
+                    )
                 }
-                task.leave()
-            }
-
-            /// BRANDS
-            task.enter()
-            let brand = self.repository.getBrands()
-            brand.whenComplete { result in
-                switch result {
-                case .success(let brands):
-                    for item in brands {
+                
+                /// BRANDS
+                let brand = self.repository.getBrands()
+                brand.whenSuccess { brands in
+                    for (i, item) in brands.enumerated() {
                         siteMapItems.append(
                             SitemapItem(
                                 url: "\(ZenRetail.config.serverUrl)/brand/\(item.brandSeo.permalink)",
@@ -95,30 +83,32 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                         )
                         
                         /// PRODUCTS
-                        task.enter()
-                        self.repository
-                            .getProducts(brand: item.brandSeo.permalink)
-                            .whenComplete { result in
-                                switch result {
-                                case .success(let products):
-                                    for product in products {
-                                        siteMapItems.append(
-                                            SitemapItem(
-                                                url: "\(ZenRetail.config.serverUrl)/product/\(product.productSeo?.permalink ?? "")",
-                                                lastModified: Date(timeIntervalSinceReferenceDate: TimeInterval(product.productUpdated)),
-                                                changeFrequency: .weekly,
-                                                priority: 0.9
-                                            )
-                                        )
-                                    }
-                                case .failure(_): break
-                                }
-                                task.leave()
+                        let prod = self.repository.getProducts(brand: item.brandSeo.permalink)
+                        prod.whenSuccess { products in
+                            for product in products {
+                                siteMapItems.append(
+                                    SitemapItem(
+                                        url: "\(ZenRetail.config.serverUrl)/product/\(product.productSeo?.permalink ?? "")",
+                                        lastModified: Date(timeIntervalSinceReferenceDate: TimeInterval(product.productUpdated)),
+                                        changeFrequency: .weekly,
+                                        priority: 0.9
+                                    )
+                                )
                             }
+                            
+                            if i == brands.count - 1 { doResponse() }
+                        }
+                        prod.whenFailure { err in
+                            doResponse()
+                        }
                     }
-                case .failure(_): break
                 }
-                task.leave()
+                brand.whenFailure { err in
+                    doResponse()
+                }
+            }
+            cat.whenFailure { err in
+                doResponse()
             }
         }
         

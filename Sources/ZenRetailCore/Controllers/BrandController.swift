@@ -41,7 +41,7 @@ class BrandController {
     
     func brandHandlerGET(request: HttpRequest, response: HttpResponse) {
         guard let id: Int = request.getParam("id") else {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): error parameter id")
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
             return
         }
         
@@ -63,7 +63,7 @@ class BrandController {
     func brandHandlerPOST(request: HttpRequest, response: HttpResponse) {
         guard let data = request.bodyData,
             let item = try? JSONDecoder().decode(Brand.self, from: data) else {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): error decoding json body")
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
             return
         }
 
@@ -87,7 +87,7 @@ class BrandController {
         guard let id: Int = request.getParam("id"),
             let data = request.bodyData,
             let item = try? JSONDecoder().decode(Brand.self, from: data) else {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): error decoding json body")
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
             return
         }
 
@@ -108,7 +108,7 @@ class BrandController {
 
     func brandHandlerDELETE(request: HttpRequest, response: HttpResponse) {
         guard let id: Int = request.getParam("id") else {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): error parameter id")
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
             return
         }
 

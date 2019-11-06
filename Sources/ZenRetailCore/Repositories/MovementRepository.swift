@@ -228,7 +228,7 @@ ORDER BY "MovementArticle"."movementArticleId"
         item.movementId = id
         try item.delete()
         
-        _ = try MovementArticle().delete(id: "movementId", value: id)
+        _ = try MovementArticle().delete(key: "movementId", value: id)
     }
     
     fileprivate func makeBarcodesForTags(_ movement: Movement, _ item: MovementArticle, _ article: Article, _ company: Company) throws {

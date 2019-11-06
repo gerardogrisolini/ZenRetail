@@ -52,6 +52,6 @@ struct AttributeRepository : AttributeProtocol {
         let item = Attribute()
         item.attributeId = id
         try item.delete()
-        _ = try AttributeValue().delete(id: "attributeId", value: id)
+        _ = try AttributeValue().delete(key: "attributeId", value: id)
     }
 }

@@ -170,7 +170,7 @@ struct ArticleRepository : ArticleProtocol {
                     _ = try item.update(cols: ["articleIsValid"], params: [true], id:"articleId", value: item.articleId)
                     continue
                 }
-                _ = try ArticleAttributeValue(connection: connection).delete(id: "articleId", value: item.articleId)
+                _ = try ArticleAttributeValue(connection: connection).delete(key: "articleId", value: item.articleId)
                 try item.delete()
                 result.articles.remove(at: i - result.deleted)
                 result.deleted += 1

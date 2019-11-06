@@ -11,7 +11,6 @@ import NIO
 protocol BrandProtocol {
     
     func getAll() -> EventLoopFuture<[Brand]>
-    //func getAll() throws -> [Brand]
 
     func get(id: Int) -> EventLoopFuture<Brand>
     

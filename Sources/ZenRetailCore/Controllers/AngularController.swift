@@ -89,7 +89,7 @@ public class AngularController {
 //           resp.send(data: content)
 //           resp.completed()
             
-            resp.addHeader(HttpHeader.location, value: "/index.html")
+            resp.addHeader(HttpHeader.location, value: webapi ? "/admin/index.html" : "/index.html")
             resp.completed(.found)
         }
     }
