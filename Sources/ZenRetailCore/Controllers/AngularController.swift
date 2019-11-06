@@ -70,29 +70,31 @@ public class AngularController {
 
     func angularHandler(webapi: Bool = true) -> HttpHandler {
         return { req, resp in
-            req.eventLoop.execute {
-                var data: Data?
-                
-                let header = ZenNIO.http == .v1 ? "User-Agent" : "user-agent";
-                if let agent = req.head.headers[header].first?.lowercased(),
-                    agent.contains("googlebot") || agent.contains("adsbot")
-                    || agent.contains("bingbot") || agent.contains("msnbot") {
-                    data = self.getContent(request: req)
-                } else {
-                    data = FileManager.default.contents(atPath: webapi ? "./webroot/admin/index.html" : "./webroot/index.html")
-                }
-                
-                guard let content = data else {
-                    resp.completed( .notFound)
-                    return
-                }
-                resp.addHeader(.contentType, value: "text/html")
-                resp.send(data: content)
-                resp.completed()
-            }
+//           var data: Data?
+//
+//           let header = ZenNIO.http == .v1 ? "User-Agent" : "user-agent";
+//           if let agent = req.head.headers[header].first?.lowercased(),
+//               agent.contains("googlebot") || agent.contains("adsbot")
+//               || agent.contains("bingbot") || agent.contains("msnbot") {
+//               data = self.getContent(request: req)
+//           } else {
+//               data = FileManager.default.contents(atPath: webapi ? "./webroot/admin/index.html" : "./webroot/index.html")
+//           }
+//
+//           guard let content = data else {
+//               resp.completed( .notFound)
+//               return
+//           }
+//           resp.addHeader(.contentType, value: "text/html")
+//           resp.send(data: content)
+//           resp.completed()
+            
+            resp.addHeader(HttpHeader.location, value: "/index.html")
+            resp.completed(.found)
         }
     }
     
+    /*
     func getContent(request: HttpRequest) -> Data? {
         var country = "EN"
         let header = ZenNIO.http == .v1 ? "Accept-Language" : "accept-language";
@@ -313,4 +315,5 @@ public class AngularController {
 """
         return content
     }
+    */
 }

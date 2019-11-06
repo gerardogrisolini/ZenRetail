@@ -66,10 +66,19 @@ class MovementController {
                     let shippingId: String = request.getParam("shippingId") else {
                     throw HttpError.badRequest
                 }
+                
                 let item = try self.repository.get(id: id)!
-                let cost = (ZenIoC.shared.resolve() as EcommerceProtocol).getShippingCost(id: shippingId, registry: item.movementRegistry)
-                try response.send(json:cost)
-                response.completed()
+                
+                (ZenIoC.shared.resolve() as EcommerceProtocol).getShippingCost(id: shippingId, registry: item.movementRegistry).whenComplete { res in
+                    switch res {
+                    case .success(let cost):
+                        try! response.send(json: cost)
+                        response.completed()
+                    case .failure(let err):
+                        response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
+                    }
+                }
+                
             } catch {
                 response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }

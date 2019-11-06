@@ -23,8 +23,14 @@ final class ZenRetailTests: XCTestCase {
     }
     
     func testGetProduct() {
-        let repository = EcommerceRepository()
-        XCTAssertNoThrow(try repository.getProduct(name: "gaia"))
+        EcommerceRepository().getProduct(name: "gaia").whenComplete { res in
+            switch res {
+            case .success(_):
+                XCTAssert(true)
+            case .failure(_):
+                XCTAssert(false)
+            }
+        }
     }
     
 

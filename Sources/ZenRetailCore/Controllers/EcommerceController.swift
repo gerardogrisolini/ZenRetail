@@ -30,28 +30,39 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
         }
         
         router.get("/sitemap.xml") { request, response in
-            request.eventLoop.execute {
-                do {
-                    var siteMapItems = [SitemapItem]()
+            var siteMapItems = [SitemapItem]()
 
-                    /// PAGES
-                    siteMapItems.append(
-                        SitemapItem(
-                            url: "\(ZenRetail.config.serverUrl)/home",
-                            changeFrequency: .daily,
-                            priority: 1.0
-                        )
-                    )
-                    siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/info", priority: 0.8))
-                    siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/account", priority: 0.1))
-                    siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/login", priority: 0.1))
-                    siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/register", priority: 0.1))
-                    siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/checkout", priority: 0.1))
-                    siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/orders", priority: 0.1))
-                    siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/basket", priority: 0.1))
+            let task = DispatchGroup()
+            task.notify(queue: .main) {
+                print("completed")
+                response.addHeader(.contentType, value: "application/xml; charset=utf-8")
+                let data = Sitemap(items: siteMapItems).xmlString.data(using: .utf8)!
+                response.send(data: data)
+                response.completed()
+            }
 
-                    /// CATEGORIES
-                    let categories = try self.repository.getCategories()
+            /// PAGES
+            siteMapItems.append(
+                SitemapItem(
+                    url: "\(ZenRetail.config.serverUrl)/home",
+                    changeFrequency: .daily,
+                    priority: 1.0
+                )
+            )
+            siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/info", priority: 0.8))
+            siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/account", priority: 0.1))
+            siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/login", priority: 0.1))
+            siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/register", priority: 0.1))
+            siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/checkout", priority: 0.1))
+            siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/orders", priority: 0.1))
+            siteMapItems.append(SitemapItem(url: "\(ZenRetail.config.serverUrl)/basket", priority: 0.1))
+
+            /// CATEGORIES
+            task.enter()
+            let cat = self.repository.getCategories()
+            cat.whenComplete { result in
+                switch result {
+                case .success(let categories):
                     for item in categories {
                         siteMapItems.append(
                             SitemapItem(
@@ -62,9 +73,17 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                             )
                         )
                     }
+                case .failure(_): break
+                }
+                task.leave()
+            }
 
-                    /// BRANDS
-                    let brands = try self.repository.getBrands()
+            /// BRANDS
+            task.enter()
+            let brand = self.repository.getBrands()
+            brand.whenComplete { result in
+                switch result {
+                case .success(let brands):
                     for item in brands {
                         siteMapItems.append(
                             SitemapItem(
@@ -76,28 +95,30 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                         )
                         
                         /// PRODUCTS
-                        let products = try self.repository.getProducts(brand: item.brandSeo.permalink)
-                        for product in products {
-                            siteMapItems.append(
-                                SitemapItem(
-                                    url: "\(ZenRetail.config.serverUrl)/product/\(product.productSeo?.permalink ?? "")",
-                                    lastModified: Date(timeIntervalSinceReferenceDate: TimeInterval(product.productUpdated)),
-                                    changeFrequency: .weekly,
-                                    priority: 0.9
-                                )
-                            )
-                        }
-
+                        task.enter()
+                        self.repository
+                            .getProducts(brand: item.brandSeo.permalink)
+                            .whenComplete { result in
+                                switch result {
+                                case .success(let products):
+                                    for product in products {
+                                        siteMapItems.append(
+                                            SitemapItem(
+                                                url: "\(ZenRetail.config.serverUrl)/product/\(product.productSeo?.permalink ?? "")",
+                                                lastModified: Date(timeIntervalSinceReferenceDate: TimeInterval(product.productUpdated)),
+                                                changeFrequency: .weekly,
+                                                priority: 0.9
+                                            )
+                                        )
+                                    }
+                                case .failure(_): break
+                                }
+                                task.leave()
+                            }
                     }
-                    let siteMap = Sitemap(items: siteMapItems)
-                    
-                    response.addHeader(.contentType, value: "application/xml; charset=utf-8")
-                    let data = siteMap.xmlString.data(using: .utf8)!
-                    response.send(data: data)
-                    response.completed()
-                } catch {
-                    response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                case .failure(_): break
                 }
+                task.leave()
             }
         }
         
@@ -134,48 +155,45 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
         router.post("/api/ecommerce/order", handler: ecommerceOrderHandlerPOST)
 
         router.post("/api/register") { request, response in
-            request.eventLoop.execute {
-                guard let data = request.bodyData else {
-                    response.completed(.badRequest)
-                    return
-                }
-                
-                do {
-                    let account = try JSONDecoder().decode(Account.self, from: data)
-                    let registry = Registry()
-                    if registry.exists(account.username) {
-                        response.completed(.notAcceptable)
-                        return
-                    }
-                    registry.registryEmail = account.username
-                    registry.registryPassword = account.password.encrypted
-                    try registry.save { id in
-                        registry.registryId = id as! Int
-                    }
-                    
+            guard let data = request.bodyData,
+                let account = try? JSONDecoder().decode(Account.self, from: data) else {
+                response.completed(.badRequest)
+                return
+            }
+
+            let registry = Registry()
+            if registry.exists(account.username) {
+               response.completed(.notAcceptable)
+               return
+            }
+            registry.registryEmail = account.username
+            registry.registryPassword = account.password.encrypted
+            registry.saveAsync().whenComplete { result in
+                switch result {
+                case .success(let id):
+                    registry.registryId = id as! Int
                     let base64 = UUID().uuidString.data(using: .utf8)!.base64EncodedString()
                     request.session!.token = Token(bearer: base64)
                     request.session!.uniqueID = registry.registryId.description
-                    
-                    try response.send(json: request.session!.token!)
+                    try! response.send(json: request.session!.token!)
                     response.completed()
-                } catch {
-                    response.completed(.internalServerError)
+                case .failure(let err):
+                    response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
                 }
             }
         }
     }
-
+    
     /// Company
     
     func ecommerceCompanyHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                let settings = try self.repository.getSettings()
-                try response.send(json: settings)
+        self.repository.getSettings().whenComplete { result in
+            switch result {
+            case .success(let items):
+                try! response.send(json: items)
                 response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
@@ -183,121 +201,129 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
     /// Products
 
     func ecommerceCategoriesHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                let items = try self.repository.getCategories()
-                try response.send(json:items)
+        self.repository.getCategories().whenComplete { result in
+            switch result {
+            case .success(let items):
+                try! response.send(json: items)
                 response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
 
     func ecommerceBrandsHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                let items = try self.repository.getBrands()
-                try response.send(json:items)
+        self.repository.getBrands().whenComplete { result in
+            switch result {
+            case .success(let items):
+                try! response.send(json: items)
                 response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
 
     func ecommerceNewsHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                let items = try self.repository.getProductsNews()
-                try response.send(json:items)
+        self.repository.getProductsNews().whenComplete { result in
+            switch result {
+            case .success(let items):
+                try! response.send(json: items)
                 response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
     
     func ecommerceSaleHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                let items = try self.repository.getProductsDiscount()
-                try response.send(json:items)
+        self.repository.getProductsDiscount().whenComplete { result in
+            switch result {
+            case .success(let items):
+                try! response.send(json: items)
                 response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
     
     func ecommerceFeaturedHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                let items = try self.repository.getProductsFeatured()
-                try response.send(json:items)
+        self.repository.getProductsFeatured().whenComplete { result in
+            switch result {
+            case .success(let items):
+                try! response.send(json: items)
                 response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
     
     func ecommerceCategoryHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let name: String = request.getParam("name") else {
-                    throw HttpError.badRequest
-                }
-                let items = try self.repository.getProducts(category: name)
-                try response.send(json:items)
+        guard let name: String = request.getParam("name") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): paramenter name")
+            return
+        }
+
+        self.repository.getProducts(category: name).whenComplete { result in
+            switch result {
+            case .success(let items):
+                try! response.send(json: items)
                 response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
 
     func ecommerceBrandHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let name: String = request.getParam("name") else {
-                    throw HttpError.badRequest
-                }
-                let items = try self.repository.getProducts(brand: name)
-                try response.send(json:items)
+        guard let name: String = request.getParam("name") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): paramenter name")
+            return
+        }
+
+        self.repository.getProducts(brand: name).whenComplete { result in
+            switch result {
+            case .success(let items):
+                try! response.send(json: items)
                 response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
 
     func ecommerceProductHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let name: String = request.getParam("name") else {
-                    throw HttpError.badRequest
-                }
-                let items = try self.repository.getProduct(name: name)
-                try response.send(json:items)
+        guard let name: String = request.getParam("name") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): paramenter name")
+            return
+        }
+
+        self.repository.getProduct(name: name).whenComplete { result in
+            switch result {
+            case .success(let item):
+                try! response.send(json: item)
                 response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
 
     func ecommerceSearchHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let text: String = request.getParam("text") else {
-                    throw HttpError.badRequest
-                }
-                let items = try self.repository.findProducts(text: text)
-                try response.send(json:items)
+        guard let text: String = request.getParam("text") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): paramenter text")
+            return
+        }
+
+        self.repository.findProducts(text: text).whenComplete { result in
+            switch result {
+            case .success(let items):
+                try! response.send(json: items)
                 response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
@@ -305,97 +331,90 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
     /// Registry
 
     func ecommerceRegistryHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
-            do {
-                let registry = try self.registryRepository.get(id: uniqueID)
-                try response.send(json:registry)
-                response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-            }
+        let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
+        do {
+            let registry = try self.registryRepository.get(id: uniqueID)
+            try response.send(json:registry)
+            response.completed()
+        } catch {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func ecommerceRegistryHandlerPUT(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
-            do {
-                guard let data = request.bodyData else {
-                    throw HttpError.badRequest
-                }
-                let registry = try JSONDecoder().decode(Registry.self, from: data)
-                try self.registryRepository.update(id: uniqueID, item: registry)
-                try response.send(json:registry)
-                response.completed( .accepted)
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+        let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
+        do {
+            guard let data = request.bodyData else {
+                throw HttpError.badRequest
             }
+            let registry = try JSONDecoder().decode(Registry.self, from: data)
+            try self.registryRepository.update(id: uniqueID, item: registry)
+            try response.send(json:registry)
+            response.completed( .accepted)
+        } catch {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func ecommerceRegistryHandlerDELETE(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
-            do {
-                try self.registryRepository.delete(id: uniqueID)
-                response.completed( .noContent)
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-            }
+        let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
+        do {
+            try self.registryRepository.delete(id: uniqueID)
+            response.completed( .noContent)
+        } catch {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     /// Basket
 
     func ecommerceBasketsHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                let items = try self.repository.getBaskets()
-                try response.send(json:items)
+        self.repository.getBaskets().whenComplete { result in
+            switch result {
+            case .success(let items):
+                try! response.send(json: items)
                 response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
 
     func ecommerceBasketHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            guard let uniqueID = request.session?.uniqueID as? String , let id = Int(uniqueID) else {
-                response.completed( .unauthorized)
-                return
-            }
+        guard let uniqueID = request.session?.uniqueID as? String , let id = Int(uniqueID) else {
+            response.completed( .unauthorized)
+            return
+        }
 
-            do {
-                let items = try self.repository.getBasket(registryId: id)
-                try response.send(json:items)
+        self.repository.getBasket(registryId: id).whenComplete { result in
+            switch result {
+            case .success(let items):
+                try! response.send(json: items)
                 response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
     
     func ecommerceBasketHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            guard let uniqueID = request.session?.uniqueID as? String , let id = Int(uniqueID) else {
-                response.completed( .unauthorized)
-                return
-            }
+        guard let uniqueID = request.session?.uniqueID as? String , let id = Int(uniqueID) else {
+            response.completed( .unauthorized)
+            return
+        }
 
-            do {
-                guard let data = request.bodyData else {
-                    throw HttpError.badRequest
-                }
-                let basket = try JSONDecoder().decode(Basket.self, from: data)
-                basket.registryId = id
-                
-                let connection = try ZenPostgres.pool.connect()
-                defer { connection.disconnect() }
+        guard let data = request.bodyData,
+            let basket = try? JSONDecoder().decode(Basket.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+        }
 
-                let product = Product(connection: connection)
-                try product.get(barcode: basket.basketBarcode)
+        basket.registryId = id
+        
+        let product = Product()
+        product.getAsync(barcode: basket.basketBarcode).whenComplete { result in
+            switch result {
+            case .success(_):
                 if product.productId == 0 {
                     response.completed( .notFound)
                     return
@@ -404,42 +423,52 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                 basket.basketPrice = product.productDiscount != nil
                     ? product.productDiscount!.discountPrice : product.productPrice.selling
 
-                try self.repository.addBasket(item: basket)
-                try response.send(json:basket)
-                response.completed( .created)
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                self.repository.addBasket(item: basket).whenComplete { res in
+                    switch res {
+                    case .success(let item):
+                        try! response.send(json: item)
+                        response.completed(.created)
+                    case .failure(let err):
+                        response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
+                    }
+                }
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
     
     func ecommerceBasketHandlerPUT(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let id: Int = request.getParam("id"),
-                    let data = request.bodyData else {
-                    throw HttpError.badRequest
-                }
-                let basket = try JSONDecoder().decode(Basket.self, from: data)
-                try self.repository.updateBasket(id: id, item: basket)
-                try response.send(json: basket)
-                response.completed( .accepted)
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-            }
+       guard let id: Int = request.getParam("id"),
+            let data = request.bodyData,
+            let basket = try? JSONDecoder().decode(Basket.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+       }
+        
+       self.repository.updateBasket(id: id, item: basket).whenComplete { res in
+           switch res {
+           case .success(let result):
+               try! response.send(json: basket)
+               response.completed(result ? .accepted : .notModified)
+           case .failure(let err):
+               response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
+           }
         }
     }
     
     func ecommerceBasketHandlerDELETE(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let id: Int = request.getParam("id") else {
-                    throw HttpError.badRequest
-                }
-                try self.repository.deleteBasket(id: id)
-                response.completed( .noContent)
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+        guard let id: Int = request.getParam("id") else {
+             response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+             return
+        }
+
+        self.repository.deleteBasket(id: id).whenComplete { res in
+            switch res {
+            case .success(let result):
+                response.completed(result ? .noContent : .notModified)
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
@@ -447,108 +476,116 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
     /// Payment
     
     func ecommercePaymentsHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                let items = try self.repository.getPayments()
-                try response.send(json:items)
-                response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-            }
+        do {
+            let items = self.repository.getPayments()
+            try response.send(json:items)
+            response.completed()
+        } catch {
+            response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
 
     /// Shipping
     
     func ecommerceShippingsHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                let items = try self.repository.getShippings()
-                try response.send(json:items)
-                response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-            }
+        do {
+            let items = self.repository.getShippings()
+            try response.send(json:items)
+            response.completed()
+        } catch {
+            response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
 
     func ecommerceShippingCostHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
-            do {
-                guard let id :String = request.getParam("id") else {
-                    throw HttpError.badRequest
+        guard let id: String = request.getParam("id") else {
+             response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+             return
+        }
+        let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
+
+        do {
+            let registry = try self.registryRepository.get(id: uniqueID)!
+            self.repository.getShippingCost(id: id, registry: registry).whenComplete { res in
+                switch res {
+                case .success(let cost):
+                    try! response.send(json: cost)
+                    response.completed()
+                case .failure(let err):
+                    response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
                 }
-                let registry = try self.registryRepository.get(id: uniqueID)!
-                let cost = self.repository.getShippingCost(id: id, registry: registry)
-                try response.send(json:cost)
-                response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
+        } catch {
+            response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
 
     /// Order
     
     func ecommerceOrdersHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
-            do {
-                let items = try self.repository.getOrders(registryId: uniqueID)
-                try response.send(json:items)
+        let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
+        self.repository.getOrders(registryId: uniqueID).whenComplete { res in
+            switch res {
+            case .success(let items):
+                try! response.send(json: items)
                 response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
     
     func ecommerceOrderHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
-            do {
-                guard let id: Int = request.getParam("id") else {
-                    throw HttpError.badRequest
-                }
-                let item = try self.repository.getOrder(registryId: uniqueID, id: id)
-                try response.send(json:item)
+        guard let id: Int = request.getParam("id") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+
+        let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
+        self.repository.getOrder(registryId: uniqueID, id: id).whenComplete { res in
+            switch res {
+            case .success(let item):
+                try! response.send(json: item)
                 response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
 
     func ecommerceOrderItemsHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
-            do {
-                guard let id: Int = request.getParam("id") else {
-                    throw HttpError.badRequest
-                }
-                let items = try self.repository.getOrderItems(registryId: uniqueID, id: id)
-                try response.send(json:items)
+        guard let id: Int = request.getParam("id") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+
+        let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
+        self.repository.getOrderItems(registryId: uniqueID, id: id).whenComplete { res in
+            switch res {
+            case .success(let items):
+                try! response.send(json: items)
                 response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
 
     func ecommerceOrderHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            let uniqueID = Int(request.session?.uniqueID as? String ?? "0")!
-            do {
-                guard let data = request.bodyData else {
-                    throw HttpError.badRequest
-                }
-                let order = try JSONDecoder().decode(OrderModel.self, from: data)
-                let item = try self.repository.addOrder(registryId: uniqueID, order: order)
-                try response.send(json:item)
-                response.completed( .created)
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+        guard let data = request.bodyData,
+            let order = try? JSONDecoder().decode(OrderModel.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+        }
+
+        let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
+        self.repository.addOrder(registryId: uniqueID, order: order).whenComplete { res in
+            switch res {
+            case .success(let item):
+                try! response.send(json: item)
+                response.completed()
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }

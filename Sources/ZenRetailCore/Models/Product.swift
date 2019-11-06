@@ -133,21 +133,53 @@ class Product: PostgresTable, PostgresJson {
         try container.encode(productUpdated, forKey: .productUpdated)
     }
 
-//	func makeCategories() throws {
-//		let categoryJoin = DataSourceJoin(
-//            table: "Category",
-//            onCondition: "ProductCategory.categoryId = Category.categoryId"
-//        )
-//
-//        self._categories = try ProductCategory(connection: connection!).query(
-//			whereclause: "ProductCategory.productId = $1",
-//			params: [self.productId],
-//			orderby: ["Category.categoryId"],
-//			joins: [categoryJoin]
-//		)
-//	}
+    func rowsAsync(sql: String, barcodes: Bool, storeIds: String = "0") -> EventLoopFuture<[Product]> {
+        let promise: EventLoopPromise<[Product]> = ZenPostgres.pool.newPromise()
 
-    func rows(sql: String, barcodes: Bool, storeIds: String = "0") throws -> [Product] {
+        let connect = ZenPostgres.pool.connectAsync()
+        connect.whenSuccess { conn in
+            defer { conn.disconnect() }
+            self.connection = conn
+            
+            let query = self.sqlRowsAsync(sql)
+            query.whenSuccess { rows in
+                
+                let groups = rows.groupBy { row -> Int in
+                    row.column("productId")!.int!
+                }
+
+                var results = [Product]()
+                for group in groups {
+                    let row = Product(connection: self.connection!)
+                    row.decode(row: group.value.first!)
+
+                    for cat in group.value {
+                        let productCategory = ProductCategory()
+                        productCategory.decode(row: cat)
+                        row._categories.append(productCategory)
+                    }
+
+                    if barcodes {
+                        row.makeAttributesAsync();
+                        row.makeArticlesAsync(storeIds);
+                    }
+                    results.append(row)
+                }
+                
+                promise.succeed(results)
+            }
+            query.whenFailure { err in
+                promise.fail(err)
+            }
+        }
+        connect.whenFailure { err in
+            promise.fail(err)
+        }
+       
+        return promise.futureResult
+    }
+
+    func rows(sql: String, barcodes: Bool, storeIds: String = "") throws -> [Product] {
        var results = [Product]()
        let rows = try self.sqlRows(sql)
 
@@ -190,6 +222,50 @@ class Product: PostgresTable, PostgresJson {
         self._attributes.append(productAttribute)
     }
     
+    func makeAttributesAsync() {
+        let attributeJoin = DataSourceJoin(
+            table: "Attribute",
+            onCondition: "ProductAttribute.attributeId = Attribute.attributeId",
+            direction: .INNER
+        )
+        let productAttributeValueJoin = DataSourceJoin(
+            table: "ProductAttributeValue",
+            onCondition: "ProductAttribute.productAttributeId = ProductAttributeValue.productAttributeId",
+            direction: .LEFT
+        )
+        let attributeValueJoin = DataSourceJoin(
+            table: "AttributeValue",
+            onCondition: "ProductAttributeValue.attributeValueId = AttributeValue.attributeValueId",
+            direction: .INNER
+        )
+
+        let productAttribute = ProductAttribute(connection: connection!)
+        let sql = productAttribute.querySQL(
+            whereclause: "ProductAttribute.productId = $1",
+            params: [self.productId],
+            orderby: ["ProductAttribute.productAttributeId", "ProductAttributeValue.attributeValueId"],
+            joins: [attributeJoin, productAttributeValueJoin, attributeValueJoin]
+        )
+        
+        let query = productAttribute.sqlRowsAsync(sql)
+        query.whenSuccess { rows in
+            let groups = rows.groupBy { row -> Int in
+                row.column("productAttributeId")!.int!
+            }
+            
+            for group in groups.sorted(by: { $0.key < $1.key }) {
+                let pa = ProductAttribute()
+                pa.decode(row: group.value.first!)
+                for att in group.value {
+                    let productAttributeValue = ProductAttributeValue()
+                    productAttributeValue.decode(row: att)
+                    pa._attributeValues.append(productAttributeValue)
+                }
+                self._attributes.append(pa)
+            }
+        }
+    }
+
     func makeAttributes() throws {
         let attributeJoin = DataSourceJoin(
             table: "Attribute",
@@ -231,6 +307,72 @@ class Product: PostgresTable, PostgresJson {
             _attributes.append(pa)
         }
 	}
+
+    func makeArticlesAsync(_ storeIds: String = "") {
+        let item = Article(connection: connection!)
+
+        let join = DataSourceJoin(
+            table: "ArticleAttributeValue",
+            onCondition: "Article.articleId = ArticleAttributeValue.articleId",
+            direction: .LEFT
+        )
+
+        let sql = storeIds.isEmpty
+            ? item.querySQL(
+                whereclause: "Article.productId = $1",
+                params: [self.productId],
+                orderby: ["Article.articleId", "ArticleAttributeValue.articleId"],
+                joins: [join]
+            )
+            : """
+SELECT "Article"."articleId",
+"Article"."productId",
+"Article"."articleNumber",
+"Article"."articleBarcodes",
+"Article"."articlePackaging",
+"Article"."articleIsValid",
+"Article"."articleCreated",
+"Article"."articleUpdated",
+"ArticleAttributeValue"."articleAttributeValueId",
+"ArticleAttributeValue"."articleId",
+"ArticleAttributeValue"."attributeValueId",
+SUM ("Stock"."stockQuantity") as stockQuantity,
+SUM ("Stock"."stockBooked") as stockBooked
+FROM "Article"
+LEFT JOIN "ArticleAttributeValue" ON "Article"."articleId" = "ArticleAttributeValue"."articleId"
+LEFT JOIN "Stock" ON "Article"."articleId" = "Stock"."articleId"
+WHERE "Article"."productId" = \(productId) AND ("Stock"."storeId" IN (\(storeIds)) OR "Stock"."storeId" IS NULL)
+GROUP BY "Article"."articleId",
+"Article"."productId",
+"Article"."articleNumber",
+"Article"."articleBarcodes",
+"Article"."articlePackaging",
+"Article"."articleIsValid",
+"Article"."articleCreated",
+"Article"."articleUpdated",
+"ArticleAttributeValue"."articleAttributeValueId",
+"ArticleAttributeValue"."articleId",
+"ArticleAttributeValue"."attributeValueId"
+ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
+"""
+        let query = item.sqlRowsAsync(sql)
+        query.whenSuccess { rows in
+            let groups = rows.groupBy { row -> Int in
+                row.column("articleId")!.int!
+            }
+            
+            for group in groups {
+                let article = Article()
+                article.decode(row: group.value.first!)
+                for art in group.value {
+                    let attributeValue = ArticleAttributeValue()
+                    attributeValue.decode(row: art)
+                    article._attributeValues.append(attributeValue)
+                }
+                self._articles.append(article)
+            }
+        }
+    }
 
     func makeArticles(_ storeIds: String = "") throws {
         let item = Article(connection: connection!)
@@ -296,9 +438,8 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
         }
 	}
 
-	func makeArticle(barcode: String, rows: [PostgresRow]) throws {
-        let article = Article(connection: connection!)
-        
+	func makeArticle(barcode: String, rows: [PostgresRow]) {
+        let article = Article()
         article.decode(row: rows[0])
         article._attributeValues = rows.map({ row -> ArticleAttributeValue in
             let a = ArticleAttributeValue()
@@ -307,6 +448,87 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
         })
         self._articles = [article]
 	}
+
+    func getAsync(barcode: String) -> EventLoopFuture<Void> {
+        let brandJoin = DataSourceJoin(
+            table: "Brand",
+            onCondition: "Product.brandId = Brand.brandId",
+            direction: .INNER
+        )
+        let productCategoryJoin = DataSourceJoin(
+            table: "ProductCategory",
+            onCondition: "Product.productId = ProductCategory.productId",
+            direction: .LEFT
+        )
+        let categoryJoin = DataSourceJoin(
+            table: "Category",
+            onCondition: "ProductCategory.categoryId = Category.categoryId",
+            direction: .INNER
+        )
+        let articleJoin = DataSourceJoin(
+            table: "Article",
+            onCondition: "Product.productId = Article.productId",
+            direction: .INNER
+        )
+        let articleAttributeJoin = DataSourceJoin(
+            table: "ArticleAttributeValue",
+            onCondition: "ArticleAttributeValue.articleId = Article.articleId",
+            direction: .LEFT
+        )
+
+        let param = """
+'[{"barcode": "\(barcode)"}]'::jsonb
+"""
+        let sql = querySQL(
+            whereclause: "Article.articleBarcodes @> $1",
+            params: [param],
+            orderby: ["ArticleAttributeValue.articleAttributeValueId"],
+            joins: [
+                brandJoin,
+                productCategoryJoin,
+                categoryJoin,
+                articleJoin,
+                articleAttributeJoin
+            ])
+
+        
+        let promise: EventLoopPromise<Void> = ZenPostgres.pool.newPromise()
+
+        let connect = ZenPostgres.pool.connectAsync()
+        connect.whenSuccess { conn in
+            defer { conn.disconnect() }
+            self.connection = conn
+            
+            let query = self.sqlRowsAsync(sql)
+            query.whenSuccess { rows in
+                if rows.count == 0 { promise.fail(ZenError.recordNotFound) }
+                
+                if let item = rows.first {
+                    self.decode(row: item)
+                    
+                    self.makeAttributesAsync()
+                    // TODO: fix this dont use barcode
+                    self.makeArticle(barcode: barcode, rows: rows)
+
+                    for cat in rows {
+                        let productCategory = ProductCategory()
+                        productCategory.decode(row: cat)
+                        self._categories.append(productCategory)
+                    }
+                }
+                
+                promise.succeed(())
+            }
+            query.whenFailure { err in
+                promise.fail(err)
+            }
+        }
+        connect.whenFailure { err in
+            promise.fail(err)
+        }
+        
+        return promise.futureResult
+    }
 
     func get(barcode: String) throws {
         let brandJoin = DataSourceJoin(
@@ -368,6 +590,6 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
         }
         
         try self.makeAttributes()
-        try self.makeArticle(barcode: barcode, rows: rows)
+        self.makeArticle(barcode: barcode, rows: rows)
     }
 }

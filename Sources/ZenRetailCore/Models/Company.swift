@@ -120,15 +120,54 @@ class Company: Codable {
         defer { connection.disconnect() }
         return try select(connection: connection)
     }
-
+    
     func select(connection: PostgresConnection) throws {
-        let decoder = JSONDecoder()
         let settings = Settings(connection: connection)
         let rows: [Settings] = try settings.query()
         let data = rows.reduce(into: [String: String]()) {
             $0[$1.key] = $1.value
         }
         
+        try loadData(data)
+    }
+
+    func selectAsync() -> EventLoopFuture<Void> {
+        let promise: EventLoopPromise<Void> = ZenPostgres.pool.newPromise()
+
+        ZenPostgres.pool.connectAsync().whenComplete { result in
+            switch result {
+            case .success(let conn):
+                defer { conn.disconnect() }
+                _ = self.selectAsync(connection: conn, promise: promise)
+            case .failure(let err):
+                promise.fail(err)
+            }
+        }
+
+        return promise.futureResult
+    }
+
+    func selectAsync(connection: PostgresConnection, promise: EventLoopPromise<Void>? = nil) -> EventLoopFuture<Void> {
+        let newPromise: EventLoopPromise<Void> = promise != nil ? promise! : ZenPostgres.pool.newPromise()
+        
+        let query: EventLoopFuture<[Settings]> = Settings(connection: connection).queryAsync()
+        query.whenSuccess { rows in
+            let data = rows.reduce(into: [String: String]()) {
+                $0[$1.key] = $1.value
+            }
+            try! self.loadData(data)
+            newPromise.succeed(())
+        }
+        query.whenFailure { err in
+            newPromise.fail(err)
+        }
+        
+        return newPromise.futureResult
+    }
+    
+    fileprivate func loadData(_ data: [String : String]) throws {
+        let decoder = JSONDecoder()
+
         companyName = data["companyName"] ?? ""
         companyWebsite = data["companyWebsite"] ?? ""
         companyAddress = data["companyAddress"] ?? ""
@@ -148,7 +187,7 @@ class Company: Codable {
             let data = locales.data(using: .utf8) {
             companyLocales = try decoder.decode([Translation].self, from: data)
         }
-
+        
         homeFeatured = data["homeFeatured"]! == "true"
         homeNews = data["homeNews"]! == "true"
         homeDiscount = data["homeDiscount"]! == "true"
@@ -157,7 +196,7 @@ class Company: Codable {
         
         if let seo = data["homeSeo"],
             let data = seo.data(using: .utf8) {
-            homeSeo = try! decoder.decode(Seo.self, from: data)
+            homeSeo = try decoder.decode(Seo.self, from: data)
         }
         if let content = data["homeContent"],
             let data = content.data(using: .utf8) {
@@ -165,7 +204,7 @@ class Company: Codable {
         }
         if let seo = data["infoSeo"],
             let data = seo.data(using: .utf8) {
-            infoSeo = try! decoder.decode(Seo.self, from: data)
+            infoSeo = try decoder.decode(Seo.self, from: data)
         }
         if let content = data["infoContent"],
             let data = content.data(using: .utf8) {

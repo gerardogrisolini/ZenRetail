@@ -90,6 +90,28 @@ class File: PostgresTable, Codable {
         fileCreated = row.column("fileCreated")?.int ?? 0
     }
 
+    func getDataAsync(filename: String, size: MediaType) -> EventLoopFuture<[UInt8]> {
+        let promise: EventLoopPromise<[UInt8]> = ZenPostgres.pool.newPromise()
+        
+        let query: EventLoopFuture<[File]> = queryAsync(
+            whereclause: "fileName = $1 AND fileType = $2",
+            params: [filename, size.rawValue],
+            cursor: Cursor(limit: 1, offset: 0)
+        )
+        query.whenComplete { result in
+            switch result {
+            case .success(let files):
+                if let file = files.first {
+                    promise.succeed(file.fileData)
+                }
+            case .failure(let err):
+                promise.fail(err)
+            }
+        }
+        
+        return promise.futureResult
+    }
+
     func getData(filename: String, size: MediaType) throws -> [UInt8]? {
 //        var name = filename
 //        if let index = name.firstIndex(of: "?") {

@@ -5,6 +5,8 @@
 //  Created by Gerardo Grisolini on 25/10/17.
 //
 
+import NIO
+
 struct Cost: Codable {
     public var value: Double
 }
@@ -22,51 +24,50 @@ struct Order: Codable {
 
 protocol EcommerceProtocol {
     
-    func getSettings() throws -> Setting
+    func getSettings() -> EventLoopFuture<Setting>
     
-    func getCategories() throws -> [Category]
+    func getBrands() -> EventLoopFuture<[Brand]>
 
-    func getBrands() throws -> [Brand]
+    func getCategories() -> EventLoopFuture<[Category]>
 
+    func getProductsNews() -> EventLoopFuture<[Product]>
+
+    func getProductsFeatured() -> EventLoopFuture<[Product]>
+
+    func getProductsDiscount() -> EventLoopFuture<[Product]>
+
+    func getProducts(category: String) -> EventLoopFuture<[Product]>
+
+    func getProducts(brand: String) -> EventLoopFuture<[Product]>
+
+    func getProduct(name: String) -> EventLoopFuture<Product>
+
+    func findProducts(text: String) -> EventLoopFuture<[Product]>
     
-    func getProductsNews() throws -> [Product]
+    func getBaskets() -> EventLoopFuture<[Basket]>
 
-    func getProductsFeatured() throws -> [Product]
-
-    func getProductsDiscount() throws -> [Product]
-
-    func getProducts(category: String) throws -> [Product]
-
-    func getProducts(brand: String) throws -> [Product]
-
-    func getProduct(name: String) throws -> Product
-
-    func findProducts(text: String) throws -> [Product]
+    func getBasket(registryId: Int) -> EventLoopFuture<[Basket]>
     
-    func getBaskets() throws -> [Basket]
+    func addBasket(item: Basket) -> EventLoopFuture<Basket>
 
-    func getBasket(registryId: Int) throws -> [Basket]
+    func updateBasket(id: Int, item: Basket) -> EventLoopFuture<Bool>
     
-    func addBasket(item: Basket) throws
-
-    func updateBasket(id: Int, item: Basket) throws
-    
-    func deleteBasket(id: Int) throws
+    func deleteBasket(id: Int) -> EventLoopFuture<Bool>
 
 
-    func getPayments() throws -> [Item]
+    func getPayments() -> [Item]
     
-    func getShippings() throws -> [Item]
+    func getShippings() -> [Item]
     
-    func getShippingCost(id: String, registry: Registry) -> Cost
+    func getShippingCost(id: String, registry: Registry) -> EventLoopFuture<Cost>
     
     
-    func addOrder(registryId: Int, order: OrderModel) throws -> Movement
+    func addOrder(registryId: Int, order: OrderModel) -> EventLoopFuture<Movement>
 
-    func getOrders(registryId: Int) throws -> [Movement]
+    func getOrders(registryId: Int) -> EventLoopFuture<[Movement]>
 
-    func getOrder(registryId: Int, id: Int) throws -> Movement
+    func getOrder(registryId: Int, id: Int) -> EventLoopFuture<Movement>
 
-    func getOrderItems(registryId: Int, id: Int) throws -> [MovementArticle]
+    func getOrderItems(registryId: Int, id: Int) -> EventLoopFuture<[MovementArticle]>
 }
 
