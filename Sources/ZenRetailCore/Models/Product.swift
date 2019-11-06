@@ -160,13 +160,20 @@ class Product: PostgresTable, PostgresJson {
                     }
 
                     if barcodes {
-                        row.makeAttributesAsync();
-                        row.makeArticlesAsync(storeIds);
+                        row.makeAttributesAsync().whenComplete { _ in
+                            row.makeArticlesAsync(storeIds).whenComplete { _ in
+                                results.append(row)
+                                if results.count == group.value.count {
+                                    promise.succeed(results)
+                                }
+                            }
+                        }
+                    } else {
+                        results.append(row)
                     }
-                    results.append(row)
                 }
                 
-                promise.succeed(results)
+                if !barcodes { promise.succeed(results) }
             }
             query.whenFailure { err in
                 promise.fail(err)
@@ -222,7 +229,9 @@ class Product: PostgresTable, PostgresJson {
         self._attributes.append(productAttribute)
     }
     
-    func makeAttributesAsync() {
+    func makeAttributesAsync() -> EventLoopFuture<Void> {
+        let promise: EventLoopPromise<Void> = ZenPostgres.pool.newPromise()
+
         let attributeJoin = DataSourceJoin(
             table: "Attribute",
             onCondition: "ProductAttribute.attributeId = Attribute.attributeId",
@@ -263,7 +272,13 @@ class Product: PostgresTable, PostgresJson {
                 }
                 self._attributes.append(pa)
             }
+            promise.succeed(())
         }
+        query.whenFailure { err in
+            promise.fail(err)
+        }
+        
+        return promise.futureResult
     }
 
     func makeAttributes() throws {
@@ -308,9 +323,10 @@ class Product: PostgresTable, PostgresJson {
         }
 	}
 
-    func makeArticlesAsync(_ storeIds: String = "") {
+    func makeArticlesAsync(_ storeIds: String = "") -> EventLoopFuture<Void> {
+        let promise: EventLoopPromise<Void> = ZenPostgres.pool.newPromise()
+        
         let item = Article(connection: connection!)
-
         let join = DataSourceJoin(
             table: "ArticleAttributeValue",
             onCondition: "Article.articleId = ArticleAttributeValue.articleId",
@@ -371,7 +387,13 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
                 }
                 self._articles.append(article)
             }
+            promise.succeed(())
         }
+        query.whenFailure { err in
+            promise.fail(err)
+        }
+        
+        return promise.futureResult
     }
 
     func makeArticles(_ storeIds: String = "") throws {
@@ -501,23 +523,21 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
             
             let query = self.sqlRowsAsync(sql)
             query.whenSuccess { rows in
-                if rows.count == 0 { promise.fail(ZenError.recordNotFound) }
-                
                 if let item = rows.first {
                     self.decode(row: item)
-                    
-                    self.makeAttributesAsync()
-                    // TODO: fix this dont use barcode
-                    self.makeArticle(barcode: barcode, rows: rows)
-
                     for cat in rows {
                         let productCategory = ProductCategory()
                         productCategory.decode(row: cat)
                         self._categories.append(productCategory)
                     }
+                    
+                    self.makeArticle(barcode: barcode, rows: rows)
+                    self.makeAttributesAsync().whenComplete { _ in
+                        promise.succeed(())
+                    }
+                } else {
+                    promise.fail(ZenError.recordNotFound)
                 }
-                
-                promise.succeed(())
             }
             query.whenFailure { err in
                 promise.fail(err)

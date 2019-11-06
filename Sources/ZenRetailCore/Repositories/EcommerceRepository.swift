@@ -260,10 +260,11 @@ ORDER BY "Product"."productName"
                     }
                 }
                 
-                item.makeAttributesAsync()
-                item.makeArticlesAsync()
-                
-                promise.succeed(item)
+                item.makeAttributesAsync().whenComplete { _ in
+                    item.makeArticlesAsync().whenComplete { _ in
+                        promise.succeed(item)
+                    }
+                }                
             }
             query.whenFailure { err in
                 promise.fail(err)

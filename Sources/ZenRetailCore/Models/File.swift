@@ -103,6 +103,8 @@ class File: PostgresTable, Codable {
             case .success(let files):
                 if let file = files.first {
                     promise.succeed(file.fileData)
+                } else {
+                    promise.fail(ZenError.recordNotFound)
                 }
             case .failure(let err):
                 promise.fail(err)
