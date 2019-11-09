@@ -98,7 +98,7 @@ struct ProductRepository : ProductProtocol {
         let rows = try item.sqlRows(sql)
         if rows.count == 0 { throw ZenError.recordNotFound }
 
-        let groups = rows.groupBy { row -> Int in
+        let groups = Dictionary(grouping: rows) { row -> Int in
             row.column("productId")!.int!
         }
         

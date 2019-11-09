@@ -45,7 +45,7 @@ AND a."movementStatus" = 'Completed'
     
     func getCategories(year: Int) throws -> Statistics {
         var data = [StatisticItem]()
-        let movements = try getData(year: year).groupBy {
+        let movements = Dictionary(grouping: try getData(year: year)) {
             $0.movementArticleProduct._categories.first?._category.categoryName ?? "None"
         }
         for movement in movements {
@@ -61,7 +61,7 @@ AND a."movementStatus" = 'Completed'
     
     func getProducts(year: Int) throws -> Statistics {
         var data = [StatisticItem]()
-        let movements = try getData(year: year).groupBy {
+        let movements = Dictionary(grouping: try getData(year: year)) {
             $0.movementArticleProduct.productName
         }
         for movement in movements {
@@ -150,7 +150,7 @@ AND a."movementStatus" = 'Completed'
     
     private func toGrouped(items: [StatisticItem]) -> [StatisticItem] {
         var result = [StatisticItem]()
-        let rows = items.groupBy { "\($0.id)#\($0.label)" }
+        let rows = Dictionary(grouping: items) { "\($0.id)#\($0.label)" }
         for row in rows {
             let item = StatisticItem()
             let keys = row.key.split(separator: "#")

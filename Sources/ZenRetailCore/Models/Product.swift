@@ -134,20 +134,18 @@ class Product: PostgresTable, PostgresJson {
     }
 
     func rowsAsync(sql: String, barcodes: Bool, storeIds: String = "0") -> EventLoopFuture<[Product]> {
-        let promise: EventLoopPromise<[Product]> = ZenPostgres.pool.newPromise()
-
-        let connect = ZenPostgres.pool.connectAsync()
-        connect.whenSuccess { conn in
+        return ZenPostgres.pool.connectAsync().flatMap { conn -> EventLoopFuture<[Product]> in
             defer { conn.disconnect() }
             self.connection = conn
             
-            let query = self.sqlRowsAsync(sql)
-            query.whenSuccess { rows in
-                
-                let groups = rows.groupBy { row -> Int in
+            let promise = conn.eventLoop.makePromise(of: [Product].self)
+
+            _ = self.sqlRowsAsync(sql).map { rows -> Void in
+
+                let groups = Dictionary(grouping: rows) { row -> Int in
                     row.column("productId")!.int!
                 }
-
+                
                 var results = [Product]()
                 for group in groups {
                     let row = Product(connection: self.connection!)
@@ -175,22 +173,16 @@ class Product: PostgresTable, PostgresJson {
                 
                 if !barcodes { promise.succeed(results) }
             }
-            query.whenFailure { err in
-                promise.fail(err)
-            }
+
+            return promise.futureResult
         }
-        connect.whenFailure { err in
-            promise.fail(err)
-        }
-       
-        return promise.futureResult
     }
 
     func rows(sql: String, barcodes: Bool, storeIds: String = "") throws -> [Product] {
        var results = [Product]()
        let rows = try self.sqlRows(sql)
 
-       let groups = rows.groupBy { row -> Int in
+       let groups = Dictionary(grouping: rows) { row -> Int in
            row.column("productId")!.int!
        }
        
@@ -230,8 +222,6 @@ class Product: PostgresTable, PostgresJson {
     }
     
     func makeAttributesAsync() -> EventLoopFuture<Void> {
-        let promise: EventLoopPromise<Void> = ZenPostgres.pool.newPromise()
-
         let attributeJoin = DataSourceJoin(
             table: "Attribute",
             onCondition: "ProductAttribute.attributeId = Attribute.attributeId",
@@ -256,9 +246,8 @@ class Product: PostgresTable, PostgresJson {
             joins: [attributeJoin, productAttributeValueJoin, attributeValueJoin]
         )
         
-        let query = productAttribute.sqlRowsAsync(sql)
-        query.whenSuccess { rows in
-            let groups = rows.groupBy { row -> Int in
+        return productAttribute.sqlRowsAsync(sql).map { rows -> Void in
+            let groups = Dictionary(grouping: rows) { row in
                 row.column("productAttributeId")!.int!
             }
             
@@ -272,13 +261,8 @@ class Product: PostgresTable, PostgresJson {
                 }
                 self._attributes.append(pa)
             }
-            promise.succeed(())
+            return ()
         }
-        query.whenFailure { err in
-            promise.fail(err)
-        }
-        
-        return promise.futureResult
     }
 
     func makeAttributes() throws {
@@ -307,7 +291,7 @@ class Product: PostgresTable, PostgresJson {
 		)
         
         let rows = try productAttribute.sqlRows(sql)
-        let groups = rows.groupBy { row -> Int in
+        let groups = Dictionary(grouping: rows) { row -> Int in
             row.column("productAttributeId")!.int!
         }
         
@@ -324,8 +308,6 @@ class Product: PostgresTable, PostgresJson {
 	}
 
     func makeArticlesAsync(_ storeIds: String = "") -> EventLoopFuture<Void> {
-        let promise: EventLoopPromise<Void> = ZenPostgres.pool.newPromise()
-        
         let item = Article(connection: connection!)
         let join = DataSourceJoin(
             table: "ArticleAttributeValue",
@@ -371,9 +353,9 @@ GROUP BY "Article"."articleId",
 "ArticleAttributeValue"."attributeValueId"
 ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
 """
-        let query = item.sqlRowsAsync(sql)
-        query.whenSuccess { rows in
-            let groups = rows.groupBy { row -> Int in
+        return item.sqlRowsAsync(sql).map { rows -> Void in
+
+            let groups = Dictionary(grouping: rows) { row -> Int in
                 row.column("articleId")!.int!
             }
             
@@ -387,13 +369,7 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
                 }
                 self._articles.append(article)
             }
-            promise.succeed(())
         }
-        query.whenFailure { err in
-            promise.fail(err)
-        }
-        
-        return promise.futureResult
     }
 
     func makeArticles(_ storeIds: String = "") throws {
@@ -444,7 +420,7 @@ GROUP BY "Article"."articleId",
 ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
 """
         let rows = try item.sqlRows(sql)
-        let groups = rows.groupBy { row -> Int in
+        let groups = Dictionary(grouping: rows) { row -> Int in
             row.column("articleId")!.int!
         }
         
@@ -514,15 +490,11 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
             ])
 
         
-        let promise: EventLoopPromise<Void> = ZenPostgres.pool.newPromise()
-
-        let connect = ZenPostgres.pool.connectAsync()
-        connect.whenSuccess { conn in
+        return ZenPostgres.pool.connectAsync().flatMap { conn -> EventLoopFuture<Void> in
             defer { conn.disconnect() }
             self.connection = conn
             
-            let query = self.sqlRowsAsync(sql)
-            query.whenSuccess { rows in
+            return self.sqlRowsAsync(sql).flatMapThrowing { rows -> Void in
                 if let item = rows.first {
                     self.decode(row: item)
                     for cat in rows {
@@ -532,22 +504,13 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
                     }
                     
                     self.makeArticle(barcode: barcode, rows: rows)
-                    self.makeAttributesAsync().whenComplete { _ in
-                        promise.succeed(())
+                    return self.makeArticlesAsync().whenComplete { _ in
                     }
                 } else {
-                    promise.fail(ZenError.recordNotFound)
+                    throw ZenError.recordNotFound
                 }
             }
-            query.whenFailure { err in
-                promise.fail(err)
-            }
         }
-        connect.whenFailure { err in
-            promise.fail(err)
-        }
-        
-        return promise.futureResult
     }
 
     func get(barcode: String) throws {
@@ -595,7 +558,7 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
         let rows = try self.sqlRows(sql)
         if rows.count == 0 { throw ZenError.recordNotFound }
 
-        let groups = rows.groupBy { row -> Int in
+        let groups = Dictionary(grouping: rows) { row -> Int in
             row.column("productId")!.int!
         }
         

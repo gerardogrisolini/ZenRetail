@@ -13,11 +13,8 @@ import ZenPostgres
 struct EcommerceRepository : EcommerceProtocol {
 
     func getSettings() -> EventLoopFuture<Setting> {
-        let promise: EventLoopPromise<Setting> = ZenPostgres.pool.newPromise()
-        
         let item = Company()
-        let query = item.selectAsync()
-        query.whenSuccess { _ in
+        return item.selectAsync().map { () -> Setting in
             var setting = Setting()
             setting.companyName = item.companyName
             setting.companyAddress = item.companyAddress
@@ -53,13 +50,8 @@ struct EcommerceRepository : EcommerceProtocol {
             setting.shippingStandard = item.shippingStandard
             setting.shippingExpress = item.shippingExpress
             
-            promise.succeed(setting)
+            return setting
         }
-        query.whenFailure { err in
-            promise.fail(err)
-        }
-        
-        return promise.futureResult
     }
 
     internal func defaultJoins() -> [DataSourceJoin] {
@@ -226,10 +218,7 @@ ORDER BY "Product"."productName"
     }
 
     func getProduct(name: String) -> EventLoopFuture<Product> {
-        let promise: EventLoopPromise<Product> = ZenPostgres.pool.newPromise()
-
-        let connect = ZenPostgres.pool.connectAsync()
-        connect.whenSuccess { conn in
+        return ZenPostgres.pool.connectAsync().flatMap { conn -> EventLoopFuture<Product> in
             defer { conn.disconnect() }
             
             let item = Product(connection: conn)
@@ -239,14 +228,9 @@ ORDER BY "Product"."productName"
                 joins: self.defaultJoins()
             )
             
-            let query = item.sqlRowsAsync(sql)
-            query.whenSuccess { rows in
-                if rows.count == 0 {
-                    promise.fail(ZenError.recordNotFound)
-                    return
-                }
+            return item.sqlRowsAsync(sql).flatMap { rows -> EventLoopFuture<Product> in
                 
-                let groups = rows.groupBy { row -> Int in
+                let groups = Dictionary(grouping: rows) { row -> Int in
                     row.column("productId")!.int!
                 }
                 
@@ -260,21 +244,16 @@ ORDER BY "Product"."productName"
                     }
                 }
                 
-                item.makeAttributesAsync().whenComplete { _ in
-                    item.makeArticlesAsync().whenComplete { _ in
-                        promise.succeed(item)
+                return item.makeAttributesAsync().flatMap { () -> EventLoopFuture<Product> in
+                    return item.makeArticlesAsync().flatMapThrowing { () -> Product in
+                        if rows.count == 0 {
+                            throw ZenError.recordNotFound
+                        }
+                        return item
                     }
                 }                
             }
-            query.whenFailure { err in
-                promise.fail(err)
-            }
         }
-        connect.whenFailure { err in
-            promise.fail(err)
-        }
-
-        return promise.futureResult
     }
 
     func getBaskets() -> EventLoopFuture<[Basket]> {
@@ -291,10 +270,7 @@ ORDER BY "Product"."productName"
     }
     
     func addBasket(item: Basket) -> EventLoopFuture<Basket> {
-        let promise: EventLoopPromise<Basket> = ZenPostgres.pool.newPromise()
-        
-        let connect = ZenPostgres.pool.connectAsync()
-        connect.whenSuccess { conn in
+        ZenPostgres.pool.connectAsync().flatMap { conn -> EventLoopFuture<Basket> in
             defer { conn.disconnect() }
 
             let query: EventLoopFuture<[Basket]> = Basket(connection: conn).queryAsync(
@@ -303,93 +279,59 @@ ORDER BY "Product"."productName"
                 cursor: Cursor(limit: 1, offset: 0)
             )
             
-            query.whenSuccess { rows in
+            return query.flatMap { rows -> EventLoopFuture<Basket> in
                 if let current = rows.first {
                     current.connection = conn
                     current.basketQuantity += 1
                     current.basketUpdated = Int.now()
-                    current.updateAsync(
+                    return current.updateAsync(
                         cols: ["basketQuantity", "basketUpdated"],
                         params: [current.basketQuantity, current.basketUpdated],
                         id: "basketId",
                         value: current.basketId
-                    ).whenComplete { result in
-                        switch result {
-                        case .success(let count):
-                            item.basketId = current.basketId
-                            item.basketQuantity = current.basketQuantity
-                            if count > 0 {
-                                promise.succeed(item)
-                            } else {
-                                promise.fail(ZenError.recordNotSave)
-                            }
-                        case .failure(let err):
-                            promise.fail(err)
+                    ).flatMapThrowing { count -> Basket in
+                        item.basketId = current.basketId
+                        item.basketQuantity = current.basketQuantity
+                        if count > 0 {
+                            return item
                         }
+                        throw ZenError.recordNotSave
                     }
                 } else {
                     item.basketUpdated = Int.now()
-                    item.saveAsync().whenComplete { result in
-                        switch result {
-                        case .success(let id):
-                            item.basketId = id as! Int
-                            promise.succeed(item)
-                        case .failure(let err):
-                            promise.fail(err)
+                    return item.saveAsync().flatMapThrowing { id -> Basket in
+                        item.basketId = id as! Int
+                        if item.basketId > 0 {
+                            return item
                         }
+                        throw ZenError.recordNotSave
                     }
                 }
             }
-            query.whenFailure { err in
-                promise.fail(err)
-            }
         }
-        connect.whenFailure { err in
-            promise.fail(err)
-        }
-
-        return promise.futureResult
     }
     
     func updateBasket(id: Int, item: Basket) -> EventLoopFuture<Bool> {
-        let promise: EventLoopPromise<Bool> = ZenPostgres.pool.newPromise()
-
-        let connect = ZenPostgres.pool.connectAsync()
-        connect.whenSuccess { conn in
+        return ZenPostgres.pool.connectAsync().flatMap { conn -> EventLoopFuture<Bool> in
             defer { conn.disconnect() }
 
             let current = Basket(connection: conn)
-            let query = current.getAsync(id)
-            query.whenSuccess {
-                if current.basketId == 0 {
-                    promise.fail(ZenError.recordNotFound)
-                    return
-                }
+            return current.getAsync(id).flatMap { rows -> EventLoopFuture<Bool> in
                 current.basketQuantity = item.basketQuantity
                 current.basketUpdated = Int.now()
-                current.updateAsync(
+                return current.updateAsync(
                     cols: ["basketQuantity", "basketUpdated"],
                     params: [current.basketQuantity, current.basketUpdated],
                     id: "basketId",
                     value: current.basketId
-                ).whenComplete { result in
-                    switch result {
-                    case .success(let count):
-                        promise.succeed(count > 0)
-                    case .failure(let err):
-                        promise.fail(err)
+                ).flatMapThrowing { count -> Bool in
+                    if current.basketId == 0 {
+                        throw ZenError.recordNotFound
                     }
+                    return count > 0
                 }
             }
-            query.whenFailure { err in
-                promise.fail(err)
-            }
         }
-        connect.whenFailure { err in
-            promise.fail(err)
-        }
-        
-        return promise.futureResult
     }
     
     func deleteBasket(id: Int) -> EventLoopFuture<Bool> {
@@ -414,8 +356,6 @@ ORDER BY "Product"."productName"
     }
 
     func getShippingCost(id: String, registry: Registry) -> EventLoopFuture<Cost> {
-        let promise: EventLoopPromise<Cost> = ZenPostgres.pool.newPromise()
-
 //        var string: String
 //        let data = FileManager.default.contents(atPath: "./webroot/csv/shippingcost_\(id).csv")
 //        if let content = data {
@@ -429,118 +369,99 @@ ORDER BY "Product"."productName"
 //            }
 //        }
         
-        File()
+        return File()
             .getDataAsync(filename: "shippingcost.csv", size: .csv)
-            .whenComplete { result in
-                switch result {
-                case .success(let bytes):
-                    let string = String(bytes: bytes, encoding: .utf8)!
-                    let lines = string.split(separator: "\n")
-                    for line in lines {
-                        let columns = line.split(separator: ",", omittingEmptySubsequences: false)
-                        if (columns[0] == registry.registryCountry || columns[0] == "*")
+            .flatMapThrowing { bytes -> Cost in
+                let string = String(bytes: bytes, encoding: .utf8)!
+                let lines = string.split(separator: "\n")
+                for line in lines {
+                    let columns = line.split(separator: ",", omittingEmptySubsequences: false)
+                    if (columns[0] == registry.registryCountry || columns[0] == "*")
+                    {
+                        var cost = Cost(value: 0)
+                        if let value = Double(columns[4]) {
+                            cost.value = value
+                        }
+                        if (columns[1] == registry.registryCity)
                         {
-                            var cost = Cost(value: 0)
                             if let value = Double(columns[4]) {
                                 cost.value = value
                             }
-                            if (columns[1] == registry.registryCity)
-                            {
-                                if let value = Double(columns[4]) {
-                                    cost.value = value
-                                }
-                                promise.succeed(cost)
-                                return
-                            }
+                            return cost
                         }
                     }
-                    //promise.fail(ZenError.recordNotFound)
-                case .failure(let err):
-                    promise.fail(err)
                 }
+                throw ZenError.recordNotFound
             }
-
-        return promise.futureResult
     }
 
     func addOrder(registryId: Int, order: OrderModel) -> EventLoopFuture<Movement> {
-        let promise: EventLoopPromise<Movement> = ZenPostgres.pool.newPromise()
-        
         let repository = ZenIoC.shared.resolve() as MovementProtocol
         
-        let connect = ZenPostgres.pool.connectAsync()
-        connect.whenSuccess { connection in
-            defer { connection.disconnect() }
+        return ZenPostgres.pool.connectAsync().flatMapThrowing { conn -> Movement in
+            defer { conn.disconnect() }
 
-            do {
-                let items: [Basket] = try Basket(connection: connection).query(whereclause: "registryId = $1", params: [registryId])
-                if items.count == 0 {
-                    throw ZenError.recordNotFound
-                }
-
-                let registry = Registry(connection: connection)
-                try registry.get(registryId)
-                if registry.registryId == 0 {
-                    throw ZenError.recordNotFound
-                }
-                
-                var store = Store(connection: connection)
-                let stores: [Store] = try store.query(orderby: ["storeId"], cursor: Cursor(limit: 1, offset: 0))
-                if stores.count == 1 {
-                    store = stores.first!
-                }
-                let causals: [Causal] = try Causal(connection: connection).query(
-                    whereclause: "causalBooked = $1 AND causalQuantity = $2 AND causalIsPos = $3",
-                    params: [1, -1 , true],
-                    orderby: ["causalId"],
-                    cursor: Cursor(limit: 1, offset: 0)
-                )
-                if causals.count == 0 {
-                    throw ZenError.error("no causal found")
-                }
-                
-                let movement = Movement(connection: connection)
-                movement.movementDate = Int.now()
-                movement.movementStore = store
-                movement.movementCausal = causals.first!
-                movement.movementRegistry = registry
-                movement.movementUser = "eCommerce"
-                movement.movementStatus = "New"
-                movement.movementPayment = order.payment
-                movement.movementShipping = order.shipping
-                movement.movementShippingCost = order.shippingCost
-                movement.movementNote = order.paypal.isEmpty ? "" : "paypal authorization: \(order.paypal)"
-                movement.movementDesc = "eCommerce order"
-                
-                try repository.add(item: movement)
-                
-                for item in items {
-                    let movementArticle = MovementArticle(connection: connection)
-                    movementArticle.movementId = movement.movementId
-                    movementArticle.movementArticleBarcode = item.basketBarcode
-                    movementArticle.movementArticleProduct = item.basketProduct
-                    movementArticle.movementArticlePrice = item.basketPrice
-                    movementArticle.movementArticleQuantity = item.basketQuantity
-                    movementArticle.movementArticleUpdated = Int.now()
-                    try movementArticle.save {
-                        id in movementArticle.movementArticleId = id as! Int
-                    }
-                    try item.delete()
-                }
-                
-                movement.movementStatus = "Processing"
-                try repository.update(id: movement.movementId, item: movement)
-                
-                promise.succeed(movement)
-            } catch {
-                promise.fail(error)
+            let items: [Basket] = try Basket(connection: conn).query(whereclause: "registryId = $1", params: [registryId])
+            
+            if items.count == 0 {
+                throw ZenError.recordNotFound
             }
-        }
-        connect.whenFailure { err in
-            promise.fail(err)
-        }
 
-        return promise.futureResult;
+            let registry = Registry(connection: conn)
+            try registry.get(registryId)
+            if registry.registryId == 0 {
+                throw ZenError.recordNotFound
+            }
+            
+            var store = Store(connection: conn)
+            let stores: [Store] = try store.query(orderby: ["storeId"], cursor: Cursor(limit: 1, offset: 0))
+            if stores.count == 1 {
+                store = stores.first!
+            }
+            let causals: [Causal] = try Causal(connection: conn).query(
+                whereclause: "causalBooked = $1 AND causalQuantity = $2 AND causalIsPos = $3",
+                params: [1, -1 , true],
+                orderby: ["causalId"],
+                cursor: Cursor(limit: 1, offset: 0)
+            )
+            if causals.count == 0 {
+                throw ZenError.error("no causal found")
+            }
+            
+            let movement = Movement(connection: conn)
+            movement.movementDate = Int.now()
+            movement.movementStore = store
+            movement.movementCausal = causals.first!
+            movement.movementRegistry = registry
+            movement.movementUser = "eCommerce"
+            movement.movementStatus = "New"
+            movement.movementPayment = order.payment
+            movement.movementShipping = order.shipping
+            movement.movementShippingCost = order.shippingCost
+            movement.movementNote = order.paypal.isEmpty ? "" : "paypal authorization: \(order.paypal)"
+            movement.movementDesc = "eCommerce order"
+            
+            try repository.add(item: movement)
+            
+            for item in items {
+                let movementArticle = MovementArticle(connection: conn)
+                movementArticle.movementId = movement.movementId
+                movementArticle.movementArticleBarcode = item.basketBarcode
+                movementArticle.movementArticleProduct = item.basketProduct
+                movementArticle.movementArticlePrice = item.basketPrice
+                movementArticle.movementArticleQuantity = item.basketQuantity
+                movementArticle.movementArticleUpdated = Int.now()
+                try movementArticle.save {
+                    id in movementArticle.movementArticleId = id as! Int
+                }
+                try item.delete()
+            }
+            
+            movement.movementStatus = "Processing"
+            try repository.update(id: movement.movementId, item: movement)
+            
+            return movement
+        }
     }
 
     func getOrders(registryId: Int) -> EventLoopFuture<[Movement]> {
@@ -550,24 +471,19 @@ ORDER BY "Product"."productName"
     }
 
     func getOrder(registryId: Int, id: Int) -> EventLoopFuture<Movement> {
-        let promise: EventLoopPromise<Movement> = ZenPostgres.pool.newPromise()
-
         let query: EventLoopFuture<[Movement]> = Movement()
             .queryAsync(
                 whereclause: "movementRegistry ->> $1 = $2 AND movementId = $3",
                 params: ["registryId", registryId, id],
                 cursor: Cursor(limit: 1, offset: 0)
             )
-        query.whenSuccess { items in
-            if let item = items.first {
-                promise.succeed(item)
+        return query.flatMapThrowing { rows -> Movement in
+            if let row = rows.first {
+                return row
             }
+            throw ZenError.recordNotFound
         }
-        query.whenFailure { err in
-            promise.fail(err)
-        }
-        
-        return promise.futureResult
+
     }
     
     func getOrderItems(registryId: Int, id: Int) -> EventLoopFuture<[MovementArticle]> {

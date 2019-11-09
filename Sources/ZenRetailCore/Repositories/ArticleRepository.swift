@@ -244,11 +244,11 @@ struct ArticleRepository : ArticleProtocol {
 		}
 		
         let articles = try get(connection: connection, productId: productId, storeIds: storeIds)
-		let grouped = articles.groupBy {
+        let grouped = Dictionary(grouping: articles) {
             $0._attributeValues.dropLast().reduce("") { a,b in
                 "\(a)#\(b.attributeValueId)"
-			}
-		}
+            }
+        }
 		
 		for group in grouped.sorted(by: { $0.key < $1.key }) {
 			var row = [ArticleItem]()

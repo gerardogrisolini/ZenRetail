@@ -132,37 +132,21 @@ class Company: Codable {
     }
 
     func selectAsync() -> EventLoopFuture<Void> {
-        let promise: EventLoopPromise<Void> = ZenPostgres.pool.newPromise()
-
-        ZenPostgres.pool.connectAsync().whenComplete { result in
-            switch result {
-            case .success(let conn):
-                defer { conn.disconnect() }
-                _ = self.selectAsync(connection: conn, promise: promise)
-            case .failure(let err):
-                promise.fail(err)
-            }
+        return ZenPostgres.pool.connectAsync().flatMap { conn -> EventLoopFuture<Void> in
+            defer { conn.disconnect() }
+            return self.selectAsync(connection: conn)
         }
-
-        return promise.futureResult
     }
 
-    func selectAsync(connection: PostgresConnection, promise: EventLoopPromise<Void>? = nil) -> EventLoopFuture<Void> {
-        let newPromise: EventLoopPromise<Void> = promise != nil ? promise! : ZenPostgres.pool.newPromise()
-        
+    func selectAsync(connection: PostgresConnection) -> EventLoopFuture<Void> {
         let query: EventLoopFuture<[Settings]> = Settings(connection: connection).queryAsync()
-        query.whenSuccess { rows in
+        return query.flatMapThrowing { rows -> Void in
             let data = rows.reduce(into: [String: String]()) {
                 $0[$1.key] = $1.value
             }
-            try! self.loadData(data)
-            newPromise.succeed(())
+            try self.loadData(data)
+            return ()
         }
-        query.whenFailure { err in
-            newPromise.fail(err)
-        }
-        
-        return newPromise.futureResult
     }
     
     fileprivate func loadData(_ data: [String : String]) throws {

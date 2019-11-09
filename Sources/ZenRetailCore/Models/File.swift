@@ -91,27 +91,19 @@ class File: PostgresTable, Codable {
     }
 
     func getDataAsync(filename: String, size: MediaType) -> EventLoopFuture<[UInt8]> {
-        let promise: EventLoopPromise<[UInt8]> = ZenPostgres.pool.newPromise()
-        
         let query: EventLoopFuture<[File]> = queryAsync(
             whereclause: "fileName = $1 AND fileType = $2",
             params: [filename, size.rawValue],
             cursor: Cursor(limit: 1, offset: 0)
         )
-        query.whenComplete { result in
-            switch result {
-            case .success(let files):
-                if let file = files.first {
-                    promise.succeed(file.fileData)
-                } else {
-                    promise.fail(ZenError.recordNotFound)
-                }
-            case .failure(let err):
-                promise.fail(err)
+        
+        return query.flatMapThrowing { files -> [UInt8] in
+            if let file = files.first {
+                return file.fileData
+            } else {
+                throw ZenError.recordNotFound
             }
         }
-        
-        return promise.futureResult
     }
 
     func getData(filename: String, size: MediaType) throws -> [UInt8]? {
@@ -135,7 +127,7 @@ class File: PostgresTable, Codable {
         fileData = [UInt8](data)
         fileSize = data.count
     }
-
+    
     func setupShippingCost() throws {
         let fileNames = ["logo.png", "shippingcost.csv", "shippingcost_express.csv"]
         for fileName in fileNames {

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import NIOHTTP1
 import ZenNIO
 import ZenNIOSSL
 import ZenSMTP
@@ -30,13 +31,6 @@ public class ZenRetail {
 
     public func start() throws {
         ZenRetail.zenNIO = ZenNIO(host: "0.0.0.0", port: ZenRetail.config.serverPort, router: router)
-        if !ZenRetail.config.sslCert.isEmpty {
-            try ZenRetail.zenNIO.addSSL(
-                certFile: ZenRetail.config.sslCert,
-                keyFile: ZenRetail.config.sslKey,
-                http: ZenRetail.config.httpVersion == 1 ? .v1 : .v2
-            )
-        }
         ZenRetail.zenNIO.addCORS()
         ZenRetail.zenNIO.addWebroot(path: ZenRetail.config.documentRoot)
         ZenRetail.zenNIO.addAuthentication(handler: { (username, password) -> (String?) in
@@ -57,19 +51,29 @@ public class ZenRetail {
 
         try setupDatabase()
         try createTables()
+        try createFolders()
         try setupSmtp()
         
         addIoC()
         routesAndHandlers()
         addFilters()
+        addErrorHandler()
         
-        try ZenRetail.zenNIO.start()
+        if ZenRetail.config.sslCert.isEmpty {
+            try ZenRetail.zenNIO.start()
+        } else {
+            try ZenRetail.zenNIO.startSecure(
+                certFile: ZenRetail.config.sslCert,
+                keyFile: ZenRetail.config.sslKey,
+                http: ZenRetail.config.httpVersion == 1 ? .v1 : .v2
+            )
+        }
     }
 
     public func stop() {
         try? zenSMTP?.close()
     }
-
+    
     private func setup() {
         ZenRetail.config = loadConfiguration()
         
@@ -82,6 +86,7 @@ public class ZenRetail {
         if let databaseUrl = ProcessInfo.processInfo.environment["DATABASE_URL"] {
             parseConnectionString(databaseUrl: databaseUrl)
         }
+        
     }
     
     private func setupSmtp() throws {
@@ -284,6 +289,88 @@ public class ZenRetail {
         ZenRetail.zenNIO.setFilter(false, methods: [.POST], url: "/api/movement")
     }
     
+    private func createFolders() throws {
+        let fileManager = FileManager.default
+        let paths = ["csv", "media", "thumb"]
+        for path in paths {
+            var isDirectory: ObjCBool = true
+            let p = "\(ZenNIO.htdocsPath)/\(path)"
+            if !fileManager.fileExists(atPath: p, isDirectory: &isDirectory) {
+                try fileManager.createDirectory(atPath: p, withIntermediateDirectories: true, attributes: nil)
+            }
+        }
+    }
+
+    private func getFile(response: HttpResponse, fileName: String, size: MediaType) {
+        let file = File()
+        if let data = try? file.getData(filename: fileName, size: size) {
+                response.addHeader(.contentType, value: file.fileContentType)
+                response.body.reserveCapacity(data.count)
+                response.body.writeBytes(data)
+                response.completed()
+            
+            ZenRetail.zenNIO.eventLoopGroup.next().execute {
+                let path = "\(ZenRetail.config.documentRoot)/\(size)/\(fileName)"
+                let url = URL(fileURLWithPath: path)
+                try? Data(data).write(to: url)
+            }
+        } else {
+            response.completed( .notFound)
+        }
+    }
+    
+    private func addErrorHandler() {
+        ZenRetail.zenNIO.addError { (ctx, request, error) -> HttpResponse in
+            let response = HttpResponse(body: ctx.channel.allocator.buffer(capacity: 0))
+
+            var html = ""
+            var status: HTTPResponseStatus
+            switch error {
+            case let e as IOError where e.errnoCode == ENOENT:
+                html += "<h3>IOError (not found)</h3>"
+                status = .notFound
+      
+                // syncronize from database
+                switch request.uri {
+                case let str where str.contains("/thumb/"):
+                    let fileName = request.uri.replacingOccurrences(of: "/thumb/", with: "")
+                    self.getFile(response: response, fileName: fileName, size: .thumb)
+                    return response
+                case let str where str.contains("/media/"):
+                    let fileName = request.uri.replacingOccurrences(of: "/media/", with: "")
+                    self.getFile(response: response, fileName: fileName, size: .media)
+                    return response
+                case let str where str.contains("/csv/"):
+                    let fileName = request.uri.replacingOccurrences(of: "/csv/", with: "")
+                    self.getFile(response: response, fileName: fileName, size: .csv)
+                    return response
+                default:
+                    break
+                }
+            case let e as IOError:
+                html += "<h3>IOError (other)</h3><h4>\(e.description)</h4>"
+                status = .expectationFailed
+            default:
+                html += "<h3>\(type(of: error)) error</h3>"
+                status = .internalServerError
+            }
+            
+            html = """
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
+<html>
+<head><title>ZenRetail</title></head>
+<body>
+    <h1>ZenRetail</h1>
+    \(html)
+</body>
+</html>
+"""
+            response.send(html: html)
+            response.completed(status)
+            return response
+        }
+    }
+
     private func loadConfiguration() -> Configuration {
         let fileUrl = URL(fileURLWithPath: "\(FileManager.default.currentDirectoryPath)/zenretail.json")
         print("Config: " + fileUrl.absoluteString)

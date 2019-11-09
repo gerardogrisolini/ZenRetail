@@ -130,58 +130,6 @@ extension String {
     }
 }
 
-//extension PostgresData {
-//    public var boolean: Bool? {
-//        guard var value = self.value else {
-//            return nil
-//        }
-//        guard value.readableBytes == 1 else {
-//            return nil
-//        }
-//        guard let byte = value.readInteger(as: UInt8.self) else {
-//            return nil
-//        }
-//        
-//        switch self.formatCode {
-//        case .text:
-//            switch byte {
-//            case Character("t").asciiValue!:
-//                return true
-//            case Character("f").asciiValue!:
-//                return false
-//            default:
-//                return nil
-//            }
-//        case .binary:
-//            switch byte {
-//            case 1:
-//                return true
-//            case 0:
-//                return false
-//            default:
-//                return nil
-//            }
-//        }
-//    }
-//}
-
-extension Sequence {
-    func groupBy<G: Hashable>(closure: (Iterator.Element)->G) -> [G: [Iterator.Element]] {
-        var results = [G: Array<Iterator.Element>]()
-        forEach {
-            let key = closure($0)
-            if var array = results[key] {
-                array.append($0)
-                results[key] = array
-            }
-            else {
-                results[key] = [$0]
-            }
-        }
-        return results
-    }
-}
-
 extension Sequence where Iterator.Element: Hashable {
     func unique() -> [Iterator.Element] {
         var alreadyAdded = Set<Iterator.Element>()
