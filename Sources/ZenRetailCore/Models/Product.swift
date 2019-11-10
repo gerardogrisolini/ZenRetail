@@ -447,6 +447,68 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
         self._articles = [article]
 	}
 
+    override func getAsync(_ id: Int) -> EventLoopFuture<Void> {
+        let brandJoin = DataSourceJoin(
+            table: "Brand",
+            onCondition: "Product.brandId = Brand.brandId",
+            direction: .INNER
+        )
+        let productCategoryJoin = DataSourceJoin(
+            table: "ProductCategory",
+            onCondition: "Product.productId = ProductCategory.productId",
+            direction: .LEFT
+        )
+        let categoryJoin = DataSourceJoin(
+            table: "Category",
+            onCondition: "ProductCategory.categoryId = Category.categoryId",
+            direction: .INNER
+        )
+
+        let sql = querySQL(
+            whereclause: "Product.productId = $1",
+            params: [id],
+            joins: [
+                brandJoin,
+                productCategoryJoin,
+                categoryJoin
+            ]
+        )
+        
+        return ZenPostgres.pool.connectAsync().flatMap { conn -> EventLoopFuture<Void> in
+            defer { conn.disconnect() }
+            self.connection = conn
+            
+            let promise = conn.eventLoop.makePromise(of: Void.self)
+
+            self.sqlRowsAsync(sql).whenComplete { result in
+                switch result {
+                case .success(let rows):
+                    if let item = rows.first {
+                        self.decode(row: item)
+                        
+                        for cat in rows {
+                            let productCategory = ProductCategory()
+                            productCategory.decode(row: cat)
+                            self._categories.append(productCategory)
+                        }
+
+                        self.makeAttributesAsync().whenComplete { _ in
+                            self.makeArticlesAsync().whenComplete { _ in
+                                promise.succeed(())
+                            }
+                        }
+                    } else {
+                        promise.fail(ZenError.recordNotFound)
+                    }
+                case .failure(let err):
+                    promise.fail(err)
+                }
+            }
+
+            return promise.futureResult
+        }
+    }
+    
     func getAsync(barcode: String) -> EventLoopFuture<Void> {
         let brandJoin = DataSourceJoin(
             table: "Brand",

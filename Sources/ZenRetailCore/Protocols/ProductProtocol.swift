@@ -6,31 +6,33 @@
 //
 //
 
+import NIO
+
 protocol ProductProtocol {
     
-    func getTaxes() throws -> [Tax]
+    func getTaxes() -> [Tax]
     
-    func getProductTypes() throws -> [ItemValue]
+    func getProductTypes() -> [ItemValue]
 
-    func getAll(date: Int) throws -> [Product]
+    func getAll(date: Int) -> EventLoopFuture<[Product]>
     
-    func getAmazonChanges() throws -> [Product]
+    func getAmazonChanges() -> EventLoopFuture<[Product]>
     
-    func get(id: Int) throws -> Product
+    func get(id: Int) -> EventLoopFuture<Product>
 
-    func get(barcode: String) throws -> Product
+    func get(barcode: String) -> EventLoopFuture<Product>
 
-    func add(item: Product) throws
+    func add(item: Product) -> EventLoopFuture<Int>
     
+    func update(id: Int, item: Product) -> EventLoopFuture<Bool>
+
     func sync(item: Product) throws -> Product
 
     func syncImport(item: Product) throws -> Result
     
-    func update(id: Int, item: Product) throws
-    
     func delete(id: Int) throws
 
-    func reset(id: Int) throws
+    func reset(id: Int) -> EventLoopFuture<Int> 
     
     /*
 	func addAttribute(item: ProductAttribute) throws

@@ -68,6 +68,7 @@ struct ArticleRepository : ArticleProtocol {
         // Create matrix indexes
         var indexes = [[Int]]()
         for attribute in productAttributes {
+            attribute.connection = connection
             try attribute.makeAttributeValues()
             let count = attribute._attributeValues.count - 1
             if count == -1 {

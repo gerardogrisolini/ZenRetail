@@ -14,7 +14,7 @@ import SwiftGD
 
 struct ProductRepository : ProductProtocol {
 
-    func getTaxes() throws -> [Tax] {
+    func getTaxes() -> [Tax] {
         var taxes = [Tax]()
         taxes.append(Tax(name: "Standard rate", value: 22))
         taxes.append(Tax(name: "Reduced rate", value: 10))
@@ -22,11 +22,11 @@ struct ProductRepository : ProductProtocol {
         return taxes
     }
     
-    func getProductTypes() throws -> [ItemValue] {
+    func getProductTypes() -> [ItemValue] {
         var types = [ItemValue]()
         types.append(ItemValue(value: "Simple"))
         types.append(ItemValue(value: "Variant"))
-        types.append(ItemValue(value: "Grouped"))
+        //types.append(ItemValue(value: "Grouped"))
         return types
     }
 
@@ -50,21 +50,18 @@ struct ProductRepository : ProductProtocol {
         ]
 	}
 		
-	func getAll(date: Int) throws -> [Product] {
-        let connection = try ZenPostgres.pool.connect()
-        defer { connection.disconnect() }
-
-        let obj = Product(connection: connection)
+	func getAll(date: Int) -> EventLoopFuture<[Product]> {
+        let obj = Product()
         let sql = obj.querySQL(
 			whereclause: "Product.productUpdated > $1", params: [date],
 			orderby: ["Product.productId"],
 			joins: defaultJoins()
 		)
 
-        return try obj.rows(sql: sql, barcodes: date > 0)
+        return obj.rowsAsync(sql: sql, barcodes: date > 0)
     }
 	
-    func getAmazonChanges() throws -> [Product] {
+    func getAmazonChanges() -> EventLoopFuture<[Product]> {
         let publication = DataSourceJoin(
             table: "Publication",
             onCondition: "Product.productId = Publication.productId",
@@ -81,282 +78,321 @@ struct ProductRepository : ProductProtocol {
             joins: joins
         )
         
-        return try obj.rows(sql: sql, barcodes: true, storeIds: "")
+        return obj.rowsAsync(sql: sql, barcodes: true, storeIds: "")
     }
     
-	func get(id: Int) throws -> Product {
-        let connection = try ZenPostgres.pool.connect()
-        defer { connection.disconnect() }
-
-        let item = Product(connection: connection)
-        let sql = item.querySQL(
-            whereclause: "Product.productId = $1",
-            params: [String(id)],
-            joins: defaultJoins()
-        )
- 
-        let rows = try item.sqlRows(sql)
-        if rows.count == 0 { throw ZenError.recordNotFound }
-
-        let groups = Dictionary(grouping: rows) { row -> Int in
-            row.column("productId")!.int!
+	func get(id: Int) -> EventLoopFuture<Product> {
+        let product = Product()
+        return product.getAsync(id).map { () -> Product in
+            return product
         }
-        
-        for group in groups {
-            item.decode(row: group.value.first!)
-            
-            for cat in group.value {
-                let productCategory = ProductCategory()
-                productCategory.decode(row: cat)
-                item._categories.append(productCategory)
-            }
-        }
-
-        try item.makeAttributes()
-		try item.makeArticles()
-		
-		return item
 	}
 
-    func get(barcode: String) throws -> Product {
-        let connection = try ZenPostgres.pool.connect()
-        defer { connection.disconnect() }
-
-        let item = Product(connection: connection)
-        try item.get(barcode: barcode)
-        
-        return item
+    func get(barcode: String) -> EventLoopFuture<Product> {
+        let product = Product()
+        return product.getAsync(barcode: barcode).map { () -> Product in
+            return product
+        }
     }
     
-    func reset(id: Int) throws {
-        let item = Product()
-        _ = try item.update(cols: ["productAmazonUpdated"], params: [1], id: "productId", value: id)
+    func reset(id: Int) -> EventLoopFuture<Int> {
+        return Product().updateAsync(cols: ["productAmazonUpdated"], params: [1], id: "productId", value: id)
     }
     
-    func add(item: Product) throws {
-        let connection = try ZenPostgres.pool.connect()
-        defer { connection.disconnect() }
+    func add(item: Product) -> EventLoopFuture<Int> {
+        let promise: EventLoopPromise<Int> = ZenRetail.zenNIO.eventLoopGroup.next().makePromise()
 
-        item.connection = connection
-        
-        /// Brand
-        let brand = Brand(connection: connection)
-        try? brand.get("brandName", item._brand.brandName)
-        if brand.brandId == 0 {
-            brand.brandName = item._brand.brandName
-            brand.brandDescription = item._brand.brandDescription
-            brand.brandMedia = item._brand.brandMedia
-            brand.brandSeo = item._brand.brandSeo
-            brand.brandCreated = Int.now()
-            brand.brandUpdated = Int.now()
-            try brand.save {
-                id in brand.brandId = id as! Int
-            }
-        }
-        item.brandId = brand.brandId
+        let q = ZenPostgres.pool.connectAsync()
+        q.whenSuccess { connection in
+            defer { connection.disconnect() }
 
-        /// Categories
-        for c in item._categories.sorted(by: { $0._category.categoryIsPrimary.hashValue < $1._category.categoryIsPrimary.hashValue }) {
-            var category = Category(connection: connection)
-            let categories: [Category] = try category.query(
-                whereclause: "categoryName = $1", params: [c._category.categoryName],
-                cursor: Cursor(limit: 1, offset: 0)
-            )
-            if categories.count == 1 {
-                category = categories.first!
-            } else {
-                category.categoryName = c._category.categoryName
-                category.categoryIsPrimary = c._category.categoryIsPrimary
-                category.categoryDescription = c._category.categoryDescription
-                category.categoryMedia = c._category.categoryMedia
-                category.categorySeo = c._category.categorySeo
-                category.categoryCreated = Int.now()
-                category.categoryUpdated = Int.now()
-                try category.save {
-                    id in category.categoryId = id as! Int
-                }
-            }
-            c.categoryId = category.categoryId
-        }
-        
-        /// Medias
-        for var m in item.productMedia {
-            if m.name.hasPrefix("http") || m.name.hasPrefix("ftp") {
-                try download(media: &m)
-            }
-        }
-        
-        /// Seo
-        if let seo = item.productSeo {
-            if (seo.permalink.isEmpty) {
-                seo.permalink = item.productName.permalink()
-            }
-            seo.description = seo.description.filter({ !$0.value.isEmpty })
-        }
-        
-        /// Discount
-        item.productDiscount?.makeDiscount(sellingPrice: item.productPrice.selling)
-
-        /// Product
-        item.productDescription = item.productDescription.filter({ !$0.value.isEmpty })
-        item.productCreated = Int.now()
-        item.productUpdated = Int.now()
-        try item.save {
-            id in item.productId = id as! Int
-        }
-        
-        /// ProductCategories
-        for c in item._categories {
-            let productCategory = ProductCategory(connection: connection)
-            productCategory.productId = item.productId
-            productCategory.categoryId = c.categoryId
-            try productCategory.save {
-                id in productCategory.productCategoryId = id as! Int
-            }
-        }
-        
-//        /// Articles
-//        let articles = item.productType == "Variant"
-//            ? item._articles.filter({ $0._attributeValues.count == 0 })
-//            : item._articles
-//        for article in articles {
-//            article.productId = item.productId
-//            article.articleIsValid = true
-//            article.articleCreated = Int.now()
-//            article.articleUpdated = Int.now()
-//            try article.save {
-//                id in article.articleId = id as! Int
-//            }
-//        }
-    }
-    
-    func update(id: Int, item: Product) throws {
-        let current = try get(id: id)
-
-        let connection = try ZenPostgres.pool.connect()
-        defer { connection.disconnect() }
-
-        current.connection = connection
-        current.productCode = item.productCode
-        current.productName = item.productName
-        //current.productType = item.productType
-        current.productUm = item.productUm
-        current.productPrice = item.productPrice
-        current.productDiscount = item.productDiscount
-        current.productPackaging = item.productPackaging
-        current.productIsActive = item.productIsActive
-
-        /// Brand
-        let brand = Brand(connection: connection)
-        try? brand.get("brandName", item._brand.brandName)
-        if brand.brandId == 0 {
-            brand.brandName = item._brand.brandName
-            brand.brandDescription = item._brand.brandDescription
-            brand.brandMedia = item._brand.brandMedia
-            brand.brandSeo = item._brand.brandSeo
-            brand.brandCreated = Int.now()
-            brand.brandUpdated = Int.now()
-            try brand.save {
-                id in brand.brandId = id as! Int
-            }
-        }
-        item.brandId = brand.brandId
-        current.brandId = item.brandId
-        
-        /// Categories
-        for c in item._categories.sorted(by: { $0._category.categoryIsPrimary.hashValue < $1._category.categoryIsPrimary.hashValue }
-            ) {
-            let category = Category(connection: connection)
-            try? category.get("categoryName", c._category.categoryName)
-            if category.categoryId == 0 {
-                category.categoryName = c._category.categoryName
-                category.categoryIsPrimary = c._category.categoryIsPrimary
-                category.categoryDescription = c._category.categoryDescription
-                category.categoryMedia = c._category.categoryMedia
-                category.categorySeo = c._category.categorySeo
-                category.categoryCreated = Int.now()
-                category.categoryUpdated = Int.now()
-                try category.save {
-                    id in category.categoryId = id as! Int
-                }
-            }
-            c.categoryId = category.categoryId
-        }
-        
-        /// ProductCategories
-        for c in current._categories {
-            c.connection = connection
-            try c.delete()
-        }
-        for c in item._categories {
-            c.productCategoryId = 0
-            c.productId = id
-            c.connection = connection
-            try c.save {
-                id in c.productCategoryId = id as! Int
-            }
-        }
-        
-        /// Articles
-        if let itemArticle = item._articles.first(where: { $0._attributeValues.count == 0 }) {
-            if let itemBarcode = itemArticle.articleBarcodes.first(where: { $0.tags.count == 0 }) {
-                if let currentArticle = current._articles.first(where: { $0._attributeValues.count == 0 }) {
-                    let currentBarcode = currentArticle.articleBarcodes.first(where: { $0.tags.count == 0 })!
-                    currentBarcode.barcode = itemBarcode.barcode
-                    currentArticle.connection = connection
-                    try currentArticle.save()
+            item.connection = connection
+            
+            /// Brand
+            let brand = Brand(connection: connection)
+            brand.getAsync("brandName", item._brand.brandName).whenComplete { _ in
+                if brand.brandId == 0 {
+                    brand.brandName = item._brand.brandName
+                    brand.brandDescription = item._brand.brandDescription
+                    brand.brandMedia = item._brand.brandMedia
+                    brand.brandSeo = item._brand.brandSeo
+                    brand.brandCreated = Int.now()
+                    brand.brandUpdated = Int.now()
+                    brand.saveAsync().whenComplete { result in
+                        switch result {
+                        case .success(let id):
+                            item.brandId = id as! Int
+                        case .failure(let err):
+                            promise.fail(err)
+                            return
+                        }
+                    }
                 } else {
-                    itemArticle.articleIsValid = true
-                    itemArticle.articleId = 0
-                    itemArticle.productId = id
-                    itemArticle.articleUpdated = Int.now()
-                    itemArticle.connection = connection
-                    try itemArticle.save {
-                        id in itemArticle.articleId = id as! Int
+                    item.brandId = brand.brandId
+                }
+            }
+
+            /// Categories
+            for c in item._categories.sorted(by: { $0._category.categoryIsPrimary.hashValue < $1._category.categoryIsPrimary.hashValue }) {
+                var category = Category(connection: connection)
+                let query: EventLoopFuture<[Category]> = category.queryAsync(
+                    whereclause: "categoryName = $1", params: [c._category.categoryName],
+                    cursor: Cursor(limit: 1, offset: 0)
+                )
+                query.whenSuccess { categories in
+                    if categories.count == 1 {
+                        category = categories.first!
+                        c.categoryId = category.categoryId
+                    } else {
+                        category.categoryName = c._category.categoryName
+                        category.categoryIsPrimary = c._category.categoryIsPrimary
+                        category.categoryDescription = c._category.categoryDescription
+                        category.categoryMedia = c._category.categoryMedia
+                        category.categorySeo = c._category.categorySeo
+                        category.categoryCreated = Int.now()
+                        category.categoryUpdated = Int.now()
+                        category.saveAsync().whenComplete { result in
+                            switch result {
+                            case .success(let id):
+                                category.categoryId = id as! Int
+                            case .failure(let err):
+                                promise.fail(err)
+                                return
+                            }
+                        }
+                    }
+                }
+                query.whenFailure { err in
+                    promise.fail(err)
+                }
+            }
+            
+            /// Medias
+            for var m in item.productMedia {
+                if m.name.hasPrefix("http") || m.name.hasPrefix("ftp") {
+                    try? self.download(media: &m)
+                }
+            }
+            
+            /// Seo
+            if let seo = item.productSeo {
+                if (seo.permalink.isEmpty) {
+                    seo.permalink = item.productName.permalink()
+                }
+                seo.description = seo.description.filter({ !$0.value.isEmpty })
+            }
+            
+            /// Discount
+            item.productDiscount?.makeDiscount(sellingPrice: item.productPrice.selling)
+
+            /// Product
+            item.productDescription = item.productDescription.filter({ !$0.value.isEmpty })
+            item.productCreated = Int.now()
+            item.productUpdated = Int.now()
+            return item.saveAsync().whenComplete { result in
+                switch result {
+                case .success(let id):
+                    item.productId = id as! Int
+                    
+                    /// ProductCategories
+                    let count = item._categories.count - 1
+                    for (i, c) in item._categories.enumerated() {
+                        let productCategory = ProductCategory(connection: connection)
+                        productCategory.productId = item.productId
+                        productCategory.categoryId = c.categoryId
+                        productCategory.saveAsync().whenComplete { result in
+                            switch result {
+                            case .success(let id):
+                                c.productCategoryId = id as! Int
+                                if i == count {
+                                    promise.succeed(item.productId)
+                                }
+                            case .failure(let err):
+                                promise.fail(err)
+                                return
+                            }
+                        }
+                    }
+                case .failure(let err):
+                    promise.fail(err)
+                }
+            }
+        }
+        q.whenFailure { err in
+            promise.fail(err)
+        }
+
+        return promise.futureResult
+    }
+    
+    func update(id: Int, item: Product) -> EventLoopFuture<Bool> {
+        let promise: EventLoopPromise<Bool> = ZenRetail.zenNIO.eventLoopGroup.next().makePromise()
+
+        let q = ZenPostgres.pool.connectAsync()
+        q.whenSuccess { connection in
+            defer { connection.disconnect() }
+
+            let current = Product(connection: connection)
+            let get = current.getAsync(id)
+            get.whenSuccess { _ in
+                current.connection = connection
+                current.productCode = item.productCode
+                current.productName = item.productName
+                //current.productType = item.productType
+                current.productUm = item.productUm
+                current.productPrice = item.productPrice
+                current.productDiscount = item.productDiscount
+                current.productPackaging = item.productPackaging
+                current.productIsActive = item.productIsActive
+                current.brandId = item.brandId
+
+                /// Categories
+                for c in item._categories.sorted(by: { $0._category.categoryIsPrimary.hashValue < $1._category.categoryIsPrimary.hashValue }) {
+                    var category = Category(connection: connection)
+                    let query: EventLoopFuture<[Category]> = category.queryAsync(
+                        whereclause: "categoryName = $1", params: [c._category.categoryName],
+                        cursor: Cursor(limit: 1, offset: 0)
+                    )
+                    query.whenSuccess { categories in
+                        if categories.count == 1 {
+                            category = categories.first!
+                            c.categoryId = category.categoryId
+                        } else {
+                            category.categoryName = c._category.categoryName
+                            category.categoryIsPrimary = c._category.categoryIsPrimary
+                            category.categoryDescription = c._category.categoryDescription
+                            category.categoryMedia = c._category.categoryMedia
+                            category.categorySeo = c._category.categorySeo
+                            category.categoryCreated = Int.now()
+                            category.categoryUpdated = Int.now()
+                            category.saveAsync().whenComplete { result in
+                                switch result {
+                                case .success(let id):
+                                    category.categoryId = id as! Int
+                                case .failure(let err):
+                                    promise.fail(err)
+                                    return
+                                }
+                            }
+                        }
+                    }
+                    query.whenFailure { err in
+                        promise.fail(err)
+                    }
+                }
+                
+                /// ProductCategories
+                for c in current._categories {
+                    c.connection = connection
+                    c.deleteAsync().whenComplete { _ in }
+                }
+                for c in item._categories {
+                    c.productCategoryId = 0
+                    c.productId = id
+                    c.connection = connection
+                    c.saveAsync().whenComplete { result in
+                        switch result {
+                        case .success(let id):
+                            c.productCategoryId = id as! Int
+                        case .failure(let err):
+                            promise.fail(err)
+                            return
+                        }
+                    }
+                }
+                
+                /// Articles
+                if let itemArticle = item._articles.first(where: { $0._attributeValues.count == 0 }) {
+                    if let itemBarcode = itemArticle.articleBarcodes.first(where: { $0.tags.count == 0 }) {
+                        if let currentArticle = current._articles.first(where: { $0._attributeValues.count == 0 }) {
+                            let currentBarcode = currentArticle.articleBarcodes.first(where: { $0.tags.count == 0 })!
+                            currentBarcode.barcode = itemBarcode.barcode
+                            currentArticle.connection = connection
+                            currentArticle.saveAsync().whenComplete { result in
+                                switch result {
+                                case .success(let id):
+                                    currentArticle.articleId = id as! Int
+                                case .failure(let err):
+                                    promise.fail(err)
+                                    return
+                                }
+                            }
+                        } else {
+                            itemArticle.articleIsValid = true
+                            itemArticle.articleId = 0
+                            itemArticle.productId = id
+                            itemArticle.articleUpdated = Int.now()
+                            itemArticle.connection = connection
+                            itemArticle.saveAsync().whenComplete { result in
+                                switch result {
+                                case .success(let id):
+                                    itemArticle.articleId = id as! Int
+                                case .failure(let err):
+                                    promise.fail(err)
+                                    return
+                                }
+                            }
+                        }
+                    }
+                }
+                
+//                if item.productType == "Grouped" {
+//                    for a in current._articles.filter({ $0._attributeValues.count > 0 }) {
+//                        try a.delete()
+//                    }
+//                    for a in item._articles.filter({ $0._attributeValues.count > 0 }) {
+//                        a.articleId = 0
+//                        a.productId = id
+//                        try a.save {
+//                            id in a.articleId = id as! Int
+//                        }
+//                    }
+//                }
+                
+                /// Medias
+                for var m in item.productMedia {
+                    if m.name.hasPrefix("http") || m.name.hasPrefix("ftp") {
+                        try? self.download(media: &m)
+                    }
+                }
+                current.productMedia = item.productMedia
+
+                /// Seo
+                if let seo = item.productSeo {
+                    if (seo.permalink.isEmpty) {
+                        seo.permalink = item.productName.permalink()
+                    }
+                    seo.description = seo.description.filter({ !$0.value.isEmpty })
+                    current.productSeo = seo
+                }
+                
+                /// Discount
+                item.productDiscount?.makeDiscount(sellingPrice: item.productPrice.selling)
+                current.productDiscount = item.productDiscount;
+                
+                /// Product
+                current.productDescription = item.productDescription.filter({ !$0.value.isEmpty })
+                item.productUpdated = Int.now()
+                current.productUpdated = item.productUpdated
+                current.saveAsync().whenComplete { result in
+                    switch result {
+                    case .success(let id):
+                        item.productId = id as! Int
+                        promise.succeed(item.productId > 0)
+                    case .failure(let err):
+                        promise.fail(err)
                     }
                 }
             }
-        }
-        
-//        if item.productType == "Grouped" {
-//            for a in current._articles.filter({ $0._attributeValues.count > 0 }) {
-//                try a.delete()
-//            }
-//            for a in item._articles.filter({ $0._attributeValues.count > 0 }) {
-//                a.articleId = 0
-//                a.productId = id
-//                try a.save {
-//                    id in a.articleId = id as! Int
-//                }
-//            }
-//        }
-        
-        /// Medias
-        for var m in item.productMedia {
-            if m.name.hasPrefix("http") || m.name.hasPrefix("ftp") {
-                try download(media: &m)
+            get.whenFailure { err in
+                promise.fail(err)
             }
         }
-        current.productMedia = item.productMedia
+        q.whenFailure { err in
+            promise.fail(err)
+        }
 
-        /// Seo
-        if let seo = item.productSeo {
-            if (seo.permalink.isEmpty) {
-                seo.permalink = item.productName.permalink()
-            }
-            seo.description = seo.description.filter({ !$0.value.isEmpty })
-            current.productSeo = seo
-        }
-        
-        /// Discount
-        item.productDiscount?.makeDiscount(sellingPrice: item.productPrice.selling)
-        current.productDiscount = item.productDiscount;
-        
-        /// Product
-        current.productDescription = item.productDescription.filter({ !$0.value.isEmpty })
-        item.productUpdated = Int.now()
-        current.productUpdated = item.productUpdated
-        try current.save()
+        return promise.futureResult
     }
 
     fileprivate func download(media: inout Media) throws {

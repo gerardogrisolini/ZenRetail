@@ -30,137 +30,168 @@ class ProductController {
     }
     
     func productTypesHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                let items = try self.repository.getProductTypes()
-                try response.send(json:items)
-                response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-            }
+        do {
+            try response.send(json: self.repository.getProductTypes())
+            response.completed()
+        } catch {
+            response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
 
     func productTaxesHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                let items = try self.repository.getTaxes()
-                try response.send(json:items)
-                response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-            }
+        do {
+            try response.send(json: self.repository.getTaxes())
+            response.completed()
+        } catch {
+            response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
 
     func productsHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        let date: Int = request.getParam("date") ?? 0
+        
+        self.repository.getAll(date: date).whenComplete { result in
             do {
-                let date: Int = request.getParam("date") ?? 0
-                let items = try self.repository.getAll(date: date)
-                try response.send(json:items)
-                response.completed()
+                switch result {
+                case .success(let items):
+                    try response.send(json: items)
+                    response.completed()
+                case .failure(let err):
+                    throw err
+                }
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
     }
 
     func productHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let id: Int = request.getParam("id") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+        
+        self.repository.get(id: id).whenComplete { result in
             do {
-                guard let id: Int = request.getParam("id") else {
-                    throw HttpError.badRequest
+                switch result {
+                case .success(let item):
+                    try response.send(json: item)
+                    response.completed()
+                case .failure(let err):
+                    throw err
                 }
-                let item = try self.repository.get(id: id)
-                try response.send(json:item)
-                response.completed()
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
     }
 
     func productResetHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let id: Int = request.getParam("id") else {
-                    throw HttpError.badRequest
-                }
-                try self.repository.reset(id: id)
-                response.completed( .noContent)
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+        guard let id: Int = request.getParam("id") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+
+        self.repository.reset(id: id).whenComplete { result in
+            switch result {
+            case .success(_):
+                response.completed(.noContent)
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
 
     func productBarcodeHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let id: String = request.getParam("id") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+
+        self.repository.get(barcode: id).whenComplete { result in
             do {
-                guard let id: String = request.getParam("id") else {
-                    throw HttpError.badRequest
+                switch result {
+                case .success(let item):
+                    try response.send(json: item)
+                    response.completed()
+                case .failure(let err):
+                    throw err
                 }
-                let item = try self.repository.get(barcode: id)
-                try response.send(json:item)
-                response.completed()
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
     }
     
     func productHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let data = request.bodyData else {
-                    throw HttpError.badRequest
-                }
+        guard let data = request.bodyData,
+            let item = try? JSONDecoder().decode(Product.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+        }
 
-                let item = try JSONDecoder().decode(Product.self, from: data)
-                try self.repository.add(item: item)
-                let result = try self.repository.sync(item: item)
-                
-                try response.send(json: result)
-                response.completed( .created)
+        self.repository.add(item: item).whenComplete { result in
+            do {
+                switch result {
+                case .success(let id):
+                    item.productId = id
+                    let result = try self.repository.sync(item: item)
+                    try response.send(json: result)
+                    response.completed( .created)
+                case .failure(let err):
+                    throw err
+                }
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
     }
 
     func productImportHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let data = request.bodyData,
+            let item = try? JSONDecoder().decode(Product.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+        }
+
+        self.repository.add(item: item).whenComplete { result in
             do {
-                guard let data = request.bodyData else {
-                    throw HttpError.badRequest
+                switch result {
+                case .success(let id):
+                    item.productId = id
+                    let i = try self.repository.sync(item: item)
+                    let result = try self.repository.syncImport(item: i)
+                    try response.send(json: result)
+                    response.completed( .created)
+                case .failure(let err):
+                    throw err
                 }
-                var item = try JSONDecoder().decode(Product.self, from: data)
-                try self.repository.add(item: item)
-                item = try self.repository.sync(item: item)
-                let result = try self.repository.syncImport(item: item)
-                try response.send(json: result)
-                response.completed( .created)
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
     }
 
     func productHandlerPUT(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let id: Int = request.getParam("id"),
+            let data = request.bodyData,
+            let item = try? JSONDecoder().decode(Product.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+        }
+
+        self.repository.update(id: id, item: item).whenComplete { result in
             do {
-                guard let id: Int = request.getParam("id"),
-                    let data = request.bodyData else {
-                    throw HttpError.badRequest
+                switch result {
+                case .success(_):
+                    let result = try self.repository.sync(item: item)
+                    try response.send(json: result)
+                    response.completed( .created)
+                case .failure(let err):
+                    throw err
                 }
-                let item = try JSONDecoder().decode(Product.self, from: data)
-                try self.repository.update(id: id, item: item)
-                let result = try self.repository.sync(item: item)
-                try response.send(json:result)
-                response.completed( .accepted)
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
     }

@@ -111,11 +111,10 @@ public class AmazonController: NSObject {
             while(true) {
                 
                 if self.mws.isSubmitted() {
-                    do {
-                        var requests = [RequestFeed]()
-                        
-                        let products = try self.repository.getAmazonChanges()
-                        products.forEach({ (p) in
+                    var requests = [RequestFeed]()
+                    
+                    self.repository.getAmazonChanges().whenSuccess { products in
+                        products.forEach { p in
                             var index = Int.now()
                             if p.productAmazonUpdated == 1 {
                                 let parent = index
@@ -134,15 +133,13 @@ public class AmazonController: NSObject {
                             } else if let feed = p.inventoryFeed() {
                                 requests.append(RequestFeed(sku: p.productCode, feed : feed, id: index, parentId: 0))
                             }
-                        })
+                        }
                         
                         self.mws.start(requests: requests)
-                    } catch {
-                        print("mwsRequest: \(error)")
                     }
-                }
                 
-                sleep(180)
+                    sleep(180)
+                }
             }
         }
     }
