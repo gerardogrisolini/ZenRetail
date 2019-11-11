@@ -207,7 +207,7 @@ class Product: PostgresTable, PostgresJson {
        return results
     }
 
-    func addDefaultAttributes() throws {
+    func addDefaultAttributes() {
         let productAttribute = ProductAttribute()
         productAttribute.productId = self.productId
         let attribute = Attribute()
@@ -227,15 +227,15 @@ class Product: PostgresTable, PostgresJson {
             onCondition: "ProductAttribute.attributeId = Attribute.attributeId",
             direction: .INNER
         )
-        let productAttributeValueJoin = DataSourceJoin(
-            table: "ProductAttributeValue",
-            onCondition: "ProductAttribute.productAttributeId = ProductAttributeValue.productAttributeId",
-            direction: .LEFT
-        )
         let attributeValueJoin = DataSourceJoin(
             table: "AttributeValue",
             onCondition: "ProductAttributeValue.attributeValueId = AttributeValue.attributeValueId",
             direction: .INNER
+        )
+        let productAttributeValueJoin = DataSourceJoin(
+            table: "ProductAttributeValue",
+            onCondition: "ProductAttribute.productAttributeId = ProductAttributeValue.productAttributeId",
+            direction: .LEFT
         )
 
         let productAttribute = ProductAttribute(connection: connection!)

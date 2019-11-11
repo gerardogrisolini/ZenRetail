@@ -26,11 +26,11 @@ protocol ProductProtocol {
     
     func update(id: Int, item: Product) -> EventLoopFuture<Bool>
 
-    func sync(item: Product) throws -> Product
+    func sync(item: Product) -> EventLoopFuture<Product>
 
-    func syncImport(item: Product) throws -> Result
+    func syncImport(item: Product) throws -> EventLoopFuture<Result>
     
-    func delete(id: Int) throws
+    func delete(id: Int) -> EventLoopFuture<Void>
 
     func reset(id: Int) -> EventLoopFuture<Int> 
     

@@ -425,193 +425,240 @@ struct ProductRepository : ProductProtocol {
         }
     }
     
-    func sync(item: Product) throws -> Product {
-        let connection = try ZenPostgres.pool.connect()
-        defer { connection.disconnect() }
+    func sync(item: Product) -> EventLoopFuture<Product> {
+        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Product> in
+            defer { connection.disconnect() }
 
-        item.connection = connection
-        
-        /// Fix empty attribute
-        if item._attributes.count == 0 {
-            try item.addDefaultAttributes()
-        }
+            let promise = connection.eventLoop.makePromise(of: Product.self)
+            let promiseAttributes = connection.eventLoop.makePromise(of: Void.self)
+            let promiseProductAttributes = connection.eventLoop.makePromise(of: Void.self)
 
-        /// Attributes
-        for a in item._attributes {
-            let attribute = Attribute(connection: connection)
-            try? attribute.get("attributeName", a._attribute.attributeName)
-            if attribute.attributeId == 0 {
-                attribute.attributeName = a._attribute.attributeName
-                attribute.attributeTranslates = a._attribute.attributeTranslates
-                attribute.attributeCreated = Int.now()
-                attribute.attributeUpdated = Int.now()
-                try attribute.save {
-                    id in attribute.attributeId = id as! Int
-                }
+            item.connection = connection
+            
+            /// Fix empty attribute
+            if item._attributes.count == 0 {
+                item.addDefaultAttributes()
             }
-            a.attributeId = attribute.attributeId
 
-            /// AttributeValues
-            for v in a._attributeValues.sorted(by: { $0._attributeValue.attributeValueCode < $1._attributeValue.attributeValueCode }) {
-                let attributeValue = AttributeValue(connection: connection)
-                try? attributeValue.get("attributeId\" = \(a.attributeId) AND \"attributeValueName", v._attributeValue.attributeValueName)
-                if attributeValue.attributeValueId == 0 {
-                    attributeValue.attributeId = a.attributeId
-                    attributeValue.attributeValueCode = v._attributeValue.attributeValueCode
-                    attributeValue.attributeValueName = v._attributeValue.attributeValueName
-                    attributeValue.attributeValueMedia = v._attributeValue.attributeValueMedia
-                    attributeValue.attributeValueTranslates = v._attributeValue.attributeValueTranslates
-                    attributeValue.attributeValueCreated = Int.now()
-                    attributeValue.attributeValueUpdated = Int.now()
-                    try attributeValue.save {
-                        id in attributeValue.attributeValueId = id as! Int
+            /// Attributes
+            for (i, a) in item._attributes.enumerated() {
+                
+                let attribute = Attribute(connection: connection)
+                let getAttributeId = attribute.getAsync("attributeName", a._attribute.attributeName).flatMap { () -> EventLoopFuture<Void> in
+                    a.attributeId = attribute.attributeId
+                    return connection.eventLoop.future()
+                }.flatMapError { error -> EventLoopFuture<Void> in
+                    attribute.attributeName = a._attribute.attributeName
+                    attribute.attributeTranslates = a._attribute.attributeTranslates
+                    attribute.attributeCreated = Int.now()
+                    attribute.attributeUpdated = Int.now()
+                    return attribute.saveAsync().map { id -> Void in
+                        a.attributeId = id as! Int
                     }
                 }
-                v.attributeValueId = attributeValue.attributeValueId
-            }
-        }
-
-        /// Get current attributes and values
-        let attributes: [ProductAttribute] = try ProductAttribute(connection: connection).query(
-            whereclause: "productId = $1",
-            params: [item.productId]
-        )
-        for a in attributes {
-            let attributeValue = ProductAttributeValue(connection: connection)
-            a._attributeValues = try attributeValue.query(
-                whereclause: "productAttributeId = $1",
-                params: [a.productAttributeId]
-            )
-        }
-
-        /// ProductAttributes
-        for a in item._attributes {
-            let productAttribute = ProductAttribute(connection: connection)
-            try? productAttribute.get("productId\" = \(item.productId) AND \"attributeId", a.attributeId)
-            if productAttribute.productAttributeId == 0 {
-                productAttribute.productId = item.productId
-                productAttribute.attributeId = a.attributeId
-                try productAttribute.save {
-                    id in productAttribute.productAttributeId = id as! Int
-                 }
-            }
-            a.productAttributeId = productAttribute.productAttributeId
-            
-            let current = attributes.first(where: { $0.attributeId == a.attributeId })
-            current?.productId = 0
-            
-            /// ProductAttributeValues
-            for v in a._attributeValues {
-                let productAttributeValue = ProductAttributeValue(connection: connection)
-                try? productAttributeValue.get("productAttributeId\" = \(a.productAttributeId) AND \"attributeValueId", v.attributeValueId)
-                if productAttributeValue.productAttributeValueId == 0 {
-                    productAttributeValue.productAttributeId = a.productAttributeId
-                    productAttributeValue.attributeValueId = v.attributeValueId
-                    try productAttributeValue.save {
-                        id in productAttributeValue.productAttributeValueId = id as! Int
+                
+                getAttributeId.whenComplete { _ in
+                    /// AttributeValues
+                    let sorted = a._attributeValues.sorted(by: { $0._attributeValue.attributeValueCode < $1._attributeValue.attributeValueCode })
+                    for (ii, v) in sorted.enumerated() {
+                        let attributeValue = AttributeValue(connection: connection)
+                        let getAttributeValueId = attributeValue
+                            .getAsync("attributeId\" = \(a.attributeId) AND \"attributeValueName", v._attributeValue.attributeValueName)
+                            .flatMap { () -> EventLoopFuture<Void> in
+                            v.attributeValueId = attributeValue.attributeValueId
+                            return connection.eventLoop.future()
+                        }.flatMapError { error -> EventLoopFuture<Void> in
+                            attributeValue.attributeId = a.attributeId
+                            attributeValue.attributeValueCode = v._attributeValue.attributeValueCode
+                            attributeValue.attributeValueName = v._attributeValue.attributeValueName
+                            attributeValue.attributeValueMedia = v._attributeValue.attributeValueMedia
+                            attributeValue.attributeValueTranslates = v._attributeValue.attributeValueTranslates
+                            attributeValue.attributeValueCreated = Int.now()
+                            attributeValue.attributeValueUpdated = Int.now()
+                            return attributeValue.saveAsync().map { id -> Void in
+                                v.attributeValueId = id as! Int
+                            }
+                        }
+                        
+                        getAttributeValueId.whenComplete { _ in
+                            v.attributeValueId = attributeValue.attributeValueId
+                            if i  == item._attributes.count - 1 && ii == sorted.count - 1 {
+                                promiseAttributes.succeed(())
+                            }
+                        }
                     }
                 }
-                v.productAttributeValueId = productAttributeValue.productAttributeValueId
+            }
 
-                if let index = current?._attributeValues.firstIndex(of: productAttributeValue) {
-                    current?._attributeValues.remove(at: index)
+            promiseAttributes.futureResult.whenComplete { _ in
+            
+                /// Get current attributes and values
+                let p = Product(connection: connection)
+                p.productId = item.productId
+                p.makeAttributesAsync().whenComplete { _ in
+                    
+                    /// ProductAttributes
+                    for (i, a) in item._attributes.enumerated() {
+                        let productAttribute = ProductAttribute(connection: connection)
+                        let getProductAttributeId = productAttribute.getAsync("productId\" = \(item.productId) AND \"attributeId", a.attributeId).flatMap { () -> EventLoopFuture<Void> in
+                            a.productAttributeId = productAttribute.productAttributeId
+                            return connection.eventLoop.future()
+                        }.flatMapError { error -> EventLoopFuture<Void> in
+                            productAttribute.productId = item.productId
+                            productAttribute.attributeId = a.attributeId
+                            return productAttribute.saveAsync().map { id -> Void in
+                                productAttribute.productAttributeId = id as! Int
+                            }
+                        }
+                        
+                        let current = p._attributes.first(where: { $0.attributeId == a.attributeId })
+                        current?.productId = 0
+                        
+                        getProductAttributeId.whenComplete { _ in
+                            a.productAttributeId = productAttribute.productAttributeId
+                            
+                            // ProductAttributeValues
+                            for (ii, v) in a._attributeValues.enumerated() {
+                                let productAttributeValue = ProductAttributeValue(connection: connection)
+                                let g = productAttributeValue.getAsync("productAttributeId\" = \(a.productAttributeId) AND \"attributeValueId", v.attributeValueId).flatMap { () -> EventLoopFuture<Void> in
+                                    v.productAttributeValueId = productAttributeValue.productAttributeValueId
+                                    if let index = current?._attributeValues.firstIndex(of: productAttributeValue) {
+                                        current?._attributeValues.remove(at: index)
+                                    }
+                                    return connection.eventLoop.future()
+                                }.flatMapError { error -> EventLoopFuture<Void> in
+                                    productAttributeValue.productAttributeId = a.productAttributeId
+                                    productAttributeValue.attributeValueId = v.attributeValueId
+                                    return productAttributeValue.saveAsync().map { id -> Void in
+                                        productAttributeValue.productAttributeValueId = id as! Int
+                                        if let index = current?._attributeValues.firstIndex(of: productAttributeValue) {
+                                            current?._attributeValues.remove(at: index)
+                                        }
+                                        return ()
+                                    }
+                                }
+                                
+                                g.whenComplete { _ in
+                                    if i == item._attributes.count - 1 && ii == a._attributeValues.count - 1 {
+                                        promiseProductAttributes.succeed(())
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    promiseProductAttributes.futureResult.whenComplete { _ in
+                        /// Clean attributes
+                        for a in p._attributes {
+                            if a.productId > 0 {
+                                a.connection = connection
+                                a.deleteAsync().whenComplete { _ in }
+                                continue
+                            }
+                            for v in a._attributeValues {
+                                v.connection = connection
+                                v.deleteAsync().whenComplete { _ in }
+                            }
+                        }
+                        promise.succeed(item)
+                    }
                 }
             }
+            
+            return promise.futureResult
         }
-        
-        /// Clean attributes
-        for a in attributes {
-            if a.productId > 0 {
-                a.connection = connection
-                try a.delete()
-                continue
-            }
-            for v in a._attributeValues {
-                v.connection = connection
-                try v.delete()
-            }
-        }
-        
-        return item
     }
     
-    func syncImport(item: Product) throws -> Result {
-        let connection = try ZenPostgres.pool.connect()
-        defer { connection.disconnect() }
-
+    func syncImport(item: Product) throws -> EventLoopFuture<Result> {
         let result = try (ZenIoC.shared.resolve() as ArticleProtocol).build(productId: item.productId)
-        
-        /// Sync barcodes
-        for a in item._articles.filter({ $0._attributeValues.count > 0 }) {
-            let values = a._attributeValues.map({ a in a._attributeValue.attributeValueName }).joined(separator: "', '")
-            let article = Article(connection: connection)
-            let current = try article.sqlRows("""
+
+        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Result> in
+            defer { connection.disconnect() }
+            
+            let promise = connection.eventLoop.makePromise(of: Result.self)
+            
+            /// Publication
+            let publication = Publication(connection: connection)
+            publication.productId = item.productId
+            publication.publicationStartAt = "2019-01-01".DateToInt()
+            publication.publicationFinishAt = "2030-12-31".DateToInt()
+            publication.saveAsync().whenSuccess { id in
+                publication.publicationId = id as! Int
+            }
+
+            /// Sync barcodes
+            let filtered = item._articles.filter({ $0._attributeValues.count > 0 })
+            for (i, a) in filtered.enumerated() {
+                let values = a._attributeValues.map({ a in a._attributeValue.attributeValueName }).joined(separator: "', '")
+                let article = Article(connection: connection)
+                let sql = """
 SELECT a.*
 FROM "Article" as a
 LEFT JOIN "ArticleAttributeValue" as b ON a."articleId" = b."articleId"
 LEFT JOIN "AttributeValue" as c ON b."attributeValueId" = c."attributeValueId"
 WHERE c."attributeValueName" IN ('\(values)') AND a."productId" = \(item.productId)
 GROUP BY a."articleId" HAVING count(b."attributeValueId") = \(item._attributes.count)
-""")
-            if current.count > 0 {
-                article.decode(row: current[0])
-                article.articleBarcodes = a.articleBarcodes
-                try article.save()
+"""
+                article.sqlRowsAsync(sql).whenSuccess { current in
+                    if current.count > 0 {
+                        article.decode(row: current[0])
+                        article.articleBarcodes = a.articleBarcodes
+                        article.saveAsync().whenComplete { _ in
+                        }
+                    }
+                    if i == filtered.count - 1 {
+                        promise.succeed(result)
+                    }
+                }
             }
+                        
+            return promise.futureResult
         }
-        
-        /// Publication
-        let publication = Publication(connection: connection)
-        publication.productId = item.productId
-        publication.publicationStartAt = "2019-01-01".DateToInt()
-        publication.publicationFinishAt = "2030-12-31".DateToInt()
-        try publication.save {
-            id in publication.publicationId = id as! Int
-        }
-        
-        return result
     }
 
-    func delete(id: Int) throws {
-        let connection = try ZenPostgres.pool.connect()
-        defer { connection.disconnect() }
+    func delete(id: Int) -> EventLoopFuture<Void> {
+        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Void> in
+            defer { connection.disconnect() }
 
-        let item = Product(connection: connection)
-        item.productId = id
-        try item.delete()
+            let item = Product(connection: connection)
+            item.productId = id
+            return item.deleteAsync().map { deleted -> Void in
 
-        let productId = String(id)
-        _ = try item.sqlRows("DELETE FROM \"ProductCategory\" WHERE \"productId\" = \(productId)")
-        _ = try item.sqlRows("""
+                item.sqlRowsAsync("DELETE FROM \"ProductCategory\" WHERE \"productId\" = \(id)").whenComplete { _ in }
+                item.sqlRowsAsync("""
 DELETE FROM "ProductAttributeValue"
 WHERE "productAttributeId" IN
 (
     SELECT "productAttributeId"
     FROM   "ProductAttribute"
-    WHERE  "productId" = \(productId)
+    WHERE  "productId" = \(id)
 )
-""")
-        _ = try item.sqlRows("DELETE FROM \"ProductAttribute\" WHERE \"productId\" = \(productId)")
-        _ = try item.sqlRows("""
+""").whenComplete { _ in }
+                item.sqlRowsAsync("DELETE FROM \"ProductAttribute\" WHERE \"productId\" = \(id)").whenComplete { _ in }
+                item.sqlRowsAsync("""
 DELETE FROM "ArticleAttributeValue"
 WHERE "articleId" IN
 (
     SELECT "articleId"
     FROM   "Article"
-    WHERE  "productId" = \(productId)
+    WHERE  "productId" = \(id)
 )
-""")
-        _ = try item.sqlRows("""
+""").whenComplete { _ in }
+            item.sqlRowsAsync("""
 DELETE FROM "Stock"
 WHERE "articleId" IN
 (
     SELECT "articleId"
     FROM   "Article"
-    WHERE  "productId" = \(productId)
+    WHERE  "productId" = \(id)
 )
-""")
-        _ = try item.sqlRows("DELETE FROM \"Article\" WHERE \"productId\" = \(productId)")
-        _ = try item.sqlRows("DELETE FROM \"Publication\" WHERE \"productId\" = \(productId)")
+""").whenComplete { _ in }
+                item.sqlRowsAsync("DELETE FROM \"Article\" WHERE \"productId\" = \(id)").whenComplete { _ in }
+                item.sqlRowsAsync("DELETE FROM \"Publication\" WHERE \"productId\" = \(id)").whenComplete { _ in }
+                
+                return ()
+            }
+        }
     }
 
     /*

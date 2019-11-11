@@ -131,18 +131,24 @@ class ProductController {
         }
 
         self.repository.add(item: item).whenComplete { result in
-            do {
-                switch result {
-                case .success(let id):
-                    item.productId = id
-                    let result = try self.repository.sync(item: item)
-                    try response.send(json: result)
-                    response.completed( .created)
-                case .failure(let err):
-                    throw err
+            switch result {
+            case .success(let id):
+                item.productId = id
+                self.repository.sync(item: item).whenComplete { res in
+                    do {
+                        switch res {
+                        case .success(let data):
+                            try response.send(json: data)
+                            response.completed(.created)
+                        case .failure(let err):
+                            throw err
+                        }
+                    } catch {
+                        response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
+                    }
                 }
-            } catch {
-                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
@@ -155,19 +161,22 @@ class ProductController {
         }
 
         self.repository.add(item: item).whenComplete { result in
-            do {
-                switch result {
-                case .success(let id):
-                    item.productId = id
-                    let i = try self.repository.sync(item: item)
-                    let result = try self.repository.syncImport(item: i)
-                    try response.send(json: result)
-                    response.completed( .created)
-                case .failure(let err):
-                    throw err
+            switch result {
+            case .success(let id):
+                item.productId = id
+                self.repository.sync(item: item).whenComplete { res in
+                        switch res {
+                        case .success(let i):
+                            try? self.repository.syncImport(item: i).whenSuccess { result in
+                                try? response.send(json: result)
+                                response.completed( .created)
+                            }
+                        case .failure(let err):
+                            response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
+                        }
                 }
-            } catch {
-                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
@@ -181,31 +190,39 @@ class ProductController {
         }
 
         self.repository.update(id: id, item: item).whenComplete { result in
-            do {
-                switch result {
-                case .success(_):
-                    let result = try self.repository.sync(item: item)
-                    try response.send(json: result)
-                    response.completed( .created)
-                case .failure(let err):
-                    throw err
+            switch result {
+            case .success(_):
+                self.repository.sync(item: item).whenComplete { res in
+                    do {
+                        switch res {
+                        case .success(let i):
+                            try response.send(json: i)
+                            response.completed(.accepted)
+                        case .failure(let err):
+                            throw err
+                        }
+                    } catch {
+                        response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
+                    }
                 }
-            } catch {
-                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
 
     func productHandlerDELETE(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let id: Int = request.getParam("id") else {
-                    throw HttpError.badRequest
-                }
-                try self.repository.delete(id: id)
-                response.completed( .noContent)
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+        guard let id: Int = request.getParam("id") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+
+        self.repository.delete(id: id).whenComplete { result in
+            switch result {
+            case .success(_):
+                response.completed(.noContent)
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
