@@ -570,28 +570,28 @@ struct ProductRepository : ProductProtocol {
     }
     
     func syncImport(item: Product) throws -> EventLoopFuture<Result> {
-        let result = try (ZenIoC.shared.resolve() as ArticleProtocol).build(productId: item.productId)
-
-        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Result> in
-            defer { connection.disconnect() }
+        return (ZenIoC.shared.resolve() as ArticleProtocol).build(productId: item.productId).flatMap { result -> EventLoopFuture<Result> in
             
-            let promise = connection.eventLoop.makePromise(of: Result.self)
-            
-            /// Publication
-            let publication = Publication(connection: connection)
-            publication.productId = item.productId
-            publication.publicationStartAt = "2019-01-01".DateToInt()
-            publication.publicationFinishAt = "2030-12-31".DateToInt()
-            publication.saveAsync().whenSuccess { id in
-                publication.publicationId = id as! Int
-            }
+            return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Result> in
+                defer { connection.disconnect() }
+                
+                let promise = connection.eventLoop.makePromise(of: Result.self)
+                
+                /// Publication
+                let publication = Publication(connection: connection)
+                publication.productId = item.productId
+                publication.publicationStartAt = "2019-01-01".DateToInt()
+                publication.publicationFinishAt = "2030-12-31".DateToInt()
+                publication.saveAsync().whenSuccess { id in
+                    publication.publicationId = id as! Int
+                }
 
-            /// Sync barcodes
-            let filtered = item._articles.filter({ $0._attributeValues.count > 0 })
-            for (i, a) in filtered.enumerated() {
-                let values = a._attributeValues.map({ a in a._attributeValue.attributeValueName }).joined(separator: "', '")
-                let article = Article(connection: connection)
-                let sql = """
+                /// Sync barcodes
+                let filtered = item._articles.filter({ $0._attributeValues.count > 0 })
+                for (i, a) in filtered.enumerated() {
+                    let values = a._attributeValues.map({ a in a._attributeValue.attributeValueName }).joined(separator: "', '")
+                    let article = Article(connection: connection)
+                    let sql = """
 SELECT a.*
 FROM "Article" as a
 LEFT JOIN "ArticleAttributeValue" as b ON a."articleId" = b."articleId"
@@ -599,20 +599,21 @@ LEFT JOIN "AttributeValue" as c ON b."attributeValueId" = c."attributeValueId"
 WHERE c."attributeValueName" IN ('\(values)') AND a."productId" = \(item.productId)
 GROUP BY a."articleId" HAVING count(b."attributeValueId") = \(item._attributes.count)
 """
-                article.sqlRowsAsync(sql).whenSuccess { current in
-                    if current.count > 0 {
-                        article.decode(row: current[0])
-                        article.articleBarcodes = a.articleBarcodes
-                        article.saveAsync().whenComplete { _ in
+                    article.sqlRowsAsync(sql).whenSuccess { current in
+                        if current.count > 0 {
+                            article.decode(row: current[0])
+                            article.articleBarcodes = a.articleBarcodes
+                            article.saveAsync().whenComplete { _ in
+                            }
+                        }
+                        if i == filtered.count - 1 {
+                            promise.succeed(result)
                         }
                     }
-                    if i == filtered.count - 1 {
-                        promise.succeed(result)
-                    }
                 }
+                            
+                return promise.futureResult
             }
-                        
-            return promise.futureResult
         }
     }
 

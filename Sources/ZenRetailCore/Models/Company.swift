@@ -115,6 +115,12 @@ class Company: Codable {
         _ = try Settings(connection: connection).update(cols: ["value"], params: [value], id: "key", value: key)
     }
     
+    func updateAsync(connection: PostgresConnection, key: String, value: String) -> EventLoopFuture<Bool> {
+        return Settings(connection: connection).updateAsync(cols: ["value"], params: [value], id: "key", value: key).map { count -> Bool in
+            return count > 0
+        }
+    }
+    
     func select() throws {
         let connection = try ZenPostgres.pool.connect()
         defer { connection.disconnect() }
