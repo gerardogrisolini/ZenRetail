@@ -6,15 +6,17 @@
 //
 //
 
+import NIO
+
 protocol AttributeValueProtocol {
     
-    func getAll() throws -> [AttributeValue]
+    func getAll() -> EventLoopFuture<[AttributeValue]>
     
-    func get(id: Int) throws -> AttributeValue?
+    func get(id: Int) -> EventLoopFuture<AttributeValue>
     
-    func add(item: AttributeValue) throws
+    func add(item: AttributeValue) -> EventLoopFuture<Int>
     
-    func update(id: Int, item: AttributeValue) throws
+    func update(id: Int, item: AttributeValue) -> EventLoopFuture<Bool>
     
-    func delete(id: Int) throws
+    func delete(id: Int) -> EventLoopFuture<Bool>
 }

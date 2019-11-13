@@ -7,51 +7,48 @@
 //
 
 import Foundation
+import NIO
 import ZenPostgres
 
 struct AttributeRepository : AttributeProtocol {
 
-    func getAll() throws -> [Attribute] {
-        let items = Attribute()
-        return try items.query()
+    func getAll() -> EventLoopFuture<[Attribute]> {
+        return Attribute().queryAsync(orderby: ["attributeId"])
     }
     
-    func get(id: Int) throws -> Attribute? {
+    func get(id: Int) -> EventLoopFuture<Attribute> {
         let item = Attribute()
-		try item.get(id)
-		
-        return item
+        return item.getAsync(id).map { () -> Attribute in
+            return item
+        }
     }
     
-    func getValues(id: Int) throws -> [AttributeValue] {
-        let items = AttributeValue()
-        return try items.query(whereclause: "attributeId = $1", params: [id])
+    func getValues(id: Int) -> EventLoopFuture<[AttributeValue]> {
+        return AttributeValue().queryAsync(whereclause: "attributeId = $1", params: [id])
     }
     
-    func add(item: Attribute) throws {
+    func add(item: Attribute) -> EventLoopFuture<Int> {
         item.attributeCreated = Int.now()
         item.attributeUpdated = Int.now()
-        try item.save {
-            id in item.attributeId = id as! Int
+        return item.saveAsync().map { id -> Int in
+            item.attributeId = id as! Int
+            return item.attributeId
         }
     }
     
-    func update(id: Int, item: Attribute) throws {
-        
-        guard let current = try get(id: id) else {
-            throw ZenError.recordNotFound
+    func update(id: Int, item: Attribute) -> EventLoopFuture<Bool> {
+        item.attributeUpdated = Int.now()
+        return item.saveAsync().map { id -> Bool in
+            id as! Int > 0
         }
-        
-        current.attributeName = item.attributeName
-        current.attributeTranslates = item.attributeTranslates
-        current.attributeUpdated = Int.now()
-        try current.save()
     }
     
-    func delete(id: Int) throws {
-        let item = Attribute()
-        item.attributeId = id
-        try item.delete()
-        _ = try AttributeValue().delete(key: "attributeId", value: id)
+    func delete(id: Int) -> EventLoopFuture<Bool> {
+        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Bool> in
+            defer { connection.disconnect() }
+            return AttributeValue(connection: connection).deleteAsync(key: "attributeId", value: id).flatMap { id -> EventLoopFuture<Bool> in
+                return Attribute(connection: connection).deleteAsync(id)
+            }
+        }
     }
 }

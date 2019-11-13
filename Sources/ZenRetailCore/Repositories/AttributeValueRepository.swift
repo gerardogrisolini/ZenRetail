@@ -7,47 +7,39 @@
 //
 
 import Foundation
+import NIO
 import ZenPostgres
 
 struct AttributeValueRepository : AttributeValueProtocol {
 
-    func getAll() throws -> [AttributeValue] {
-        let items = AttributeValue()
-        return try items.query()
+    func getAll() -> EventLoopFuture<[AttributeValue]> {
+        return AttributeValue().queryAsync(orderby: ["attributeValueId"])
     }
     
-    func get(id: Int) throws -> AttributeValue? {
+    func get(id: Int) -> EventLoopFuture<AttributeValue> {
         let item = AttributeValue()
-		try item.get(id)
-		
-        return item
+        return item.getAsync(id).map { () -> AttributeValue in
+            return item
+        }
     }
     
-    func add(item: AttributeValue) throws {
+    func add(item: AttributeValue) -> EventLoopFuture<Int> {
         item.attributeValueCreated = Int.now()
         item.attributeValueUpdated = Int.now()
-        try item.save {
-            id in item.attributeValueId = id as! Int
+        return item.saveAsync().map { id -> Int in
+            item.attributeValueId = id as! Int
+            return item.attributeValueId
         }
     }
     
-    func update(id: Int, item: AttributeValue) throws {
-
-        guard let current = try get(id: id) else {
-            throw ZenError.recordNotFound
+    func update(id: Int, item: AttributeValue) -> EventLoopFuture<Bool> {
+        item.attributeValueUpdated = Int.now()
+        return item.saveAsync().map { id -> Bool in
+            id as! Int > 0
         }
-        
-        current.attributeValueCode = item.attributeValueCode
-        current.attributeValueName = item.attributeValueName
-        current.attributeValueMedia = item.attributeValueMedia
-        current.attributeValueTranslates = item.attributeValueTranslates
-        current.attributeValueUpdated = Int.now()
-        try current.save()
     }
     
-    func delete(id: Int) throws {
-        let item = AttributeValue()
-        item.attributeValueId = id
-        try item.delete()
+    func delete(id: Int) -> EventLoopFuture<Bool> {
+        return AttributeValue().deleteAsync(id)
     }
 }
