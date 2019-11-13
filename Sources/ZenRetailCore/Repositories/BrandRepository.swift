@@ -31,7 +31,8 @@ struct BrandRepository : BrandProtocol {
         item.brandCreated = Int.now()
         item.brandUpdated = Int.now()
         return item.saveAsync().map { id -> Int in
-            id as! Int
+            item.brandId = id as! Int
+            return item.brandId
         }
     }
     

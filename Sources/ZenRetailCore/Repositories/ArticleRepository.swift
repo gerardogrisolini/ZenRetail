@@ -87,10 +87,12 @@ struct ArticleRepository : ArticleProtocol {
                     // Creation articles
                     let company = Company()
                     return company.selectAsync(connection: connection).flatMap { () -> EventLoopFuture<Result> in
-                    
+                        let promise = connection.eventLoop.makePromise(of: Result.self)
+                        let promiseCheck = connection.eventLoop.makePromise(of: Void.self)
+                        
                         var result = Result()
                         var index = 0
-                        while index >= 0 {
+                        func subFunc() {
                             
                             // Check if exist article
                             let newArticle = Article(connection: connection)
@@ -111,13 +113,15 @@ struct ArticleRepository : ArticleProtocol {
                             newArticle.sqlRowsAsync(sql).whenSuccess { rows in
                                 if rows.count > 0 {
                                     newArticle.decode(row: rows[0])
-                                    newArticle.productId = productId
-                                    newArticle.articleIsValid = true;
-                                    newArticle.saveAsync().whenComplete { _ in
+                                    newArticle.updateAsync(
+                                        cols: ["articleIsValid"],
+                                        params: [true],
+                                        id: "articleId",
+                                        value: newArticle.articleId
+                                    ).whenComplete { _ in
                                         result.updated += 1
                                     }
-                                }
-                                else {
+                                } else {
                                     // Add article
                                     let counter = Int(company.barcodeCounterPrivate)! + 1
                                     company.barcodeCounterPrivate = counter.description
@@ -127,6 +131,7 @@ struct ArticleRepository : ArticleProtocol {
                                     newArticle.articleNumber = number
                                     newArticle.articleBarcodes = [barcode]
                                     newArticle.articleIsValid = true;
+                                    
                                     self.add(item: newArticle).whenSuccess { id in
                                         // Add article attribute values
                                         for i in 0...lastIndex {
@@ -154,54 +159,64 @@ struct ArticleRepository : ArticleProtocol {
                                         }
                                     }
                                 }
-                            }
-                        }
-
-                        // Clean articles
-                        return self.get(connection: connection, productId: productId, storeIds: "0").flatMap { articles -> EventLoopFuture<Result> in
-                            result.articles = articles
-                            
-                            let promise = connection.eventLoop.makePromise(of: Void.self)
-                            
-                            for (i, item) in result.articles.enumerated() {
-                                if !item.articleIsValid {
-                                    if item._attributeValues.count == 0 {
-                                        item.articleIsValid = true
-                                        item.updateAsync(cols: ["articleIsValid"], params: [true], id:"articleId", value: item.articleId).whenComplete { _ in }
-                                        continue
-                                    }
-                                    ArticleAttributeValue(connection: connection).deleteAsync(key: "articleId", value: item.articleId).whenComplete { _ in
-                                        item.deleteAsync().whenComplete { _ in }
-                                    }
-                                    result.articles.remove(at: i - result.deleted)
-                                    result.deleted += 1
-                                }
-                                if i == result.articles.count - 1 {
-                                    promise.succeed(())
-                                }
-                            }
-                            
-                            return promise.futureResult.flatMapThrowing { () -> Result in
-                                // Check integrity
-                                var count: Int = 1
-                                for attribute in product._attributes {
-                                    count *= attribute._attributeValues.count
-                                }
-                                if result.articles.count != count {
-                                    throw ZenError.error("Integrity error: \(count) budgeted items and \(result.articles.count) items found")
-                                }
-
-                                // Commit update product and barcode counter
-                                product.productIsValid = true
-                                product.productUpdated = Int.now()
-                                product.saveAsync().whenComplete { _ in }
-                                company
-                                    .updateAsync(connection: connection, key: "barcodeCounterPrivate", value: company.barcodeCounterPrivate)
-                                    .whenComplete { _ in }
                                 
-                                return result
+                                if index < 0 {
+                                    promiseCheck.succeed(())
+                                } else {
+                                    subFunc()
+                                }
                             }
                         }
+                        subFunc()
+
+                        promiseCheck.futureResult.whenComplete { _ in
+                            // Clean articles
+                            self.get(connection: connection, productId: productId, storeIds: "0").whenSuccess { articles in
+                                result.articles = articles
+                                
+                                let subPromise = connection.eventLoop.makePromise(of: Void.self)
+                                
+                                for (i, item) in result.articles.enumerated() {
+                                    if !item.articleIsValid {
+                                        if item._attributeValues.count == 0 {
+                                            item.articleIsValid = true
+                                            item.updateAsync(cols: ["articleIsValid"], params: [true], id:"articleId", value: item.articleId).whenComplete { _ in }
+                                            continue
+                                        }
+                                        ArticleAttributeValue(connection: connection).deleteAsync(key: "articleId", value: item.articleId).whenComplete { _ in
+                                            item.connection = connection
+                                            item.deleteAsync().whenComplete { _ in }
+                                        }
+                                        result.articles.remove(at: i - result.deleted)
+                                        result.deleted += 1
+                                    }
+                                    if i == result.articles.count - 1 {
+                                        subPromise.succeed(())
+                                    }
+                                }
+                                
+                                subPromise.futureResult.whenSuccess { _ in
+                                    // Check integrity
+                                    var count: Int = 1
+                                    for attribute in product._attributes {
+                                        count *= attribute._attributeValues.count
+                                    }
+                                    if result.articles.count != count {
+                                        let err = ZenError.error("Integrity error: \(count) budgeted items and \(result.articles.count) items found")
+                                        promise.fail(err)
+                                        return
+                                    }
+
+                                    // Commit update product and barcode counter
+                                    company.updateAsync(connection: connection, key: "barcodeCounterPrivate", value: company.barcodeCounterPrivate).whenComplete { _ in }
+                                    product.updateAsync(cols: ["productIsValid", "productUpdated"], params: [true, Int.now()], id:"productId", value: product.productId).whenComplete { _ in
+                                        promise.succeed(result)
+                                    }
+                                }
+                            }
+                        }
+                        
+                        return promise.futureResult
                     }
                 }
             }

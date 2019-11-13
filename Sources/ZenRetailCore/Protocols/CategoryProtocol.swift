@@ -6,15 +6,17 @@
 //
 //
 
+import NIO
+
 protocol CategoryProtocol {
     
-    func getAll() throws -> [Category]
+    func getAll() -> EventLoopFuture<[Category]>
     
-    func get(id: Int) throws -> Category?
+    func get(id: Int) -> EventLoopFuture<Category>
     
-    func add(item: Category) throws
+    func add(item: Category) -> EventLoopFuture<Int>
     
-    func update(id: Int, item: Category) throws
+    func update(id: Int, item: Category) -> EventLoopFuture<Bool>
     
-    func delete(id: Int) throws
+    func delete(id: Int) -> EventLoopFuture<Bool>
 }
