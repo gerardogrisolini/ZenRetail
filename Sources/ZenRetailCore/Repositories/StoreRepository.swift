@@ -6,50 +6,39 @@
 //
 //
 
-import PostgresNIO
-import ZenPostgres
-
+import NIO
 
 struct StoreRepository : StoreProtocol {
 
-    func getAll() throws -> [Store] {
-        let items = Store()
-        return try items.query()
+    func getAll() -> EventLoopFuture<[Store]> {
+        return Store().queryAsync()
     }
     
-    func get(id: Int) throws -> Store? {
+    func get(id: Int) -> EventLoopFuture<Store> {
         let item = Store()
-		try item.get(id)
-		
-        return item
+        return item.getAsync(id).map { () -> Store in
+            item
+        }
     }
     
-    func add(item: Store) throws {
+    func add(item: Store) -> EventLoopFuture<Int> {
         item.storeCreated = Int.now()
         item.storeUpdated = Int.now()
-        try item.save {
-            id in item.storeId = id as! Int
+        return item.saveAsync().map { id -> Int in
+            item.storeId = id as! Int
+            return item.storeId
         }
     }
     
-    func update(id: Int, item: Store) throws {
-        
-        guard let current = try get(id: id) else {
-            throw ZenError.recordNotFound
-        }
-        
-        current.storeName = item.storeName
-        current.storeAddress = item.storeAddress
-        current.storeCity = item.storeCity
-        current.storeCountry = item.storeCountry
-        current.storeZip = item.storeZip
-        current.storeUpdated = Int.now()
-        try current.save()
-    }
-    
-    func delete(id: Int) throws {
-        let item = Store()
+    func update(id: Int, item: Store) -> EventLoopFuture<Bool> {
         item.storeId = id
-        try item.delete()
+        item.storeUpdated = Int.now()
+        return item.saveAsync().map { id -> Bool in
+            id as! Int > 0
+        }
+    }
+    
+    func delete(id: Int) -> EventLoopFuture<Bool> {
+        return Store().deleteAsync(id)
     }
 }

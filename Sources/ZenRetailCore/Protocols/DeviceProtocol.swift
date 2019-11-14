@@ -6,15 +6,17 @@
 //
 //
 
+import NIO
+
 protocol DeviceProtocol {
 	
-	func getAll(date: Int) throws -> [Device]
+	func getAll(date: Int) -> EventLoopFuture<[Device]>
 	
-	func get(id: Int) throws -> Device?
+	func get(id: Int) -> EventLoopFuture<Device>
 	
-	func add(item: Device) throws
+	func add(item: Device) -> EventLoopFuture<Int>
 	
-	func update(id: Int, item: Device) throws
+	func update(id: Int, item: Device) -> EventLoopFuture<Bool>
 	
-	func delete(id: Int) throws
+	func delete(id: Int) -> EventLoopFuture<Bool>
 }

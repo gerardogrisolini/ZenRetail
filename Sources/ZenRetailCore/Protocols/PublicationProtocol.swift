@@ -6,17 +6,19 @@
 //
 //
 
+import NIO
+
 protocol PublicationProtocol {
     
-    func get() throws -> [Publication]
+    func getAll() -> EventLoopFuture<[Publication]>
     
-    func get(id: Int) throws -> Publication?
+    func get(id: Int) -> EventLoopFuture<Publication>
     
-    func getByProduct(productId: Int) throws -> Publication?
+    func getByProduct(productId: Int) -> EventLoopFuture<Publication>
 
-    func add(item: Publication) throws
+    func add(item: Publication) -> EventLoopFuture<Int>
     
-    func update(id: Int, item: Publication) throws
+    func update(id: Int, item: Publication) -> EventLoopFuture<Bool>
     
-    func delete(id: Int) throws
+    func delete(id: Int) -> EventLoopFuture<Bool>
 }

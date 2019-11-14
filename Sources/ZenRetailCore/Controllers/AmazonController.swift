@@ -31,7 +31,7 @@ public class AmazonController: NSObject {
     
     func mwsConfigHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
-            try response.send(json:config)
+            try response.send(json: config)
             response.completed()
         } catch {
             response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")

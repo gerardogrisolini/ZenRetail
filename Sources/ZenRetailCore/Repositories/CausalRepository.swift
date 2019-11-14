@@ -6,47 +6,39 @@
 //
 //
 
+import NIO
 import ZenPostgres
 
 struct CausalRepository : CausalProtocol {
 
-    func getAll(date: Int) throws -> [Causal] {
-        let items = Causal()
-        return try items.query(whereclause: "causalUpdated > $1", params: [date])
+    func getAll(date: Int) -> EventLoopFuture<[Causal]> {
+        return Causal().queryAsync(whereclause: "causalUpdated > $1", params: [date])
     }
     
-    func get(id: Int) throws -> Causal? {
+    func get(id: Int) -> EventLoopFuture<Causal> {
         let item = Causal()
-		try item.get(id)
-		
-        return item
+        return item.getAsync(id).map { () -> Causal in
+            item
+        }
     }
     
-    func add(item: Causal) throws {
+    func add(item: Causal) -> EventLoopFuture<Int> {
         item.causalCreated = Int.now()
         item.causalUpdated = Int.now()
-        try item.save {
-            id in item.causalId = id as! Int
+        return item.saveAsync().map { id -> Int in
+            item.causalId = id as! Int
+            return item.causalId
         }
     }
     
-    func update(id: Int, item: Causal) throws {
-        
-        guard let current = try get(id: id) else {
-            throw ZenError.recordNotFound
+    func update(id: Int, item: Causal) -> EventLoopFuture<Bool> {
+        item.causalUpdated = Int.now()
+        return item.saveAsync().map { id -> Bool in
+            id as! Int > 0
         }
-        
-        current.causalName = item.causalName
-        current.causalQuantity = item.causalQuantity
-        current.causalBooked = item.causalBooked
-		current.causalIsPos = item.causalIsPos
-		current.causalUpdated = Int.now()
-        try current.save()
     }
     
-    func delete(id: Int) throws {
-        let item = Causal()
-        item.causalId = id
-        try item.delete()
+    func delete(id: Int) -> EventLoopFuture<Bool> {
+        return Causal().deleteAsync(id)
     }
 }

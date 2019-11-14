@@ -6,15 +6,17 @@
 //
 //
 
+import NIO
+
 protocol CausalProtocol {
     
-    func getAll(date: Int) throws -> [Causal]
+    func getAll(date: Int) -> EventLoopFuture<[Causal]>
     
-    func get(id: Int) throws -> Causal?
+    func get(id: Int) -> EventLoopFuture<Causal>
     
-    func add(item: Causal) throws
+    func add(item: Causal) -> EventLoopFuture<Int>
     
-    func update(id: Int, item: Causal) throws
+    func update(id: Int, item: Causal) -> EventLoopFuture<Bool>
     
-    func delete(id: Int) throws
+    func delete(id: Int) -> EventLoopFuture<Bool>
 }

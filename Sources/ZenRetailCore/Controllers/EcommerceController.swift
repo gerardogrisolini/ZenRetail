@@ -322,37 +322,54 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
 
     func ecommerceRegistryHandlerGET(request: HttpRequest, response: HttpResponse) {
         let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
-        do {
-            let registry = try self.registryRepository.get(id: uniqueID)
-            try response.send(json:registry)
-            response.completed()
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+        
+        self.registryRepository.get(id: uniqueID).whenComplete { result in
+            switch result {
+            case .success(let registry):
+                try! response.send(json: registry)
+                response.completed()
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
+            }
         }
     }
     
     func ecommerceRegistryHandlerPUT(request: HttpRequest, response: HttpResponse) {
-        let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
-        do {
-            guard let data = request.bodyData else {
-                throw HttpError.badRequest
+        guard let uniqueID = Int(request.session?.uniqueID as! String),
+            let data = request.bodyData,
+            let registry = try? JSONDecoder().decode(Registry.self, from: data) else {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): paramenter text")
+                return
+        }
+
+        self.registryRepository.update(id: uniqueID, item: registry).whenComplete { result in
+            do {
+                switch result {
+                case .success(_):
+                    try response.send(json: registry)
+                    response.completed(.accepted)
+                case .failure(let err):
+                    throw err
+                }
+            } catch {
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
-            let registry = try JSONDecoder().decode(Registry.self, from: data)
-            try self.registryRepository.update(id: uniqueID, item: registry)
-            try response.send(json:registry)
-            response.completed( .accepted)
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
     
     func ecommerceRegistryHandlerDELETE(request: HttpRequest, response: HttpResponse) {
-        let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
-        do {
-            try self.registryRepository.delete(id: uniqueID)
-            response.completed( .noContent)
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+        guard let uniqueID = Int(request.session?.uniqueID as! String) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+
+        self.registryRepository.delete(id: uniqueID).whenComplete { result in
+            switch result {
+            case .success(let deleted):
+                response.completed(deleted ? .noContent : .expectationFailed)
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
+            }
         }
     }
     
@@ -488,25 +505,27 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
     }
 
     func ecommerceShippingCostHandlerGET(request: HttpRequest, response: HttpResponse) {
-        guard let id: String = request.getParam("id") else {
-             response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
-             return
+        guard let id: String = request.getParam("id"),
+            let uniqueID = Int(request.session?.uniqueID as! String) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
         }
-        let uniqueID = Int(request.session?.uniqueID as? String  ?? "0")!
-
-        do {
-            let registry = try self.registryRepository.get(id: uniqueID)!
-            self.repository.getShippingCost(id: id, registry: registry).whenComplete { res in
-                switch res {
-                case .success(let cost):
-                    try! response.send(json: cost)
-                    response.completed()
-                case .failure(let err):
-                    response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
-                }
-            }
-        } catch {
-            response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
+                
+        self.registryRepository.get(id: uniqueID).whenComplete { result in
+           switch result {
+           case .success(let registry):
+               self.repository.getShippingCost(id: id, registry: registry).whenComplete { res in
+                   switch res {
+                   case .success(let cost):
+                       try? response.send(json: cost)
+                       response.completed()
+                   case .failure(let err):
+                       response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
+                   }
+               }
+           case .failure(let err):
+               response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
+           }
         }
     }
 

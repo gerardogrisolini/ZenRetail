@@ -5,46 +5,40 @@
 //  Created by Gerardo Grisolini on 07/11/17.
 //
 
-import Foundation
-import ZenPostgres
+import NIO
 
 struct TagValueRepository : TagValueProtocol {
     
-    func getAll() throws -> [TagValue] {
-        let items = TagValue()
-        return try items.query()
+    func getAll() -> EventLoopFuture<[TagValue]> {
+        return TagValue().queryAsync(orderby: ["tagValueId"])
     }
     
-    func get(id: Int) throws -> TagValue? {
+    func get(id: Int) -> EventLoopFuture<TagValue> {
         let item = TagValue()
-        try item.get(id)
-        
-        return item
+        return item.getAsync(id).map { () -> TagValue in
+            item
+        }
     }
     
-    func add(item: TagValue) throws {
+    func add(item: TagValue) -> EventLoopFuture<Int> {
         item.tagValueCreated = Int.now()
         item.tagValueUpdated = Int.now()
-        try item.save {
-            id in item.tagValueId = id as! Int
+        return item.saveAsync().map { id -> Int in
+            item.tagValueId = id as! Int
+            return item.tagValueId
         }
     }
     
-    func update(id: Int, item: TagValue) throws {
-        
-        guard let current = try get(id: id) else {
-            throw ZenError.recordNotFound
-        }
-        
-        current.tagValueName = item.tagValueName
-        current.tagValueUpdated = Int.now()
-        try current.save()
-    }
-    
-    func delete(id: Int) throws {
-        let item = TagValue()
+    func update(id: Int, item: TagValue) -> EventLoopFuture<Bool> {
         item.tagValueId = id
-        try item.delete()
+        item.tagValueUpdated = Int.now()
+        return item.saveAsync().map { id -> Bool in
+            id as! Int > 0
+        }
+    }
+    
+    func delete(id: Int) -> EventLoopFuture<Bool> {
+        return TagValue().deleteAsync(id)
     }
 }
 

@@ -6,15 +6,17 @@
 //
 //
 
+import NIO
+
 protocol RegistryProtocol {
 	
-	func getAll(date: Int) throws -> [Registry]
+	func getAll(date: Int) -> EventLoopFuture<[Registry]>
 	
-	func get(id: Int) throws -> Registry?
+	func get(id: Int) -> EventLoopFuture<Registry>
 	
-	func add(item: Registry) throws
+	func add(item: Registry) -> EventLoopFuture<Int>
 	
-	func update(id: Int, item: Registry) throws
+	func update(id: Int, item: Registry) -> EventLoopFuture<Bool>
 	
-	func delete(id: Int) throws
+	func delete(id: Int) -> EventLoopFuture<Bool>
 }

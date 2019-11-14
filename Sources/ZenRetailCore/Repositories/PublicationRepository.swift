@@ -6,60 +6,47 @@
 //
 //
 
-import PostgresNIO
-import ZenPostgres
-
+import NIO
 
 struct PublicationRepository : PublicationProtocol {
 
-    func get() throws -> [Publication] {
+    func getAll() -> EventLoopFuture<[Publication]> {
         let items = Publication()
-        return try items.query(
+        return items.queryAsync(
             whereclause: "publicationStartAt <= $1 AND publicationFinishAt >= $1",
             params: [Int.now()])
     }
     
-    func get(id: Int) throws -> Publication? {
+    func get(id: Int) -> EventLoopFuture<Publication> {
         let item = Publication()
-		try item.get(id)
-
-        return item.publicationId == 0 ? nil : item
-    }
-
-    func getByProduct(productId: Int) throws -> Publication? {
-        let item = Publication()
-        try item.get("productId", productId)
-        
-        if (item.publicationId == 0) {
-            throw ZenError.recordNotFound
+        return item.getAsync(id).map { () -> Publication in
+            item
         }
-        
-        return item.publicationId == 0 ? nil : item
     }
 
-    func add(item: Publication) throws {
-        try item.save {
-            id in item.publicationId = id as! Int
+    func getByProduct(productId: Int) -> EventLoopFuture<Publication> {
+        let item = Publication()
+        return item.getAsync("productId", productId).map { () -> Publication in
+            item
+        }
+    }
+
+    func add(item: Publication) -> EventLoopFuture<Int> {
+        return item.saveAsync().map { id -> Int in
+            item.publicationId = id as! Int
+            return item.publicationId
         }
     }
     
-    func update(id: Int, item: Publication) throws {
-
-        guard let current = try get(id: id) else {
-            throw ZenError.recordNotFound
-        }
-        
-        current.publicationFeatured = item.publicationFeatured
-        current.publicationNew = item.publicationNew
-        current.publicationStartAt = item.publicationStartAt
-        current.publicationFinishAt = item.publicationFinishAt
-		current.publicationUpdated = Int.now()
-		try current.save()
-    }
-    
-    func delete(id: Int) throws {
-        let item = Publication()
+    func update(id: Int, item: Publication) -> EventLoopFuture<Bool> {
         item.publicationId = id
-        try item.delete()
+		item.publicationUpdated = Int.now()
+        return item.saveAsync().map { id -> Bool in
+            id as! Int > 0
+        }
+    }
+    
+    func delete(id: Int) -> EventLoopFuture<Bool> {
+        return Publication().deleteAsync(id)
     }
 }

@@ -110,7 +110,52 @@ class Company: Codable {
             }
         }
     }
-    
+
+    func saveAsync() -> EventLoopFuture<Void> {
+        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Void> in
+            defer { connection.disconnect() }
+            return self.saveAsync(connection: connection)
+        }
+    }
+
+    func saveAsync(connection: PostgresConnection) -> EventLoopFuture<Void> {
+        let promise = connection.eventLoop.makePromise(of: Void.self)
+        
+        do {
+            let encoder = JSONEncoder()
+            let settings = Settings(connection: connection)
+            let mirror = Mirror(reflecting: self)
+            var index = 0
+            let count = mirror.children.count
+            for case (let label?, var value) in mirror.children {
+                
+                if value is [Translation] {
+                    let jsonData = try encoder.encode(value as! [Translation])
+                    value = String(data: jsonData, encoding: .utf8)!
+                } else if value is Seo {
+                    let jsonData = try encoder.encode(value as! Seo)
+                    value = String(data: jsonData, encoding: .utf8)!
+                }
+                
+                settings.updateAsync(cols: ["value"], params: [value], id: "key", value: label).whenComplete { result in
+                    index += 1
+                    if index == count {
+                        switch result {
+                        case .success(_):
+                            promise.succeed(())
+                        case .failure(let err):
+                            promise.fail(err)
+                        }
+                    }
+                }
+            }
+        } catch {
+            promise.fail(error)
+        }
+        
+        return promise.futureResult
+    }
+
     func update(connection: PostgresConnection, key: String, value: String) throws {
         _ = try Settings(connection: connection).update(cols: ["value"], params: [value], id: "key", value: key)
     }

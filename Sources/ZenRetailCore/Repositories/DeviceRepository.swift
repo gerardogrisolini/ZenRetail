@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import NIO
 import ZenPostgres
 
 struct DeviceRepository : DeviceProtocol {
@@ -19,48 +20,48 @@ struct DeviceRepository : DeviceProtocol {
 		)
 	}
 
-	func getAll(date: Int) throws -> [Device] {
+	func getAll(date: Int) -> EventLoopFuture<[Device]> {
 		let items = Device()
-		return try items.query(
+		return items.queryAsync(
 			whereclause: "Device.deviceUpdated > $1", params: [date],
 			orderby: ["Device.deviceId"],
 			joins: [self.getJoin()]
 		)
 	}
 	
-	func get(id: Int) throws -> Device? {
+	func get(id: Int) -> EventLoopFuture<Device> {
 		let item = Device()
-        let rows: [Device] = try item.query(
+        let rows: EventLoopFuture<[Device]> = item.queryAsync(
 			whereclause: "Device.deviceId = $1",
 			params: [id],
 			joins: [self.getJoin()]
-		)
-        return rows.first
+        )
+        return rows.flatMapThrowing { devices -> Device in
+            if let device = devices.first {
+                return device
+            }
+            throw ZenError.recordNotFound
+        }
 	}
 	
-	func add(item: Device) throws {
+	func add(item: Device) -> EventLoopFuture<Int> {
 		item.deviceCreated = Int.now()
 		item.deviceUpdated = Int.now()
-		try item.save {
-			id in item.deviceId = id as! Int
+		return item.saveAsync().map { id -> Int in
+            item.deviceId = id as! Int
+            return item.deviceId
 		}
 	}
 	
-	func update(id: Int, item: Device) throws {
-		
-		guard let current = try get(id: id) else {
-			throw ZenError.recordNotFound
-		}
-		current.idStore = item.idStore
-		current.deviceName = item.deviceName
-		current.deviceToken = item.deviceToken
-		current.deviceUpdated = Int.now()
-		try current.save()
+	func update(id: Int, item: Device) -> EventLoopFuture<Bool> {
+        item.deviceId = id
+		item.deviceUpdated = Int.now()
+        return item.saveAsync().map { id -> Bool in
+            id as! Int > 0
+        }
 	}
 	
-	func delete(id: Int) throws {
-		let item = Device()
-		item.deviceId = id
-		try item.delete()
+	func delete(id: Int) -> EventLoopFuture<Bool> {
+		return Device().deleteAsync(id)
 	}
 }

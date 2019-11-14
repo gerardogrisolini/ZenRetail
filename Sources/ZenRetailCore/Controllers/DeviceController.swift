@@ -25,83 +25,108 @@ class DeviceController {
 	}
 	
     func devicesHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            if !request.isAuthenticated() {
-                response.completed(.unauthorized)
-                return
-            }
+        if !request.isAuthenticated() {
+            response.completed(.unauthorized)
+            return
+        }
 
+        let date: Int = request.getParam("date") ?? 0
+        
+        self.repository.getAll(date: date).whenComplete { result in
             do {
-                let date: Int = request.getParam("date") ?? 0
-                let items = try self.repository.getAll(date: date)
-                try response.send(json:items)
-                response.completed()
+                switch result {
+                case .success(let items):
+                    try response.send(json: items)
+                    response.completed()
+                case .failure(let err):
+                    throw err
+                }
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
 	}
 	
 	func deviceHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let id: Int = request.getParam("id") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+        
+        self.repository.get(id: id).whenComplete { result in
             do {
-                guard let id: Int = request.getParam("id") else {
-                    throw HttpError.badRequest
+                switch result {
+                case .success(let item):
+                    try response.send(json: item)
+                    response.completed()
+                case .failure(let err):
+                    throw err
                 }
-                let item = try self.repository.get(id: id)
-                try response.send(json:item)
-                response.completed()
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
 	}
 	
 	func deviceHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let data = request.bodyData,
+            let item = try? JSONDecoder().decode(Device.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+        }
+
+        self.repository.add(item: item).whenComplete { result in
             do {
-                guard let data = request.bodyData else {
-                    throw HttpError.badRequest
+                switch result {
+                case .success(let id):
+                    item.deviceId = id
+                    try response.send(json: item)
+                    response.completed(.created)
+                case .failure(let err):
+                    throw err
                 }
-                let item = try JSONDecoder().decode(Device.self, from: data)
-                item.idStore = item._store.storeId
-                try self.repository.add(item: item)
-                try response.send(json:item)
-                response.completed( .created)
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
 	}
 	
 	func deviceHandlerPUT(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let id: Int = request.getParam("id"),
+            let data = request.bodyData,
+            let item = try? JSONDecoder().decode(Device.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+        }
+
+        item.idStore = item._store.storeId
+        self.repository.update(id: id, item: item).whenComplete { result in
             do {
-                guard let id: Int = request.getParam("id"),
-                    let data = request.bodyData else {
-                    throw HttpError.badRequest
+                switch result {
+                case .success(_):
+                    try response.send(json: item)
+                    response.completed(.accepted)
+                case .failure(let err):
+                    throw err
                 }
-                let item = try JSONDecoder().decode(Device.self, from: data)
-                item.idStore = item._store.storeId
-                try self.repository.update(id: id, item: item)
-                try response.send(json:item)
-                response.completed( .accepted)
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
 	}
 	
 	func deviceHandlerDELETE(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let id: Int = request.getParam("id") else {
-                    throw HttpError.badRequest
-                }
-                try self.repository.delete(id: id)
-                response.completed( .noContent)
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+        guard let id: Int = request.getParam("id") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+
+        self.repository.delete(id: id).whenComplete { result in
+            switch result {
+            case .success(let deleted):
+                response.completed(deleted ? .noContent : .expectationFailed)
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
 	}

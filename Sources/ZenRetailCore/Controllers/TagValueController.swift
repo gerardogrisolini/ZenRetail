@@ -23,75 +23,100 @@ class TagValueController {
     }
     
     func tagvaluesHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        self.repository.getAll().whenComplete { result in
             do {
-                let items = try self.repository.getAll()
-                try response.send(json:items)
-                response.completed()
+                switch result {
+                case .success(let items):
+                    try response.send(json: items)
+                    response.completed()
+                case .failure(let err):
+                    throw err
+                }
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
     }
     
     func tagvalueHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let id: Int = request.getParam("id") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+        
+        self.repository.get(id: id).whenComplete { result in
             do {
-                guard let id: Int = request.getParam("id") else {
-                    throw HttpError.badRequest
+                switch result {
+                case .success(let item):
+                    try response.send(json: item)
+                    response.completed()
+                case .failure(let err):
+                    throw err
                 }
-                let item = try self.repository.get(id: id)
-                try response.send(json:item)
-                response.completed()
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
     }
     
     func tagvalueHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let data = request.bodyData,
+            let item = try? JSONDecoder().decode(TagValue.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+        }
+
+        self.repository.add(item: item).whenComplete { result in
             do {
-                guard let data = request.bodyData else {
-                    throw HttpError.badRequest
+                switch result {
+                case .success(let id):
+                    item.tagValueId = id
+                    try response.send(json: item)
+                    response.completed(.created)
+                case .failure(let err):
+                    throw err
                 }
-                let item = try JSONDecoder().decode(TagValue.self, from: data)
-                try self.repository.add(item: item)
-                try response.send(json:item)
-                response.completed( .created)
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
     }
     
     func tagvalueHandlerPUT(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let id: Int = request.getParam("id"),
+            let data = request.bodyData,
+            let item = try? JSONDecoder().decode(TagValue.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+        }
+
+        self.repository.update(id: id, item: item).whenComplete { result in
             do {
-                guard let id: Int = request.getParam("id"),
-                    let data = request.bodyData else {
-                    throw HttpError.badRequest
+                switch result {
+                case .success(_):
+                    try response.send(json: item)
+                    response.completed(.accepted)
+                case .failure(let err):
+                    throw err
                 }
-                let item = try JSONDecoder().decode(TagValue.self, from: data)
-                try self.repository.update(id: id, item: item)
-                try response.send(json:item)
-                response.completed( .accepted)
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
     }
     
     func tagvalueHandlerDELETE(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let id: Int = request.getParam("id") else {
-                    throw HttpError.badRequest
-                }
-                try self.repository.delete(id: id)
-                response.completed( .noContent)
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+        guard let id: Int = request.getParam("id") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+
+        self.repository.delete(id: id).whenComplete { result in
+            switch result {
+            case .success(let deleted):
+                response.completed(deleted ? .noContent : .expectationFailed)
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }

@@ -5,16 +5,18 @@
 //  Created by Gerardo Grisolini on 07/11/17.
 //
 
+import NIO
+
 protocol TagValueProtocol {
     
-    func getAll() throws -> [TagValue]
+    func getAll() -> EventLoopFuture<[TagValue]>
     
-    func get(id: Int) throws -> TagValue?
+    func get(id: Int) -> EventLoopFuture<TagValue>
     
-    func add(item: TagValue) throws
+    func add(item: TagValue) -> EventLoopFuture<Int>
     
-    func update(id: Int, item: TagValue) throws
+    func update(id: Int, item: TagValue) -> EventLoopFuture<Bool>
     
-    func delete(id: Int) throws
+    func delete(id: Int) -> EventLoopFuture<Bool>
 }
 

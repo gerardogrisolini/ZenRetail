@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import NIO
 import ZenNIO
 import ZenPostgres
 import ZenSMTP
@@ -50,113 +51,125 @@ class CompanyController {
 //        }
 //    }
 
-    fileprivate func saveFiles(_ fileName: String, _ data: Data) throws -> Media {
+    fileprivate func saveFiles(_ fileName: String, _ data: Data) -> EventLoopFuture<Media> {
         let media = Media()
         media.contentType = fileName.contentType
         media.name = fileName != "logo.png" && fileName != "header.png" ? fileName.uniqueName() : fileName
 
-        let connection = try ZenPostgres.pool.connect()
-        defer { connection.disconnect() }
+        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Media> in
+            defer { connection.disconnect() }
 
-        let big = File(connection: connection)
-        big.fileName = media.name
-        big.fileType = fileName.hasSuffix(".csv") ? MediaType.csv.rawValue : MediaType.media.rawValue
-        big.fileContentType = media.contentType
-        big.setData(data: data)
-        try big.save()
-
-        if fileName.contentType.hasPrefix("image/"), let thumb = try Image(data: data).resizedTo(width: 380) {
-            let small = File(connection: connection)
-            small.fileName = media.name
-            small.fileType = MediaType.thumb.rawValue
-            small.fileContentType = media.contentType
-            small.setData(data: try thumb.export())
-            try small.save()
+            let big = File(connection: connection)
+            big.fileName = media.name
+            big.fileType = fileName.hasSuffix(".csv") ? MediaType.csv.rawValue : MediaType.media.rawValue
+            big.fileContentType = media.contentType
+            big.setData(data: data)
+            return big.saveAsync().flatMap { id -> EventLoopFuture<Media> in
+                if fileName.contentType.hasPrefix("image/"),
+                    let thumb = try? Image(data: data).resizedTo(width: 380),
+                    let export = try? thumb.export() {
+                    let small = File(connection: connection)
+                    small.fileName = media.name
+                    small.fileType = MediaType.thumb.rawValue
+                    small.fileContentType = media.contentType
+                    small.setData(data: export)
+                    return big.saveAsync().map { id -> Media in
+                        return media
+                    }
+                }
+                return connection.eventLoop.future(media)
+            }
         }
-
-        return media
     }
 
-//    fileprivate func saveFiles(_ fileName: String, _ data: Data) throws -> Media {
-//        let media = Media()
-//        media.contentType = fileName.contentType
-//        media.name = fileName != "logo.png" && fileName != "header.png" ? fileName.uniqueName() : fileName
-//
-//        let big = File()
-//        big.fileName = media.name
-//        big.fileContentType = media.contentType
-//        big.setData(data: data)
-//        try big.save()
-//
-//        if fileName.contentType.hasPrefix("image/"), let thumb = try Image(data: data).resizedTo(width: 380) {
-//            let url = URL(fileURLWithPath: "\(ZenNIO.htdocsPath)/thumb/\(media.name)")
-//            if !thumb.write(to: url, quality: 75, allowOverwrite: true) {
-//                throw HttpError.systemError(0, "file thumb not saved")
-//            }
-//        }
-//
-//        return media
-//    }
-
     func companyHandlerGET(request: HttpRequest, response: HttpResponse) {
-       do {
-           let item = Company()
-           try item.select()
-           try response.send(json: item)
-           response.completed()
-       } catch {
-           response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-       }
+        let item = Company()
+        item.selectAsync().whenComplete { result in
+            do {
+                switch result {
+                case .success(_):
+                    try response.send(json: item)
+                    response.completed()
+                case .failure(let err):
+                    throw err
+                }
+            } catch {
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
+            }
+        }
     }
 
     func companyHandlerPOST(request: HttpRequest, response: HttpResponse) {
-       do {
-           guard let data = request.bodyData else {
-               throw HttpError.badRequest
-           }
-           let item = try JSONDecoder().decode(Company.self, from: data)
-           try item.save()
-           try response.send(json:item)
-           response.completed( .created)
-       } catch {
-           response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-       }
+        guard let data = request.bodyData,
+            let item = try? JSONDecoder().decode(Company.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+        }
+        
+        item.saveAsync().whenComplete { result in
+            do {
+                switch result {
+                case .success(_):
+                    try response.send(json: item)
+                    response.completed()
+                case .failure(let err):
+                    throw err
+                }
+            } catch {
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
+            }
+        }
     }
     
     func uploadMediaHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let fileName: String = request.getParam("file[]"),
-                let file: Data = request.getParam(fileName) else {
-                throw HttpError.badRequest
-            }
+        guard let fileName: String = request.getParam("file[]"),
+            let file: Data = request.getParam(fileName) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter file[]")
+            return
+        }
 
-            let media = try self.saveFiles(fileName, file)
-            print("Uploaded file \(fileName) => \(media.name)")
-            try response.send(json:media)
-            response.completed( .created)
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+        self.saveFiles(fileName, file).whenComplete { result in
+            do {
+            switch result {
+            case .success(let media):
+                print("Uploaded file \(fileName) => \(media.name)")
+                try response.send(json: media)
+                response.completed( .created)
+            case .failure(let err):
+                throw err
+            }
+            } catch {
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
+            }
         }
     }
 
     func uploadMediasHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let fileNames: String = request.getParam("file[]") else {
-                throw HttpError.badRequest
-            }
+        guard let fileNames: String = request.getParam("file[]") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter file[]")
+            return
+        }
 
-            var medias = [Media]()
-            for fileName in fileNames.split(separator: ",") {
-                if let data: Data = request.getParam(fileName.description) {
-                    let media = try self.saveFiles(fileName.description, data)
-                    medias.append(media)
-                    print("Uploaded file \(fileName) => \(media.name)")
+        var medias = [Media]()
+        let files = fileNames.split(separator: ",")
+        for fileName in files {
+            if let file: Data = request.getParam(fileName.description) {
+                self.saveFiles(fileName.description, file).whenComplete { result in
+                    switch result {
+                    case .success(let media):
+                        medias.append(media)
+                        print("Uploaded file \(fileName) => \(media.name)")
+                    case .failure(let err):
+                        print("Uploaded file \(fileName): \(err)")
+                        medias.append(Media())
+                    }
+                    
+                    if medias.count == files.count {
+                        try? response.send(json: medias)
+                        response.completed(.created)
+                    }
                 }
             }
-            try response.send(json:medias)
-            response.completed( .created)
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
 
@@ -171,27 +184,29 @@ class CompanyController {
             }
             
             let company = Company()
-            try company.select()
-            if company.companyEmailInfo.isEmpty {
-                throw HttpError.systemError(0, "email address from is empty")
-            }
-            
-            let email = Email(
-                fromName: company.companyName,
-                fromEmail: company.companyEmailSupport,
-                toName: nil,
-                toEmail: item.address,
-                subject: item.subject,
-                body: item.content,
-                attachments: []
-            )
-            
-            ZenSMTP.shared.send(email: email) { error in
-                if let error = error {
-                    print(error)
-                    response.completed(.internalServerError)
-                } else {
-                    response.completed(.noContent)
+            company.selectAsync().whenComplete { result in
+                if company.companyEmailInfo.isEmpty {
+                    response.badRequest(error: "\(request.head.uri) \(request.head.method): email address from is empty")
+                    return
+                }
+                
+                let email = Email(
+                    fromName: company.companyName,
+                    fromEmail: company.companyEmailSupport,
+                    toName: nil,
+                    toEmail: item.address,
+                    subject: item.subject,
+                    body: item.content,
+                    attachments: []
+                )
+                
+                ZenSMTP.shared.send(email: email) { error in
+                    if let error = error {
+                        print(error)
+                        response.completed(.internalServerError)
+                    } else {
+                        response.completed(.noContent)
+                    }
                 }
             }
         } catch {
