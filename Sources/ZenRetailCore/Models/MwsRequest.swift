@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import NIO
 import PostgresNIO
 import ZenPostgres
 
@@ -52,21 +53,22 @@ class MwsRequest : PostgresTable, Codable {
         errorDescription = row.column("errorDescription")?.string ?? ""
     }
     
-    public func currentRequests() throws -> [MwsRequest] {
-        return try self.query(orderby: ["requestCreatedAt DESC", "request"])
+    public func currentRequests() -> EventLoopFuture<[MwsRequest]> {
+        return self.queryAsync(orderby: ["requestCreatedAt DESC", "request"])
      }
     
-    public func rangeRequests(startDate: Int, finishDate: Int) throws -> [MwsRequest] {
-        return try self.query(
+    public func rangeRequests(startDate: Int, finishDate: Int) -> EventLoopFuture<[MwsRequest]> {
+        return self.queryAsync(
             whereclause: "requestCreatedAt >= $1 && requestCreatedAt <= $2 ",
             params: [startDate, finishDate],
             orderby: ["requestCreatedAt DESC", "requestId"]
         )
     }
 
-    public func lastRequest() throws -> Int {
+    public func lastRequest() -> EventLoopFuture<Int> {
         let sql = "SELECT COALESCE(MAX(\"requestCreatedAt\"),0) AS counter FROM \"\(table)\""
-        let getCount = try self.sqlRows(sql)
-        return getCount.first?.column("counter")?.int ?? 0
+        return self.sqlRowsAsync(sql).map { getCount -> Int in
+            return getCount.first?.column("counter")?.int ?? 0
+        }
     }
 }

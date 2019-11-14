@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import NIO
 import PostgresNIO
 import ZenPostgres
 
@@ -55,11 +56,8 @@ FROM "MovementArticle" AS a
 INNER JOIN "Movement" AS b ON a."movementId" = b."movementId"
 WHERE b."invoiceId" = \(invoiceId)
 """
-        do {
-            let getCount = try self.sqlRows(sql)
-            _invoiceAmount = getCount.first?.column("amount")?.double ?? 0
-        } catch {
-            print(error)
+        self.sqlRowsAsync(sql).whenSuccess { getCount in
+            self._invoiceAmount = getCount.first?.column("amount")?.double ?? 0
         }
     }
     
@@ -88,7 +86,7 @@ WHERE b."invoiceId" = \(invoiceId)
         try container.encode(_invoiceAmount, forKey: ._invoiceAmount)
     }
 
-	func makeNumber() throws {
+	func makeNumber() -> EventLoopFuture<Void> {
 		let now = Date()
 		let calendar = Calendar.current
 		
@@ -104,7 +102,8 @@ WHERE b."invoiceId" = \(invoiceId)
 		
 		self.invoiceNumber = 1
 		let sql = "SELECT COALESCE(MAX(\"invoiceNumber\"),0) AS counter FROM \"\(table)\" WHERE \"invoiceDate\" > \(date.timeIntervalSinceReferenceDate)"
-		let getCount = try self.sqlRows(sql)
-		self.invoiceNumber += getCount.first?.column("counter")?.int ?? 0
+        return self.sqlRowsAsync(sql).map { getCount -> Void in
+            self.invoiceNumber += getCount.first?.column("counter")?.int ?? 0
+        }
 	}
 }

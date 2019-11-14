@@ -16,60 +16,6 @@ enum MediaType: String {
     case csv
 }
 
-//class File {
-//    let fileManager = FileManager.default
-//    public var fileId : Int = 0
-//    public var fileName : String = ""
-//    public var fileContentType : String = ""
-//    public var fileType : MediaType = .media
-//    public var fileData : Data? = nil
-//    public var fileSize : Int = 0
-//    public var fileCreated : Int = Int.now()
-//
-//    func setupShippingCost() throws {
-//        if !FileManager.default.fileExists(atPath: "\(ZenNIO.htdocsPath)/media/logo.png") {
-//            let fileNames = ["logo.png", "shippingcost.csv", "shippingcost_express.csv"]
-//            for fileName in fileNames {
-//                if let data = FileManager.default.contents(atPath: "./Assets/\(fileName)") {
-//                    let file = File()
-//                    file.fileName = fileName
-//                    file.fileContentType = fileName.hasSuffix(".csv") ? "text/csv" : "image/png"
-//                    file.setData(data: data)
-//                    try file.save()
-//                }
-//            }
-//        }
-//    }
-//
-//    func setData(data: Data) {
-//        self.fileSize = data.count
-//        self.fileData = data
-//    }
-//
-//    func create() throws {
-//        let paths = ["csv", "media", "thumb"]
-//        for path in paths {
-//            var isDirectory: ObjCBool = true
-//            let p = "\(ZenNIO.htdocsPath)/\(path)"
-//            if !fileManager.fileExists(atPath: p, isDirectory: &isDirectory) {
-//                try fileManager.createDirectory(atPath: p, withIntermediateDirectories: true, attributes: nil)
-//            }
-//        }
-//    }
-//
-//    func save() throws {
-//        var path = "media"
-//        if fileContentType == "text/csv" {
-//            path = "csv"
-//        } else if fileType == .thumb {
-//            path = "thumb"
-//        }
-//        if !fileManager.createFile(atPath: "\(ZenNIO.htdocsPath)/\(path)/\(fileName)", contents: fileData, attributes: nil) {
-//            throw ZenError.error("file not saved")
-//        }
-//    }
-//}
-
 class File: PostgresTable, Codable {
 
     public var fileId : Int = 0
@@ -90,6 +36,45 @@ class File: PostgresTable, Codable {
         fileCreated = row.column("fileCreated")?.int ?? 0
     }
 
+    func setData(data: Data) {
+        fileData = [UInt8](data)
+        fileSize = data.count
+    }
+    
+    override func saveAsync() -> EventLoopFuture<Any> {
+        let sql = """
+INSERT INTO "File" ("fileName", "fileContentType", "fileType", "fileData", "fileSize", "fileCreated")
+VALUES ($1, $2, $3, $4, $5, $6)
+"""
+        let postgresData = [
+            PostgresData(string: fileName),
+            PostgresData(string: fileContentType),
+            PostgresData(string: fileType),
+            PostgresData(bytes: fileData),
+            PostgresData(int: fileSize),
+            PostgresData(int: fileCreated)
+        ]
+
+        func saveFile() -> EventLoopFuture<Any> {
+            return connection!.query(sql, postgresData).flatMapThrowing { rows -> Any in
+                if let id = rows.first?.column("fileId")?.int {
+                    return id
+                }
+                throw ZenError.recordNotSave
+            }
+        }
+        
+        if connection == nil {
+            return ZenPostgres.pool.connectAsync().flatMap { conn -> EventLoopFuture<Any> in
+                self.connection = conn
+                defer { conn.disconnect() }
+                return saveFile()
+            }
+        }
+
+        return saveFile()
+    }
+    
     func getDataAsync(filename: String, size: MediaType) -> EventLoopFuture<[UInt8]> {
         let query: EventLoopFuture<[File]> = queryAsync(
             whereclause: "fileName = $1 AND fileType = $2",
@@ -104,28 +89,6 @@ class File: PostgresTable, Codable {
                 throw ZenError.recordNotFound
             }
         }
-    }
-
-    func getData(filename: String, size: MediaType) throws -> [UInt8]? {
-//        var name = filename
-//        if let index = name.firstIndex(of: "?") {
-//            name = name[name.startIndex...name.index(before: index)].description
-//        }
-
-        let files: [File] = try query(
-            whereclause: "fileName = $1 AND fileType = $2",
-            params: [filename, size.rawValue],
-            cursor: Cursor(limit: 1, offset: 0)
-        )
-        if files.count > 0 {
-            return files[0].fileData
-        }
-        return nil
-    }
-    
-    func setData(data: Data) {
-        fileData = [UInt8](data)
-        fileSize = data.count
     }
     
     func setupShippingCost() throws {
@@ -149,29 +112,30 @@ class File: PostgresTable, Codable {
         }
     }
 
-//    func importStaticFiles() throws {
-//        let types = ["media", "thumb"]
-//            for type in types {
-//            let fileNames = try FileManager.default.contentsOfDirectory(atPath: "./webroot/\(type)")
-//            for fileName in fileNames {
-//                let files: [File] = try self.query(
-//                    whereclause: "fileName = $1 AND fileType = $2",
-//                    params: [fileName, type],
-//                    cursor: Cursor(limit: 1, offset: 0)
-//                )
-//                if files.count == 0 {
-//                    if let data = FileManager.default.contents(atPath: "./webroot/\(type)/\(fileName)") {
-//                        let file = File(connection: connection!)
-//                        file.fileName = fileName
-//                        file.fileContentType = fileName.hasSuffix(".csv") ? "text/csv" : "image/png"
-//                        file.fileType = type
-//                        file.setData(data: data)
-//                        try file.save()
-//                    }
-//                }
-//            }
-//        }
-//    }
+    /*
+    func importStaticFiles() throws {
+        let types = ["media", "thumb"]
+            for type in types {
+            let fileNames = try FileManager.default.contentsOfDirectory(atPath: "./webroot/\(type)")
+            for fileName in fileNames {
+                let files: [File] = try self.query(
+                    whereclause: "fileName = $1 AND fileType = $2",
+                    params: [fileName, type],
+                    cursor: Cursor(limit: 1, offset: 0)
+                )
+                if files.count == 0 {
+                    if let data = FileManager.default.contents(atPath: "./webroot/\(type)/\(fileName)") {
+                        let file = File(connection: connection!)
+                        file.fileName = fileName
+                        file.fileContentType = fileName.hasSuffix(".csv") ? "text/csv" : "image/png"
+                        file.fileType = type
+                        file.setData(data: data)
+                        try file.save()
+                    }
+                }
+            }
+        }
+    }
     
     override func save() throws {
         let sql = """
@@ -211,5 +175,23 @@ VALUES ($1, $2, $3, $4, $5, $6)
             throw error
         }
     }
+    
+    func getData(filename: String, size: MediaType) throws -> [UInt8]? {
+//        var name = filename
+//        if let index = name.firstIndex(of: "?") {
+//            name = name[name.startIndex...name.index(before: index)].description
+//        }
+
+        let files: [File] = try query(
+            whereclause: "fileName = $1 AND fileType = $2",
+            params: [filename, size.rawValue],
+            cursor: Cursor(limit: 1, offset: 0)
+        )
+        if files.count > 0 {
+            return files[0].fileData
+        }
+        return nil
+    }
+    */
 }
 

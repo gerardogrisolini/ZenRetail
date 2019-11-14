@@ -41,12 +41,6 @@ class ProductAttribute: PostgresTable, Codable, Equatable {
         productId = row.column("productId")?.int ?? 0
         attributeId = row.column("attributeId")?.int ?? 0
         _attribute.decode(row: row)
-        
-//        do {
-//            try makeAttributeValues()
-//        } catch {
-//            print(error)
-//        }
     }
     
     required init(from decoder: Decoder) throws {
@@ -65,19 +59,4 @@ class ProductAttribute: PostgresTable, Codable, Equatable {
         try container.encode(_attribute, forKey: ._attribute)
         try container.encode(_attributeValues, forKey: ._attributeValues)
     }
-    
-	func makeAttributeValues() throws {
-		let valueJoin = DataSourceJoin(
-            table: "AttributeValue",
-            onCondition: "ProductAttributeValue.attributeValueId = AttributeValue.attributeValueId"
-        )
-		
-        let attributeValue = ProductAttributeValue(connection: connection!)
-		self._attributeValues = try attributeValue.query(
-			whereclause: "ProductAttributeValue.productAttributeId = $1",
-			params: [self.productAttributeId],
-			orderby: ["ProductAttributeValue.attributeValueId"],
-			joins: [valueJoin]
-		)
-	}
 }

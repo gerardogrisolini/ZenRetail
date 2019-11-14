@@ -178,35 +178,6 @@ class Product: PostgresTable, PostgresJson {
         }
     }
 
-    func rows(sql: String, barcodes: Bool, storeIds: String = "") throws -> [Product] {
-       var results = [Product]()
-       let rows = try self.sqlRows(sql)
-
-       let groups = Dictionary(grouping: rows) { row -> Int in
-           row.column("productId")!.int!
-       }
-       
-       for group in groups {
-           let row = Product(connection: connection!)
-           row.decode(row: group.value.first!)
-           
-           for cat in group.value {
-               let productCategory = ProductCategory()
-               productCategory.decode(row: cat)
-               row._categories.append(productCategory)
-           }
-           
-           if barcodes {
-               try row.makeAttributes();
-               try row.makeArticles(storeIds);
-           }
-
-           results.append(row)
-       }
-       
-       return results
-    }
-
     func addDefaultAttributes() {
         let productAttribute = ProductAttribute()
         productAttribute.productId = self.productId
@@ -264,49 +235,7 @@ class Product: PostgresTable, PostgresJson {
             return ()
         }
     }
-
-    func makeAttributes() throws {
-        let attributeJoin = DataSourceJoin(
-            table: "Attribute",
-            onCondition: "ProductAttribute.attributeId = Attribute.attributeId",
-            direction: .INNER
-        )
-        let productAttributeValueJoin = DataSourceJoin(
-            table: "ProductAttributeValue",
-            onCondition: "ProductAttribute.productAttributeId = ProductAttributeValue.productAttributeId",
-            direction: .LEFT
-        )
-        let attributeValueJoin = DataSourceJoin(
-            table: "AttributeValue",
-            onCondition: "ProductAttributeValue.attributeValueId = AttributeValue.attributeValueId",
-            direction: .INNER
-        )
-
-        let productAttribute = ProductAttribute(connection: connection!)
-		let sql = productAttribute.querySQL(
-			whereclause: "ProductAttribute.productId = $1",
-			params: [self.productId],
-            orderby: ["ProductAttribute.productAttributeId", "ProductAttributeValue.attributeValueId"],
-			joins: [attributeJoin, productAttributeValueJoin, attributeValueJoin]
-		)
-        
-        let rows = try productAttribute.sqlRows(sql)
-        let groups = Dictionary(grouping: rows) { row -> Int in
-            row.column("productAttributeId")!.int!
-        }
-        
-        for group in groups.sorted(by: { $0.key < $1.key }) {
-            let pa = ProductAttribute()
-            pa.decode(row: group.value.first!)
-            for att in group.value {
-                let productAttributeValue = ProductAttributeValue()
-                productAttributeValue.decode(row: att)
-                pa._attributeValues.append(productAttributeValue)
-            }
-            _attributes.append(pa)
-        }
-	}
-
+    
     func makeArticlesAsync(_ storeIds: String = "") -> EventLoopFuture<Void> {
         let item = Article(connection: connection!)
         let join = DataSourceJoin(
@@ -371,71 +300,7 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
             }
         }
     }
-
-    func makeArticles(_ storeIds: String = "") throws {
-        let item = Article(connection: connection!)
-
-        let join = DataSourceJoin(
-            table: "ArticleAttributeValue",
-            onCondition: "Article.articleId = ArticleAttributeValue.articleId",
-            direction: .LEFT
-        )
-
-        let sql = storeIds.isEmpty
-            ? item.querySQL(
-                whereclause: "Article.productId = $1",
-                params: [self.productId],
-                orderby: ["Article.articleId", "ArticleAttributeValue.articleId"],
-                joins: [join]
-            )
-            : """
-SELECT "Article"."articleId",
-"Article"."productId",
-"Article"."articleNumber",
-"Article"."articleBarcodes",
-"Article"."articlePackaging",
-"Article"."articleIsValid",
-"Article"."articleCreated",
-"Article"."articleUpdated",
-"ArticleAttributeValue"."articleAttributeValueId",
-"ArticleAttributeValue"."articleId",
-"ArticleAttributeValue"."attributeValueId",
-SUM ("Stock"."stockQuantity") as stockQuantity,
-SUM ("Stock"."stockBooked") as stockBooked
-FROM "Article"
-LEFT JOIN "ArticleAttributeValue" ON "Article"."articleId" = "ArticleAttributeValue"."articleId"
-LEFT JOIN "Stock" ON "Article"."articleId" = "Stock"."articleId"
-WHERE "Article"."productId" = \(productId) AND ("Stock"."storeId" IN (\(storeIds)) OR "Stock"."storeId" IS NULL)
-GROUP BY "Article"."articleId",
-"Article"."productId",
-"Article"."articleNumber",
-"Article"."articleBarcodes",
-"Article"."articlePackaging",
-"Article"."articleIsValid",
-"Article"."articleCreated",
-"Article"."articleUpdated",
-"ArticleAttributeValue"."articleAttributeValueId",
-"ArticleAttributeValue"."articleId",
-"ArticleAttributeValue"."attributeValueId"
-ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
-"""
-        let rows = try item.sqlRows(sql)
-        let groups = Dictionary(grouping: rows) { row -> Int in
-            row.column("articleId")!.int!
-        }
-        
-        for group in groups {
-            let article = Article()
-            article.decode(row: group.value.first!)
-            for art in group.value {
-                let attributeValue = ArticleAttributeValue()
-                attributeValue.decode(row: art)
-                article._attributeValues.append(attributeValue)
-            }
-            _articles.append(article)
-        }
-	}
-
+    
 	func makeArticle(barcode: String, rows: [PostgresRow]) {
         let article = Article()
         article.decode(row: rows[0])
@@ -575,7 +440,143 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
         }
     }
 
-    func get(barcode: String) throws {
+    /*
+    func makeArticles(_ storeIds: String = "") throws {
+        let item = Article(connection: connection!)
+
+        let join = DataSourceJoin(
+            table: "ArticleAttributeValue",
+            onCondition: "Article.articleId = ArticleAttributeValue.articleId",
+            direction: .LEFT
+        )
+
+        let sql = storeIds.isEmpty
+            ? item.querySQL(
+                whereclause: "Article.productId = $1",
+                params: [self.productId],
+                orderby: ["Article.articleId", "ArticleAttributeValue.articleId"],
+                joins: [join]
+            )
+            : """
+SELECT "Article"."articleId",
+"Article"."productId",
+"Article"."articleNumber",
+"Article"."articleBarcodes",
+"Article"."articlePackaging",
+"Article"."articleIsValid",
+"Article"."articleCreated",
+"Article"."articleUpdated",
+"ArticleAttributeValue"."articleAttributeValueId",
+"ArticleAttributeValue"."articleId",
+"ArticleAttributeValue"."attributeValueId",
+SUM ("Stock"."stockQuantity") as stockQuantity,
+SUM ("Stock"."stockBooked") as stockBooked
+FROM "Article"
+LEFT JOIN "ArticleAttributeValue" ON "Article"."articleId" = "ArticleAttributeValue"."articleId"
+LEFT JOIN "Stock" ON "Article"."articleId" = "Stock"."articleId"
+WHERE "Article"."productId" = \(productId) AND ("Stock"."storeId" IN (\(storeIds)) OR "Stock"."storeId" IS NULL)
+GROUP BY "Article"."articleId",
+"Article"."productId",
+"Article"."articleNumber",
+"Article"."articleBarcodes",
+"Article"."articlePackaging",
+"Article"."articleIsValid",
+"Article"."articleCreated",
+"Article"."articleUpdated",
+"ArticleAttributeValue"."articleAttributeValueId",
+"ArticleAttributeValue"."articleId",
+"ArticleAttributeValue"."attributeValueId"
+ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
+"""
+        let rows = try item.sqlRows(sql)
+        let groups = Dictionary(grouping: rows) { row -> Int in
+            row.column("articleId")!.int!
+        }
+        
+        for group in groups {
+            let article = Article()
+            article.decode(row: group.value.first!)
+            for art in group.value {
+                let attributeValue = ArticleAttributeValue()
+                attributeValue.decode(row: art)
+                article._attributeValues.append(attributeValue)
+            }
+            _articles.append(article)
+        }
+     }
+
+     func rows(sql: String, barcodes: Bool, storeIds: String = "") throws -> [Product] {
+       var results = [Product]()
+       let rows = try self.sqlRows(sql)
+
+       let groups = Dictionary(grouping: rows) { row -> Int in
+           row.column("productId")!.int!
+       }
+       
+       for group in groups {
+           let row = Product(connection: connection!)
+           row.decode(row: group.value.first!)
+           
+           for cat in group.value {
+               let productCategory = ProductCategory()
+               productCategory.decode(row: cat)
+               row._categories.append(productCategory)
+           }
+           
+           if barcodes {
+               try row.makeAttributes();
+               try row.makeArticles(storeIds);
+           }
+
+           results.append(row)
+       }
+       
+       return results
+     }
+
+     func makeAttributes() throws {
+        let attributeJoin = DataSourceJoin(
+            table: "Attribute",
+            onCondition: "ProductAttribute.attributeId = Attribute.attributeId",
+            direction: .INNER
+        )
+        let productAttributeValueJoin = DataSourceJoin(
+            table: "ProductAttributeValue",
+            onCondition: "ProductAttribute.productAttributeId = ProductAttributeValue.productAttributeId",
+            direction: .LEFT
+        )
+        let attributeValueJoin = DataSourceJoin(
+            table: "AttributeValue",
+            onCondition: "ProductAttributeValue.attributeValueId = AttributeValue.attributeValueId",
+            direction: .INNER
+        )
+
+        let productAttribute = ProductAttribute(connection: connection!)
+        let sql = productAttribute.querySQL(
+            whereclause: "ProductAttribute.productId = $1",
+            params: [self.productId],
+            orderby: ["ProductAttribute.productAttributeId", "ProductAttributeValue.attributeValueId"],
+            joins: [attributeJoin, productAttributeValueJoin, attributeValueJoin]
+        )
+        
+        let rows = try productAttribute.sqlRows(sql)
+        let groups = Dictionary(grouping: rows) { row -> Int in
+            row.column("productAttributeId")!.int!
+        }
+        
+        for group in groups.sorted(by: { $0.key < $1.key }) {
+            let pa = ProductAttribute()
+            pa.decode(row: group.value.first!)
+            for att in group.value {
+                let productAttributeValue = ProductAttributeValue()
+                productAttributeValue.decode(row: att)
+                pa._attributeValues.append(productAttributeValue)
+            }
+            _attributes.append(pa)
+        }
+     }
+    
+     func get(barcode: String) throws {
         let brandJoin = DataSourceJoin(
             table: "Brand",
             onCondition: "Product.brandId = Brand.brandId",
@@ -637,4 +638,5 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
         try self.makeAttributes()
         self.makeArticle(barcode: barcode, rows: rows)
     }
+    */
 }

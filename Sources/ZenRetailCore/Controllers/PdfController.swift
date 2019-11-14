@@ -46,18 +46,16 @@ class PdfController {
     }
     
     func emailHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let data = request.bodyData,
+            let item = try? JSONDecoder().decode(PdfDocument.self, from: data),
+            !item.address.isEmpty else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+                return
+        }
+
+        let company = Company()
+        company.selectAsync().whenComplete { _ in
             do {
-                guard let data = request.bodyData else {
-                    throw HttpError.badRequest
-                }
-                let item = try JSONDecoder().decode(PdfDocument.self, from: data)
-                if item.address.isEmpty {
-                    throw HttpError.systemError(0, "email address to is empty")
-                }
-                
-                let company = Company()
-                try company.select()
                 if company.companyEmailInfo.isEmpty {
                     throw HttpError.systemError(0, "email address from is empty")
                 }
@@ -84,7 +82,7 @@ class PdfController {
                 
                 ZenSMTP.shared.send(email: email) { error in
                     if let error = error {
-                        response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                        response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
                     } else {
                         item.content = "Email successfully sent"
                         try? response.send(json: item)
@@ -92,7 +90,7 @@ class PdfController {
                     }
                 }
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
     }

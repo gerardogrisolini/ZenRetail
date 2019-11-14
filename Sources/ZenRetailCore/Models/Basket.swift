@@ -60,11 +60,18 @@ class Basket: PostgresTable, Codable {
         registryId = try container.decodeIfPresent(Int.self, forKey: .registryId) ?? 0
         _registry = try container.decodeIfPresent(Registry.self, forKey: ._registry) ?? Registry()
         basketBarcode = try container.decode(String.self, forKey: .basketBarcode)
-        basketProduct = try container.decodeIfPresent(Product.self, forKey: .basketProduct)
-            ?? self.getProduct(barcode: basketBarcode)
         basketQuantity = try container.decode(Double.self, forKey: .basketQuantity)
         basketPrice = try container.decodeIfPresent(Double.self, forKey: .basketPrice) ?? 0
         basketUpdated = try container.decodeIfPresent(Int.self, forKey: .basketUpdated) ?? 0
+
+//        if let product = try container.decodeIfPresent(Product.self, forKey: .basketProduct) {
+//            basketProduct = product
+//        } else {
+//            getProduct(barcode: basketBarcode).whenSuccess { product in
+//                basketProduct = product
+//            }
+//        }
+        basketProduct = try container.decode(Product.self, forKey: .basketProduct)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -80,19 +87,23 @@ class Basket: PostgresTable, Codable {
         try container.encode(basketUpdated, forKey: .basketUpdated)
     }
 
-    func getProduct(barcode: String) throws -> Product {
-        var autoclose: Bool = false
-        if connection == nil {
-            connection = try ZenPostgres.pool.connect()
-            autoclose = true
-        }
-
-        let product = Product(connection: connection!)
-        try product.get(barcode: barcode)
-
-        if autoclose { connection!.disconnect() }
-        
-        return product
-    }
+//    func getProduct(barcode: String) -> EventLoopFuture<Product> {
+//        func getProduct() -> EventLoopFuture<Product> {
+//            let product = Product(connection: connection!)
+//            return product.getAsync(barcode: barcode).map { () -> Product in
+//                return product
+//            }
+//        }
+//
+//        if connection == nil {
+//            return ZenPostgres.pool.connectAsync().flatMap { conn -> EventLoopFuture<Product> in
+//                self.connection = conn
+//                defer { conn.disconnect() }
+//                return getProduct()
+//            }
+//        }
+//        
+//        return getProduct()
+//    }
 }
 

@@ -6,6 +6,7 @@
 //
 //
 
+import NIO
 import ZenPostgres
 
 struct InvoiceRepository : InvoiceProtocol {
@@ -26,75 +27,73 @@ struct InvoiceRepository : InvoiceProtocol {
 		return status
 	}
 
-	func getAll() throws -> [Invoice] {
-		let items = Invoice()
-		return try items.query()
+	func getAll() -> EventLoopFuture<[Invoice]> {
+		return Invoice().queryAsync()
 	}
 	
-	func get(id: Int) throws -> Invoice? {
+	func get(id: Int) -> EventLoopFuture<Invoice> {
 		let item = Invoice()
-		try item.get(id)
-		
-		return item
+        return item.getAsync(id).map { () -> Invoice in
+            return item
+        }
 	}
 	
-	func getMovements(invoiceId: Int) throws -> [Movement] {
-		return try Movement().query(whereclause: "idInvoice = $1", params: [invoiceId])
+	func getMovements(invoiceId: Int) -> EventLoopFuture<[Movement]> {
+		return Movement().queryAsync(whereclause: "idInvoice = $1", params: [invoiceId])
 	}
 	
-	func getMovementArticles(invoiceId: Int) throws -> [MovementArticle] {
+	func getMovementArticles(invoiceId: Int) -> EventLoopFuture<[MovementArticle]> {
 		let join = DataSourceJoin(
 			table: "Movement",
 			onCondition:"MovementArticle.movementId = Movement.movementId",
 			direction: .INNER);
 
-		return try MovementArticle().query(whereclause: "Movement.idInvoice = $1",
-		                params: [invoiceId],
-		                joins: [join])
+		return MovementArticle().queryAsync(whereclause: "Movement.idInvoice = $1",
+                                       params: [invoiceId],
+                                       joins: [join])
 	}
 
-	func add(item: Invoice) throws {
-		if item.invoiceNumber == 0 {
-			try item.makeNumber()
+	func add(item: Invoice) -> EventLoopFuture<Int> {
+        func saveItem() -> EventLoopFuture<Int> {
+            item.invoiceUpdated = Int.now()
+            return item.saveAsync().map { id -> Int in
+                item.invoiceId = id as! Int
+                return item.invoiceId
+            }
+        }
+        
+        if item.invoiceNumber == 0 {
+            return item.makeNumber().flatMap { () -> EventLoopFuture<Int> in
+                return saveItem()
+            }
 		}
+        
+        return saveItem()
+	}
+	
+	func update(id: Int, item: Invoice) -> EventLoopFuture<Bool> {
+        item.invoiceId = id
 		item.invoiceUpdated = Int.now()
-		try item.save {
-			id in item.invoiceId = id as! Int
-		}
+        return item.saveAsync().map { id -> Bool in
+            id as! Int > 0
+        }
 	}
 	
-	func update(id: Int, item: Invoice) throws {
-		
-		guard let current = try get(id: id) else {
-			throw ZenError.recordNotFound
-		}
-		
-		item.invoiceUpdated = Int.now()
-		current.invoiceNumber = item.invoiceNumber
-		current.invoiceDate = item.invoiceDate
-		current.invoicePayment = item.invoicePayment
-		current.invoiceRegistry = item.invoiceRegistry
-		current.invoiceNote = item.invoiceNote
-		current.invoiceUpdated = item.invoiceUpdated
-		try current.save()
+	func delete(id: Int) -> EventLoopFuture<Bool> {
+        return Movement().updateAsync(cols: ["idInvoice"], params: [0], id: "idInvoice", value: id).flatMap { count -> EventLoopFuture<Bool> in
+            return Invoice().deleteAsync(id)
+        }
 	}
 	
-	func delete(id: Int) throws {
-		let movement = Movement()
-		_ = try movement.update(cols: ["idInvoice"], params: [0], id: "idInvoice", value: id)
-
-		let item = Invoice()
-		item.invoiceId = id
-		try item.delete()
+	func addMovement(invoiceId: Int, id: Int) -> EventLoopFuture<Bool> {
+		return Movement().updateAsync(cols: ["idInvoice"], params: [invoiceId], id: "movementId", value: id).map { count -> Bool in
+            count > 0
+        }
 	}
 	
-	func addMovement(invoiceId: Int, id: Int) throws {
-		let movement = Movement()
-        _ = try movement.update(cols: ["idInvoice"], params: [invoiceId], id: "movementId", value: id)
-	}
-	
-	func removeMovement(id: Int) throws {
-		let movement = Movement()
-        _ = try movement.update(cols: ["idInvoice"], params: [0], id: "movementId", value: id)
+	func removeMovement(id: Int) -> EventLoopFuture<Bool> {
+        return Movement().updateAsync(cols: ["idInvoice"], params: [0], id: "movementId", value: id).map { count -> Bool in
+            count > 0
+        }
 	}
 }

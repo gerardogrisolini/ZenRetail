@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import NIO
 import ZenNIO
 import ZenMWS
 import ZenPostgres
@@ -21,7 +22,7 @@ public class AmazonController: NSObject {
         self.repository = ZenIoC.shared.resolve() as ProductProtocol
         super.init()
         
-        loadConfig()
+        loadConfig().whenSuccess { _ in }
         
         router.get("/api/mws/config", handler: mwsConfigHandlerGET)
         router.put("/api/mws/config", handler: mwsConfigHandlerPUT)
@@ -39,58 +40,12 @@ public class AmazonController: NSObject {
     }
     
     func mwsConfigHandlerPUT(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let data = request.bodyData else {
-                    throw HttpError.badRequest
-                }
-                let amazon = try JSONDecoder().decode(Amazon.self, from: data)
-                try amazon.save()
-                
-                self.config = Config(
-                    endpoint: amazon.endpoint,
-                    marketplaceId: amazon.marketplaceId,
-                    sellerId: amazon.sellerId,
-                    accessKey: amazon.accessKey,
-                    secretKey: amazon.secretKey,
-                    authToken: amazon.authToken,
-                    userAgent: amazon.userAgent
-                )
-                
-                try response.send(json: self.config)
-                response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-            }
+        guard let data = request.bodyData,
+            let amazon = try? JSONDecoder().decode(Amazon.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
         }
-    }
-
-    func mwsHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            let data: [MwsRequest]
-            do {
-                let mwsRequest = MwsRequest()
-                if let start: Int = request.getParam("start"),
-                    let finish: Int = request.getParam("finish") {
-                    data = try mwsRequest.rangeRequests(startDate: start, finishDate: finish)
-                } else {
-                    data = try mwsRequest.currentRequests()
-                }
-                
-                try response.send(json:data)
-                response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-            }
-        }
-    }
-    
-    // Background worker
-    
-    fileprivate func loadConfig() {
-        let amazon = Amazon()
-        try? amazon.select()
-        config = Config(
+        self.config = Config(
             endpoint: amazon.endpoint,
             marketplaceId: amazon.marketplaceId,
             sellerId: amazon.sellerId,
@@ -100,11 +55,68 @@ public class AmazonController: NSObject {
             userAgent: amazon.userAgent
         )
         
-        //TODO: decomment
-//        if !amazon.authToken.isEmpty {
-//            self.startWorker()
-//        }
+        ZenPostgres.pool.connectAsync().whenComplete { result in
+            switch result {
+            case .success(let conn):
+                amazon.saveAsync(connection: conn).whenComplete { res in
+                    switch res {
+                    case .success(_):
+                        try? response.send(json: self.config)
+                        response.completed()
+                    case .failure(let err):
+                        response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
+                    }
+                }
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
+            }
+        }
     }
+
+    func mwsHandlerGET(request: HttpRequest, response: HttpResponse) {
+        var mwsRequest: EventLoopFuture<[MwsRequest]>
+        if let start: Int = request.getParam("start"), let finish: Int = request.getParam("finish") {
+            mwsRequest = MwsRequest().rangeRequests(startDate: start, finishDate: finish)
+        } else {
+            mwsRequest = MwsRequest().currentRequests()
+        }
+
+        mwsRequest.whenComplete { result in
+            do {
+                switch result {
+                case .success(let data):
+                    try response.send(json: data)
+                    response.completed()
+                case .failure(let err):
+                    throw err
+                }
+            } catch {
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
+            }
+        }
+    }
+    
+    // Background worker
+    
+    fileprivate func loadConfig() -> EventLoopFuture<Void> {
+        let amazon = Amazon()
+        return amazon.selectAsync().map { () -> Void in
+            self.config = Config(
+                endpoint: amazon.endpoint,
+                marketplaceId: amazon.marketplaceId,
+                sellerId: amazon.sellerId,
+                accessKey: amazon.accessKey,
+                secretKey: amazon.secretKey,
+                authToken: amazon.authToken,
+                userAgent: amazon.userAgent
+            )
+            
+            //TODO: decomment
+//            if !amazon.authToken.isEmpty {
+//                self.startWorker()
+//            }
+        }
+     }
     
     fileprivate func startWorker() {
         DispatchQueue.global(qos: .utility).async {

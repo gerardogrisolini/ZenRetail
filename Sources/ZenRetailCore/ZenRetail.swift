@@ -34,22 +34,18 @@ public class ZenRetail {
         ZenRetail.zenNIO.addCORS()
         ZenRetail.zenNIO.addWebroot(path: ZenRetail.config.documentRoot)
         ZenRetail.zenNIO.addAuthentication(handler: { (username, password) -> (String?) in
-            let promise = ZenRetail.zenNIO.eventLoopGroup.next().makePromise(of: String?)
             do {
                 let user = User()
-                try user.get(usr: username, pwd: password)
+                try user.get(usr: username, pwd: password).wait()
                 return user.uniqueID
             } catch {
                 do {
                     let registry = Registry()
-                    try registry.get(email: username, pwd: password)
+                    try registry.get(email: username, pwd: password).wait()
                     return registry.uniqueID
                 } catch {
                     return nil
                 }
-            }
-            promise.futureResult.whenComplete { _ in
-                <#code#>
             }
         })
 
@@ -95,7 +91,7 @@ public class ZenRetail {
     
     private func setupSmtp() throws {
         let company = Company()
-        try company.select()
+        _ = try company.selectAsync().wait()
 
         if let smtpUsername = ProcessInfo.processInfo.environment["SENDGRID_USERNAME"],
             let smtpPassword = ProcessInfo.processInfo.environment["SENDGRID_PASSWORD"] {
@@ -106,7 +102,7 @@ public class ZenRetail {
                 company.smtpHost = "smtp.sendgrid.net"
                 company.smtpUsername = smtpUsername
                 company.smtpPassword = smtpPassword
-                try company.save()
+                try company.saveAsync().wait()
             }
         }
 
@@ -163,68 +159,68 @@ public class ZenRetail {
         defer { connection.disconnect() }
 
         let settings = Settings(connection: connection)
-        try settings.create()
+        try settings.createAsync().wait()
         let company = Company()
         try company.create(connection: connection)
         let file = File(connection: connection)
-        try file.create()
+        try file.createAsync().wait()
         try file.setupShippingCost()
         //try file.importStaticFiles()
         let user = User(connection: connection)
-        try user.create()
-        user.setAdmin().whenComplete { _ in }
+        try user.createAsync().wait()
+        try user.setAdmin().wait()
         let causal = Causal(connection: connection)
-        try causal.create()
+        try causal.createAsync().wait()
         try causal.setupDefaults()
         let store = Store(connection: connection)
-        try store.create()
+        try store.createAsync().wait()
         let brand = Brand(connection: connection)
-        try brand.create()
+        try brand.createAsync().wait()
         let category = Category(connection: connection)
-        try category.create()
+        try category.createAsync().wait()
         //try category.setupMarketplace()
         let attribute = Attribute(connection: connection)
-        try attribute.create()
+        try attribute.createAsync().wait()
         let attributeValue = AttributeValue(connection: connection)
-        try attributeValue.create()
+        try attributeValue.createAsync().wait()
         try attribute.setupMarketplace()
         let tagGroup = TagGroup(connection: connection)
-        try tagGroup.create()
+        try tagGroup.createAsync().wait()
         let tagValue = TagValue(connection: connection)
-        try tagValue.create()
+        try tagValue.createAsync().wait()
         //try tagGroup.setupMarketplace()
         let product = Product(connection: connection)
-        try product.create()
+        try product.createAsync().wait()
         let productCategeory = ProductCategory(connection: connection)
-        try productCategeory.create()
+        try productCategeory.createAsync().wait()
         let productAttribute = ProductAttribute(connection: connection)
-        try productAttribute.create()
+        try productAttribute.createAsync().wait()
         let productAttributeValue = ProductAttributeValue(connection: connection)
-        try productAttributeValue.create()
+        try productAttributeValue.createAsync().wait()
         let article = Article(connection: connection)
-        try article.create()
+        try article.createAsync().wait()
         let articleAttributeValue = ArticleAttributeValue(connection: connection)
-        try articleAttributeValue.create()
+        try articleAttributeValue.createAsync().wait()
         let stock = Stock(connection: connection)
-        try stock.create()
+        try stock.createAsync().wait()
         let device = Device(connection: connection)
-        try device.create()
+        try device.createAsync().wait()
         let registry = Registry(connection: connection)
-        try registry.create()
+        try registry.createAsync().wait()
         let invoice = Invoice(connection: connection)
-        try invoice.create()
+        try invoice.createAsync().wait()
         let movement = Movement(connection: connection)
-        try movement.create()
+        try movement.createAsync().wait()
         let movementArticle = MovementArticle(connection: connection)
-        try movementArticle.create()
+        try movementArticle.createAsync().wait()
         let publication = Publication(connection: connection)
-        try publication.create()
+        try publication.createAsync().wait()
         let basket = Basket(connection: connection)
-        try basket.create()
+        try basket.createAsync().wait()
         let amazon = Amazon()
-        try amazon.create(connection: connection)
+        try amazon.createAsync(connection: connection).wait()
         let mwsRequest = MwsRequest(connection: connection)
-        try mwsRequest.create()
+        try mwsRequest.createAsync().wait()
     }
     
     private func addIoC() {
@@ -307,19 +303,21 @@ public class ZenRetail {
 
     private func getFile(response: HttpResponse, fileName: String, size: MediaType) {
         let file = File()
-        if let data = try? file.getData(filename: fileName, size: size) {
-                response.addHeader(.contentType, value: file.fileContentType)
-                response.body.reserveCapacity(data.count)
-                response.body.writeBytes(data)
-                response.completed()
+        let query = file.getDataAsync(filename: fileName, size: size)
+        query.whenSuccess { bytes in
+            response.addHeader(.contentType, value: file.fileContentType)
+            response.body.reserveCapacity(bytes.count)
+            response.body.writeBytes(bytes)
+            response.completed()
             
             ZenRetail.zenNIO.eventLoopGroup.next().execute {
                 let path = "\(ZenRetail.config.documentRoot)/\(size)/\(fileName)"
                 let url = URL(fileURLWithPath: path)
-                try? Data(data).write(to: url)
+                try? Data(bytes).write(to: url)
             }
-        } else {
-            response.completed( .notFound)
+        }
+        query.whenFailure { err in
+            response.completed(.notFound)
         }
     }
     
