@@ -166,76 +166,110 @@ ORDER BY "MovementArticle"."movementArticleId"
     }
     
     func add(item: Movement) -> EventLoopFuture<Int> {
-        if item.movementNumber == 0 {
-            try item.newNumber()
+
+        func addItem() -> EventLoopFuture<Int> {
+            item.movementUpdated = Int.now()
+            
+            func saveItem() -> EventLoopFuture<Int> {
+                return item.saveAsync().map { id -> Int in
+                    item.movementId = id as! Int
+                    return item.movementId
+                }
+            }
+            
+            if !item.movementRegistry.registryName.isEmpty {
+                let registry = item.movementRegistry
+                if registry.registryId <= 0 {
+                    registry.registryId = 0
+                    registry.registryCreated = registry.registryUpdated
+                    return registry.saveAsync().flatMap { id -> EventLoopFuture<Int> in
+                        registry.registryId = id as! Int
+                        item.movementRegistry = registry
+                        return saveItem()
+                    }
+                } else if registry.registryUpdated > 0 {
+                    let current = Registry()
+                    return current.getAsync(registry.registryId).flatMap { () -> EventLoopFuture<Int> in
+                        if current.registryUpdated < registry.registryUpdated {
+                            registry.saveAsync().whenComplete { _ in }
+                        }
+                        return saveItem()
+                    }
+                }
+            }
+            
+            return saveItem()
         }
-        item.movementUpdated = Int.now()
         
-        if !item.movementRegistry.registryName.isEmpty {
-            let registry = item.movementRegistry
-            if registry.registryId <= 0 {
-                registry.registryId = 0
-                registry.registryCreated = registry.registryUpdated
-                try registry.save {
-                    id in registry.registryId = id as! Int
-                }
-                item.movementRegistry = registry
-            } else if registry.registryUpdated > 0 {
-                let current = Registry()
-                try current.get(registry.registryId)
-                if current.registryUpdated < registry.registryUpdated {
-                    try registry.save()
-                }
+        if item.movementNumber == 0 {
+            return item.newNumber().flatMap { () -> EventLoopFuture<Int> in
+                return addItem()
             }
         }
         
-        try item.save {
-            id in item.movementId = id as! Int
-        }
+        return addItem()
     }
     
     func update(id: Int, item: Movement) -> EventLoopFuture<Bool> {
-        guard let current = try get(id: id) else {
-            throw ZenError.recordNotFound
-        }
-        
-        item.movementUpdated = Int.now()
-        if item.movementStatus == "New" {
-            current.movementNumber = item.movementNumber
-            current.movementDate = item.movementDate
-            current.movementDesc = item.movementDesc
-            current.movementUser = item.movementUser
-            current.movementDevice = item.movementDevice
-            current.movementCausal = item.movementCausal
-            current.movementStore = item.movementStore
-            current.movementRegistry = item.movementRegistry
-            current.movementTags = item.movementTags
-            current.movementPayment = item.movementPayment
-            current.movementShipping = item.movementShipping
-            current.movementShippingCost = item.movementShippingCost
-            try current.getAmount()
-        } else if current.movementStatus == "New" && item.movementStatus == "Processing" {
-            try process(movement: current, actionTypes: [.Delivering, .Booking])
-            try current.getAmount()
-        }
-        else if current.movementStatus == "Processing" && item.movementStatus == "Canceled" {
-            try process(movement: current, actionTypes: [.Unbooking])
-        }
-        else if current.movementStatus != "Completed" && item.movementStatus == "Completed" {
-            var actions: [ActionType] = [.Stoking]
-            if current.movementStatus == "New" {
-                actions = [.Delivering, .Stoking]
+        return get(id: id).flatMap { current -> EventLoopFuture<Bool> in
+            
+            func save() -> EventLoopFuture<Bool> {
+                current.movementStatus = item.movementStatus
+                current.movementNote = item.movementNote
+                current.movementUpdated = item.movementUpdated
+                return current.saveAsync().map { id -> Bool in
+                    id as! Int > 0
+                }
             }
-            else if current.movementStatus == "Processing" {
-                actions = [.Unbooking, .Stoking]
+
+            item.movementUpdated = Int.now()
+            if item.movementStatus == "New" {
+                current.movementNumber = item.movementNumber
+                current.movementDate = item.movementDate
+                current.movementDesc = item.movementDesc
+                current.movementUser = item.movementUser
+                current.movementDevice = item.movementDevice
+                current.movementCausal = item.movementCausal
+                current.movementStore = item.movementStore
+                current.movementRegistry = item.movementRegistry
+                current.movementTags = item.movementTags
+                current.movementPayment = item.movementPayment
+                current.movementShipping = item.movementShipping
+                current.movementShippingCost = item.movementShippingCost
+                return current.getAmount().flatMap { () -> EventLoopFuture<Bool> in
+                    return save()
+                }
+                
+            } else if current.movementStatus == "New" && item.movementStatus == "Processing" {
+                return self.process(movement: current, actionTypes: [.Delivering, .Booking]).flatMap { () -> EventLoopFuture<Bool> in
+                    return current.getAmount().flatMap { () -> EventLoopFuture<Bool> in
+                        return save()
+                    }
+                }
             }
-            try process(movement: current, actionTypes: actions)
-            try current.getAmount()
+            else if current.movementStatus == "Processing" && item.movementStatus == "Canceled" {
+                return self.process(movement: current, actionTypes: [.Unbooking]).flatMap { () -> EventLoopFuture<Bool> in
+                    return save()
+                }
+            }
+            else if current.movementStatus != "Completed" && item.movementStatus == "Completed" {
+                var actions: [ActionType] = [.Stoking]
+                if current.movementStatus == "New" {
+                    actions = [.Delivering, .Stoking]
+                }
+                else if current.movementStatus == "Processing" {
+                    actions = [.Unbooking, .Stoking]
+                }
+                
+                return self.process(movement: current, actionTypes: actions).flatMap { () -> EventLoopFuture<Bool> in
+                    return current.getAmount().flatMap { () -> EventLoopFuture<Bool> in
+                        return save()
+                    }
+                }
+            }
+            
+            return item.connection!.eventLoop.future(true)
         }
-        current.movementStatus = item.movementStatus
-        current.movementNote = item.movementNote
-        current.movementUpdated = item.movementUpdated
-        try current.save()
     }
     
     func delete(id: Int) -> EventLoopFuture<Bool> {
@@ -248,8 +282,9 @@ ORDER BY "MovementArticle"."movementArticleId"
     }
     
     fileprivate func makeBarcodesForTags(_ movement: Movement, _ item: MovementArticle, _ article: Article, _ company: Company) -> EventLoopFuture<Void> {
-        
-        if movement.movementTags.count == 0 { return }
+        let connection = movement.connection!
+
+        if movement.movementTags.count == 0 { return connection.eventLoop.future() }
             
         let price = Price()
         if movement.movementCausal.causalQuantity < 0 {
@@ -264,11 +299,24 @@ ORDER BY "MovementArticle"."movementArticleId"
             }
         }
         
-        if let barcode = article.articleBarcodes
-                                .first(where: { $0.tags.containsSameElements(as: movement.movementTags) }) {
+        func saveBarcode(_ barcode: String) -> EventLoopFuture<Void> {
+            return item.updateAsync(cols: ["movementArticleBarcode"], params: [barcode], id: "movementArticleId", value: item.movementArticleId).flatMap { count -> EventLoopFuture<Void> in
+                if count == 0 {
+                    return connection.eventLoop.future(error: ZenError.recordNotSave)
+                }
+                article.articleIsValid = true;
+                article.productId = item.movementArticleProduct.productId
+                article.articleUpdated = Int.now()
+                return article.saveAsync().map { id -> Void in
+                    article.articleId = id as! Int
+                }
+            }
+        }
+        
+        if let barcode = article.articleBarcodes.first(where: { $0.tags.containsSameElements(as: movement.movementTags) }) {
             barcode.price = price
             barcode.discount = item.movementArticleProduct.productDiscount
-            item.movementArticleBarcode = barcode.barcode;
+            return saveBarcode(barcode.barcode)
         } else {
             let barcode = Barcode()
             barcode.tags = movement.movementTags
@@ -279,97 +327,148 @@ ORDER BY "MovementArticle"."movementArticleId"
                 let counter = Int(company.barcodeCounterPublic)! + 1
                 company.barcodeCounterPublic = counter.description
                 barcode.barcode = String(company.barcodeCounterPublic).checkdigit()
-                _ = try Product().update(cols: ["productAmazonUpdated"], params: [1], id: "productId", value: article.productId)
+                Product(connection: connection).updateAsync(cols: ["productAmazonUpdated"], params: [1], id: "productId", value: article.productId).whenComplete { _ in }
             } else {
                 let counter = Int(company.barcodeCounterPrivate)! + 1
                 company.barcodeCounterPrivate = counter.description
                 barcode.barcode = String(company.barcodeCounterPrivate).checkdigit()
             }
             article.articleBarcodes.append(barcode)
-            item.movementArticleBarcode = barcode.barcode;
-        }
-        try item.save()
 
-        article.articleIsValid = true;
-        article.productId = item.movementArticleProduct.productId
-        article.articleUpdated = Int.now()
-        try article.save()
+            return saveBarcode(barcode.barcode)
+        }
    }
     
     func process(movement: Movement, actionTypes: [ActionType]) -> EventLoopFuture<Void> {
+        let connection = movement.connection!
+        let promise = connection.eventLoop.makePromise(of: Void.self)
         
         let storeId = movement.movementStore.storeId
         let quantity = movement.movementCausal.causalQuantity
         let booked = movement.movementCausal.causalBooked
-        let company = Company()
-        try company.select()
         
-        let articles: [MovementArticle] = try MovementArticle().query(whereclause: "movementId = $1", params: [movement.movementId])
-        for actionType in actionTypes {
-            for item in articles {
-            
-                if actionType == .Delivering {
-                    item.movementArticleDelivered = item.movementArticleQuantity
-                    _ = try item.update(
-                        cols: ["movementArticleDelivered"],
-                        params: [item.movementArticleQuantity],
-                        id: "movementArticleId",
-                        value: item.movementArticleId
-                    )
-                    continue
-                }
-                
-                let article = item.movementArticleProduct._articles.first!
-                let articleId = article.articleId
-                var stock = Stock()
-                let stocks: [Stock] = try stock.query(
-                    whereclause: "articleId = $1 AND storeId = $2",
-                    params: [ articleId, storeId ],
-                    cursor: Cursor(limit: 1, offset: 0))
-                
-                if (stocks.count == 1) {
-                    stock = stocks.first!
-                } else {
-                    stock.storeId = storeId
-                    stock.articleId = articleId
-                    try stock.save {
-                        id in stock.stockId = id as! Int
+        let company = Company()
+        company.selectAsync(connection: connection).whenComplete { result in
+            switch result {
+            case .success(_):
+                let query: EventLoopFuture<[MovementArticle]> = MovementArticle(connection: connection).queryAsync(whereclause: "movementId = $1", params: [movement.movementId])
+                query.whenSuccess { articles in
+                    let count = articles.count - 1
+                    for actionType in actionTypes {
+                        for (i, item) in articles.enumerated() {
+                        
+                            if actionType == .Delivering {
+                                item.connection = connection
+                                item.movementArticleDelivered = item.movementArticleQuantity
+                                item.updateAsync(
+                                    cols: ["movementArticleDelivered"],
+                                    params: [item.movementArticleQuantity],
+                                    id: "movementArticleId",
+                                    value: item.movementArticleId
+                                ).whenComplete { _ in
+                                    if i == count && actionType == actionTypes.last! {
+                                        promise.succeed(())
+                                    }
+                                }
+                                continue
+                            }
+                            
+                            let article = item.movementArticleProduct._articles.first!
+                            let articleId = article.articleId
+                            var stock = Stock(connection: connection)
+                            let stocksQuery: EventLoopFuture<[Stock]> = stock.queryAsync(
+                                whereclause: "articleId = $1 AND storeId = $2",
+                                params: [ articleId, storeId ],
+                                cursor: Cursor(limit: 1, offset: 0))
+                            stocksQuery.whenSuccess { stocks in
+                                
+                                func finalProcess() {
+
+                                    func finalSubProcess() {
+                                        stock.saveAsync().whenComplete { _ in
+                                            if i == count && actionType == actionTypes.last! {
+                                                promise.succeed(())
+                                            }
+                                        }
+                                    }
+
+                                    switch actionType {
+                                    case .Booking:
+                                        if booked > 0 {
+                                            stock.stockBooked += item.movementArticleQuantity
+                                        } else {
+                                            stock.stockBooked -= item.movementArticleQuantity
+                                        }
+                                        finalSubProcess()
+                                    case .Unbooking:
+                                        stock.stockBooked -= item.movementArticleQuantity
+                                        finalSubProcess()
+                                    default:
+                                        if quantity > 0 {
+                                            stock.stockQuantity += item.movementArticleDelivered
+                                        } else if quantity < 0 {
+                                            stock.stockQuantity -= item.movementArticleDelivered
+                                        }
+                                        
+                                        self.makeBarcodesForTags(movement, item, article, company).whenComplete { res in
+                                            switch res {
+                                            case .success(_):
+                                                finalSubProcess()
+                                            case .failure(let err):
+                                                if i == count && actionType == actionTypes.last! {
+                                                    promise.fail(err)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                if (stocks.count == 1) {
+                                    stock = stocks.first!
+                                    finalProcess()
+                                } else {
+                                    stock.storeId = storeId
+                                    stock.articleId = articleId
+                                    stock.saveAsync().whenComplete { res in
+                                        switch res {
+                                        case .success(let id):
+                                            stock.stockId = id as! Int
+                                            finalProcess()
+                                        case .failure(let err):
+                                            promise.fail(err)
+                                        }
+                                    }
+                                }
+                            }
+                            stocksQuery.whenFailure { err in
+                                promise.fail(err)
+                            }
+                        }
                     }
                 }
-                
-                switch actionType {
-                case .Booking:
-                    if booked > 0 {
-                        stock.stockBooked += item.movementArticleQuantity
-                    } else {
-                        stock.stockBooked -= item.movementArticleQuantity
-                    }
-                case .Unbooking:
-                    stock.stockBooked -= item.movementArticleQuantity
-                default:
-                    if quantity > 0 {
-                        stock.stockQuantity += item.movementArticleDelivered
-                    } else if quantity < 0 {
-                        stock.stockQuantity -= item.movementArticleDelivered
-                    }
-                    
-                    try makeBarcodesForTags(movement, item, article, company)
+                query.whenFailure { err in
+                    promise.fail(err)
                 }
-                
-                try stock.save()
+            case .failure(let err):
+                promise.fail(err)
             }
         }
         
-        try company.save()
+        return promise.futureResult.flatMap { () -> EventLoopFuture<Void> in
+            return company.saveAsync()
+        }
     }
     
     func clone(sourceId: Int) -> EventLoopFuture<Movement> {
-        let item = (try self.get(id: sourceId))!
-        item.movementId = 0
-        item.movementNumber = 0
-        item.movementDate = Int.now()
-        item.movementStatus = "New"
-        try self.add(item: item)
-        return item
+        return self.get(id: sourceId).flatMap { item -> EventLoopFuture<Movement> in
+            item.movementId = 0
+            item.movementNumber = 0
+            item.movementDate = Int.now()
+            item.movementStatus = "New"
+            return self.add(item: item).map { id -> Movement in
+                item.movementId = id
+                return item
+            }
+        }
     }
 }

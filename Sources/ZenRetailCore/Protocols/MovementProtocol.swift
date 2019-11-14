@@ -28,7 +28,7 @@ protocol MovementProtocol {
 	
 	func get(registryId: Int) -> EventLoopFuture<[Movement]>
 
-	func get(id: Int) throws -> EventLoopFuture<Movement>
+	func get(id: Int) -> EventLoopFuture<Movement>
     
     func add(item: Movement) -> EventLoopFuture<Int>
     

@@ -134,18 +134,21 @@ class Movement: PostgresTable, Codable {
         try container.encode(movementUpdated, forKey: .movementUpdated)
     }
     
-    func newNumber() throws {
+    func newNumber() -> EventLoopFuture<Void> {
         var sql = "SELECT COALESCE(MAX(\"movementNumber\"),0) AS counter FROM \"\(table)\"";
         if self.movementCausal.causalIsPos {
             sql += " WHERE \"movementDevice\" = '\(movementDevice)' AND to_char(to_timestamp(\"movementDate\" + extract(epoch from timestamp '2001-01-01 00:00:00')), 'YYYY-MM-DD') = '\(movementDate.formatDate(format: "yyyy-MM-dd"))'"
         }
-        let getCount = try self.sqlRows(sql)
-        self.movementNumber = (getCount.first?.column("counter")?.int ?? 0) + (self.movementCausal.causalIsPos ? 1 : 1000)
+        return self.sqlRowsAsync(sql).map { getCount -> Void in
+            let count = getCount.first?.column("counter")?.int ?? 0
+            self.movementNumber = count + (self.movementCausal.causalIsPos ? 1 : 1000)
+        }
     }
     
-    func getAmount() throws {
+    func getAmount() -> EventLoopFuture<Void> {
         let sql = "SELECT SUM(\"movementArticleQuantity\" * \"movementArticlePrice\") AS amount FROM \"MovementArticle\" WHERE \"movementId\" = \(movementId)"
-        let getCount = try self.sqlRows(sql)
-        self.movementAmount = getCount.first?.column("amount")?.double ?? 0
+        return self.sqlRowsAsync(sql).map { getCount -> Void in
+            self.movementAmount = getCount.first?.column("amount")?.double ?? 0
+        }
     }
 }

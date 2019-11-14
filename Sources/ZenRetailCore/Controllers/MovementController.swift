@@ -36,40 +36,36 @@ class MovementController {
     }
 
 	func movementPaymentsHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                let status = self.repository.getPayments()
-                try response.send(json:status)
-                response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-            }
+        do {
+            let status = self.repository.getPayments()
+            try response.send(json:status)
+            response.completed()
+        } catch {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
 	}
 	
     func movementShippingsHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                let status = self.repository.getShippings()
-                try response.send(json:status)
-                response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-            }
+        do {
+            let status = self.repository.getShippings()
+            try response.send(json:status)
+            response.completed()
+        } catch {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
 
     func movementShippingCostHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let id: Int = request.getParam("id"),
-                    let shippingId: String = request.getParam("shippingId") else {
-                    throw HttpError.badRequest
-                }
-                
-                let item = try self.repository.get(id: id)!
-                
-                (ZenIoC.shared.resolve() as EcommerceProtocol).getShippingCost(id: shippingId, registry: item.movementRegistry).whenComplete { res in
+        guard let id: Int = request.getParam("id"), let shippingId: String = request.getParam("shippingId") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+
+        self.repository.get(id: id).whenComplete { result in
+            switch result {
+            case .success(let item):
+                let repository = ZenIoC.shared.resolve() as EcommerceProtocol
+                repository.getShippingCost(id: shippingId, registry: item.movementRegistry).whenComplete { res in
                     switch res {
                     case .success(let cost):
                         try! response.send(json: cost)
@@ -78,111 +74,142 @@ class MovementController {
                         response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
                     }
                 }
-                
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
 
     func movementStatusHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                let status = self.repository.getStatus()
-                try response.send(json:status)
-                response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
-            }
+        do {
+            let status = self.repository.getStatus()
+            try response.send(json:status)
+            response.completed()
+        } catch {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
 	}
 
 	func movementsHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        self.repository.getAll().whenComplete { result in
             do {
-                let items = try self.repository.getAll()
-                try response.send(json:items)
-                response.completed()
+                switch result {
+                case .success(let items):
+                    try response.send(json: items)
+                    response.completed()
+                case .failure(let err):
+                    throw err
+                }
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
     }
 
     func movementsWhouseHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let date: String = request.getParam("date"),
+            let store: Int = request.getParam("store") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter date and/or store")
+            return
+        }
+        
+        self.repository.getWarehouse(date: date.DateToInt(), store: store).whenComplete { result in
             do {
-                guard let date: String = request.getParam("date"),
-                    let store: Int = request.getParam("store") else {
-                    throw HttpError.badRequest
+                switch result {
+                case .success(let item):
+                    try response.send(json: item)
+                    response.completed()
+                case .failure(let err):
+                    throw err
                 }
-                let items = try self.repository.getWarehouse(date: date.DateToInt(), store: store)
-                try response.send(json:items)
-                response.completed()
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
     }
 
     func movementsSalesHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let data = request.bodyData,
+            let period = try? JSONDecoder().decode(Period.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+        }
+
+        self.repository.getSales(period: period).whenComplete { result in
             do {
-                guard let data = request.bodyData else {
-                    throw HttpError.badRequest
+                switch result {
+                case .success(let articles):
+                    try response.send(json: articles)
+                    response.completed(.created)
+                case .failure(let err):
+                    throw err
                 }
-                let period = try JSONDecoder().decode(Period.self, from: data)
-                let items = try self.repository.getSales(period: period)
-                try response.send(json:items)
-                response.completed()
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
 	}
 	
 	func movementsReceiptedHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let data = request.bodyData,
+            let period = try? JSONDecoder().decode(Period.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+        }
+
+        self.repository.getReceipted(period: period).whenComplete { result in
             do {
-                guard let data = request.bodyData else {
-                    throw HttpError.badRequest
+                switch result {
+                case .success(let items):
+                    try response.send(json: items)
+                    response.completed(.created)
+                case .failure(let err):
+                    throw err
                 }
-                let period = try JSONDecoder().decode(Period.self, from: data)
-                let items = try self.repository.getReceipted(period: period)
-                try response.send(json:items)
-                response.completed()
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
 	}
 	
 	func movementHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let id: Int = request.getParam("id") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+        
+        self.repository.get(id: id).whenComplete { result in
             do {
-                guard let id: Int = request.getParam("id") else {
-                    throw HttpError.badRequest
+                switch result {
+                case .success(let item):
+                    try response.send(json: item)
+                    response.completed()
+                case .failure(let err):
+                    throw err
                 }
-                let item = try self.repository.get(id: id)
-                try response.send(json:item)
-                response.completed()
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
     }
     
 	func movementRegistryHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let id: Int = request.getParam("id") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+        
+        self.repository.get(registryId: id).whenComplete { result in
             do {
-                guard let id: Int = request.getParam("id") else {
-                    throw HttpError.badRequest
+                switch result {
+                case .success(let item):
+                    try response.send(json: item)
+                    response.completed()
+                case .failure(let err):
+                    throw err
                 }
-                let items = try self.repository.get(registryId: id)
-                try response.send(json:items)
-                response.completed()
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
 	}
@@ -230,7 +257,7 @@ class MovementController {
                         value: item.movementId)
                 }
                 
-                response.completed( .created)
+                response.completed(.created)
             } catch {
                 response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
@@ -238,16 +265,22 @@ class MovementController {
     }
     
 	func movementCloneHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let id: Int = request.getParam("id") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+
+        self.repository.clone(sourceId: id).whenComplete { result in
             do {
-                guard let id: Int = request.getParam("id") else {
-                    throw HttpError.badRequest
+                switch result {
+                case .success(let item):
+                    let price = item.movementCausal.causalQuantity > 0 ? "purchase" : "selling"
+                    try self.articleRepository.clone(sourceMovementId: id, targetMovementId: item.movementId, price: price)
+                    try response.send(json: item)
+                    response.completed(.created)
+                case .failure(let err):
+                    throw err
                 }
-                let item = try self.repository.clone(sourceId: id)
-                let price = item.movementCausal.causalQuantity > 0 ? "purchase" : "selling"
-                try self.articleRepository.clone(sourceMovementId: id, targetMovementId: item.movementId, price: price)
-                try response.send(json:item)
-                response.completed( .created)
             } catch {
                 response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
@@ -255,58 +288,68 @@ class MovementController {
 	}
 
 	func movementHandlerPUT(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
+        guard let id: Int = request.getParam("id"),
+            let data = request.bodyData,
+            let item = try? JSONDecoder().decode(Movement.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+        }
+
+        self.repository.update(id: id, item: item).whenComplete { result in
             do {
-                guard let id: Int = request.getParam("id"),
-                    let data = request.bodyData else {
-                    throw HttpError.badRequest
+                switch result {
+                case .success(_):
+                    try response.send(json: item)
+                    response.completed(.accepted)
+                case .failure(let err):
+                    throw err
                 }
-                let item = try JSONDecoder().decode(Movement.self, from: data)
-                try self.repository.update(id: id, item: item)
-                try response.send(json:item)
-                response.completed( .accepted)
             } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
         }
     }
     
     func movementHandlerDELETE(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let id: Int = request.getParam("id") else {
-                    throw HttpError.badRequest
-                }
-                try self.repository.delete(id: id)
-                response.completed( .noContent)
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+        guard let id: Int = request.getParam("id") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+
+        self.repository.delete(id: id).whenComplete { result in
+            switch result {
+            case .success(let deleted):
+                response.completed(deleted ? .noContent : .expectationFailed)
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
 
     func movementFromHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let date: Int = request.getParam("date") else {
-                    throw HttpError.badRequest
-                }
-                let basic = request.authorization.replacingOccurrences(of: "Basic ", with: "")
-                let apiKey = basic.split(separator: "#")
-                if apiKey.count == 2 {
-                    let items = try self.repository.getAll(
-                        device: apiKey[0].description,
-                        user: apiKey[1].description,
-                        date: date
-                    )
-                    try response.send(json: items)
+        guard let date: Int = request.getParam("date") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter date")
+            return
+        }
+
+        let basic = request.authorization.replacingOccurrences(of: "Basic ", with: "")
+        let apiKey = basic.split(separator: "#")
+        if apiKey.count == 2 {
+            self.repository.getAll(
+                device: apiKey[0].description,
+                user: apiKey[1].description,
+                date: date
+            ).whenComplete { result in
+                switch result {
+                case .success(let items):
+                    try? response.send(json: items)
                     response.completed()
-                } else {
-                    response.completed( .unauthorized)
+                case .failure(let err):
+                    response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
                 }
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
             }
+        } else {
+            response.completed(.unauthorized)
         }
     }
 }
