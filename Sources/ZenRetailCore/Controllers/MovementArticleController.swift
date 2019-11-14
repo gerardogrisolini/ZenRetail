@@ -8,15 +8,14 @@
 
 import Foundation
 import ZenNIO
+import ZenPostgres
 
 class MovementArticleController {
     
-    private let movementRepository: MovementArticleProtocol
-    private let productRepository: ProductProtocol
+    private let repository: MovementArticleProtocol
     
     init(router: Router) {
-        self.movementRepository = ZenIoC.shared.resolve() as MovementArticleProtocol
-        self.productRepository = ZenIoC.shared.resolve() as ProductProtocol
+        self.repository = ZenIoC.shared.resolve() as MovementArticleProtocol
 
         router.get("/api/movementarticle/:id", handler: movementArticlesHandlerGET)
         router.post("/api/movementarticle/:price", handler: movementArticleHandlerPOST)
@@ -25,64 +24,121 @@ class MovementArticleController {
     }
     
     func movementArticlesHandlerGET(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let id: Int = request.getParam("id") else {
-                    throw HttpError.badRequest
+        guard let id: Int = request.getParam("id") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+        
+        ZenPostgres.pool.connectAsync().whenComplete { res in
+            switch res {
+            case .success(let conn):
+                defer { conn.disconnect() }
+                
+                self.repository.get(movementId: id, connection: conn).whenComplete { result in
+                    do {
+                        switch result {
+                        case .success(let items):
+                            try response.send(json: items)
+                            response.completed()
+                        case .failure(let err):
+                            throw err
+                        }
+                    } catch {
+                        response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
+                    }
                 }
-                let items = try self.movementRepository.get(movementId: id)
-                try response.send(json:items)
-                response.completed()
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
     
     func movementArticleHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let price: String = request.getParam("price"),
-                    let data = request.bodyData else {
-                    throw HttpError.badRequest
+        guard let price: String = request.getParam("price"),
+            let data = request.bodyData,
+            let item = try? JSONDecoder().decode(MovementArticle.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+        }
+
+        ZenPostgres.pool.connectAsync().whenComplete { res in
+            switch res {
+            case .success(let conn):
+                defer { conn.disconnect() }
+                
+                self.repository.add(item: item, price: price, connection: conn).whenComplete { result in
+                    do {
+                        switch result {
+                        case .success(let id):
+                            item.movementId = id
+                            try response.send(json: item)
+                            response.completed(.created)
+                        case .failure(let err):
+                            throw err
+                        }
+                    } catch {
+                        response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
+                    }
                 }
-                let item = try JSONDecoder().decode(MovementArticle.self, from: data)
-                try self.movementRepository.add(item: item, price: price)
-                try response.send(json:item)
-                response.completed( .created)
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
     
     func movementArticleHandlerPUT(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let id: Int = request.getParam("id"),
-                    let data = request.bodyData else {
-                    throw HttpError.badRequest
+        guard let id: Int = request.getParam("id"),
+            let data = request.bodyData,
+            let item = try? JSONDecoder().decode(MovementArticle.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+        }
+
+        ZenPostgres.pool.connectAsync().whenComplete { res in
+            switch res {
+            case .success(let conn):
+                defer { conn.disconnect() }
+                
+                self.repository.update(id: id, item: item, connection: conn).whenComplete { result in
+                    do {
+                        switch result {
+                        case .success(_):
+                            try response.send(json: item)
+                            response.completed(.accepted)
+                        case .failure(let err):
+                            throw err
+                        }
+                    } catch {
+                        response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
+                    }
                 }
-                let item = try JSONDecoder().decode(MovementArticle.self, from: data)
-                try self.movementRepository.update(id: id, item: item)
-                try response.send(json:item)
-                response.completed( .accepted)
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
     
     func movementArticleHandlerDELETE(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            do {
-                guard let id: Int = request.getParam("id") else {
-                    throw HttpError.badRequest
+        guard let id: Int = request.getParam("id") else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
+            return
+        }
+
+        ZenPostgres.pool.connectAsync().whenComplete { res in
+            switch res {
+            case .success(let conn):
+                defer { conn.disconnect() }
+                
+                self.repository.delete(id: id, connection: conn).whenComplete { result in
+                    switch result {
+                    case .success(let deleted):
+                        response.completed(deleted ? .noContent : .expectationFailed)
+                    case .failure(let err):
+                        response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
+                    }
                 }
-                try self.movementRepository.delete(id: id)
-                response.completed( .noContent)
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }

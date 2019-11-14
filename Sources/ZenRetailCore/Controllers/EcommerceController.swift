@@ -152,24 +152,34 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             }
 
             let registry = Registry()
-            if registry.exists(account.username) {
-               response.completed(.notAcceptable)
-               return
-            }
-            registry.registryEmail = account.username
-            registry.registryPassword = account.password.encrypted
-            registry.saveAsync().whenComplete { result in
-                switch result {
-                case .success(let id):
-                    registry.registryId = id as! Int
-                    let base64 = UUID().uuidString.data(using: .utf8)!.base64EncodedString()
-                    request.session!.token = Token(bearer: base64)
-                    request.session!.uniqueID = registry.registryId.description
-                    try! response.send(json: request.session!.token!)
-                    response.completed()
-                case .failure(let err):
-                    response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
+            let query = registry.exists(account.username)
+            query.whenSuccess { exist in
+                if exist {
+                    response.completed(.notAcceptable)
+                } else {
+                    registry.registryEmail = account.username
+                    registry.registryPassword = account.password.encrypted
+                    registry.saveAsync().whenComplete { result in
+                        do {
+                            switch result {
+                            case .success(let id):
+                                registry.registryId = id as! Int
+                                let base64 = UUID().uuidString.data(using: .utf8)!.base64EncodedString()
+                                request.session!.token = Token(bearer: base64)
+                                request.session!.uniqueID = registry.registryId.description
+                                try response.send(json: request.session!.token!)
+                                response.completed()
+                            case .failure(let err):
+                                throw err
+                            }
+                        } catch {
+                            response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
+                        }
+                    }
                 }
+            }
+            query.whenFailure { err in
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }

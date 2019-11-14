@@ -71,35 +71,35 @@ class Registry: PostgresTable, PostgresJson {
         registryUpdated = row.column("registryUpdated")?.int ?? 0
     }
 
-    func get(email: String) throws {
+    func get(email: String) -> EventLoopFuture<Void> {
         let sql = querySQL(
             whereclause: "registryEmail = $1",
             params: [email],
             cursor: Cursor(limit: 1, offset: 0)
         )
-        let rows = try self.sqlRows(sql)
-        if rows.count == 0 {
-            throw ZenError.recordNotFound
+        
+        return self.sqlRowsAsync(sql).flatMapThrowing { rows -> Void in
+            if rows.count == 0 {
+                throw ZenError.recordNotFound
+            }
+            self.decode(row: rows.first!)
         }
-        decode(row: rows.first!)
     }
     
     /// Performs a find on supplied email, and matches hashed password
-    open func get(email: String, pwd: String) throws {
-        try get(email: email)
-        
-        if pwd.encrypted != registryPassword {
-            throw ZenError.recordNotFound
+    open func get(email: String, pwd: String) -> EventLoopFuture<Void> {
+        return get(email: email).flatMapThrowing { () -> Void in
+            if pwd.encrypted != self.registryPassword {
+                throw ZenError.recordNotFound
+            }
+            return ()
         }
     }
 
     /// Returns a true / false depending on if the email exits in the database.
-    func exists(_ email: String) -> Bool {
-        do {
-            try get(email: email)
-            return true
-        } catch {
-            return false
+    func exists(_ email: String) -> EventLoopFuture<Bool> {
+        return get(email: email).map { () -> Bool in
+            return !self.uniqueID.isEmpty
         }
     }
 }

@@ -65,62 +65,65 @@ class User : PostgresTable, Codable {
     }
 
     /// Forces a create with a hashed password
-    func make() throws {
+    func make() -> EventLoopFuture<Void> {
         let sql = """
 INSERT INTO "User" ("uniqueID", "username", "password", "firstname", "lastname", "email", "isAdmin")
 VALUES ('\(uniqueID)','\(username)','\(password)','\(firstname)','\(lastname)','\(email)',true)
 """
-        do {
-            _ = try self.sqlRows(sql)
-        } catch {
-            print(error)
+        return self.sqlRowsAsync(sql).map { rows -> Void in
+            ()
         }
     }
     
     
     /// Performs a find on supplied username, and matches hashed password
-    open func get(usr: String, pwd: String) throws {
-        try self.get("username", usr)
-        if uniqueID.isEmpty {
-            throw ZenError.recordNotFound
-        }
+    open func get(usr: String, pwd: String) -> EventLoopFuture<Void> {
+        return self.getAsync("username", usr).flatMapThrowing { () -> Void in
+            if self.uniqueID.isEmpty {
+                throw ZenError.recordNotFound
+            }
 
-        if pwd.encrypted != password {
-            throw ZenError.passwordDoesNotMatch
+            if pwd.encrypted != self.password {
+                throw ZenError.passwordDoesNotMatch
+            }
+            return ()
         }
     }
     
     /// Returns a true / false depending on if the username exits in the database.
-    func exists(_ un: String) -> Bool {
-        do {
-            let sql = querySQL(whereclause: "username = $1", params: [un], cursor: Cursor(limit: 1, offset: 0))
-            let rows = try sqlRows(sql)
+    func exists(_ un: String) -> EventLoopFuture<Bool> {
+        let sql = querySQL(whereclause: "username = $1", params: [un], cursor: Cursor(limit: 1, offset: 0))
+        return sqlRowsAsync(sql).map { rows -> Bool in
             if rows.count == 1 {
-                decode(row: rows.first!)
+                self.decode(row: rows.first!)
                 return true
             } else {
                 return false
             }
-        } catch {
-            print(error)
-            return false
         }
     }
 
-	func setAdmin() throws {
-        let rows: [User] = try query(whereclause: "isAdmin = $1", params: [true], cursor: Cursor(limit: 1, offset: 0))
-        if rows.count == 0 {
-            if exists("admin") {
-                isAdmin = true
-                _ = try save()
-            } else {
-                uniqueID = UUID().uuidString
-                firstname = "Administrator"
-                username = "admin"
-                password = "admin".encrypted
-                isAdmin = true
-                try make()
+	func setAdmin() -> EventLoopFuture<Void> {
+        let query: EventLoopFuture<[User]> = queryAsync(whereclause: "isAdmin = $1", params: [true], cursor: Cursor(limit: 1, offset: 0))
+        return query.flatMap { rows -> EventLoopFuture<Void> in
+            if rows.count == 0 {
+                return self.exists("admin").flatMap { exist -> EventLoopFuture<Void> in
+                    if exist {
+                        self.isAdmin = true
+                        return self.updateAsync(cols: ["isAdmin"], params: [true], id: "uniqueID", value: self.uniqueID).map { count -> Void in
+                            ()
+                        }
+                    } else {
+                        self.uniqueID = UUID().uuidString
+                        self.firstname = "Administrator"
+                        self.username = "admin"
+                        self.password = "admin".encrypted
+                        self.isAdmin = true
+                        return self.make()
+                    }
+                }
             }
+            return self.connection!.eventLoop.future()
         }
 	}
 }

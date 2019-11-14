@@ -7,6 +7,7 @@
 //
 
 import NIO
+import PostgresNIO
 import ZenPostgres
 
 
@@ -152,8 +153,8 @@ ORDER BY "MovementArticle"."movementArticleId"
             orderby: ["movementDevice", "movementDate", "movementNumber"])
     }
     
-    func get(id: Int) -> EventLoopFuture<Movement> {
-        let item = Movement()
+    func get(id: Int, connection: PostgresConnection) -> EventLoopFuture<Movement> {
+        let item = Movement(connection: connection)
         return item.getAsync(id).map { () -> Movement in
             item
         }
@@ -211,7 +212,10 @@ ORDER BY "MovementArticle"."movementArticleId"
     }
     
     func update(id: Int, item: Movement) -> EventLoopFuture<Bool> {
-        return get(id: id).flatMap { current -> EventLoopFuture<Bool> in
+        let conn = item.connection!
+
+        return self.get(id: id, connection: conn).flatMap { current -> EventLoopFuture<Bool> in
+            current.connection = conn
             
             func save() -> EventLoopFuture<Bool> {
                 current.movementStatus = item.movementStatus
@@ -268,7 +272,7 @@ ORDER BY "MovementArticle"."movementArticleId"
                 }
             }
             
-            return item.connection!.eventLoop.future(true)
+            return conn.eventLoop.future(true)
         }
     }
     
@@ -459,8 +463,9 @@ ORDER BY "MovementArticle"."movementArticleId"
         }
     }
     
-    func clone(sourceId: Int) -> EventLoopFuture<Movement> {
-        return self.get(id: sourceId).flatMap { item -> EventLoopFuture<Movement> in
+    func clone(sourceId: Int, connection: PostgresConnection) -> EventLoopFuture<Movement> {
+        return self.get(id: sourceId, connection: connection).flatMap { item -> EventLoopFuture<Movement> in
+            item.connection = connection
             item.movementId = 0
             item.movementNumber = 0
             item.movementDate = Int.now()

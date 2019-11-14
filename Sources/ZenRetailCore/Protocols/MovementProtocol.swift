@@ -7,6 +7,7 @@
 //
 
 import NIO
+import PostgresNIO
 
 protocol MovementProtocol {
     
@@ -28,7 +29,7 @@ protocol MovementProtocol {
 	
 	func get(registryId: Int) -> EventLoopFuture<[Movement]>
 
-	func get(id: Int) -> EventLoopFuture<Movement>
+	func get(id: Int, connection: PostgresConnection) -> EventLoopFuture<Movement>
     
     func add(item: Movement) -> EventLoopFuture<Int>
     
@@ -36,7 +37,7 @@ protocol MovementProtocol {
     
     func delete(id: Int) -> EventLoopFuture<Bool>
 
-	func clone(sourceId: Int) -> EventLoopFuture<Movement>
+	func clone(sourceId: Int, connection: PostgresConnection) -> EventLoopFuture<Movement>
 	
 	func process(movement: Movement, actionTypes: [ActionType]) -> EventLoopFuture<Void>
 }

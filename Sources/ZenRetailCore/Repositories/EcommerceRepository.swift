@@ -398,69 +398,78 @@ ORDER BY "Product"."productName"
     func addOrder(registryId: Int, order: OrderModel) -> EventLoopFuture<Movement> {
         let repository = ZenIoC.shared.resolve() as MovementProtocol
         
-        return ZenPostgres.pool.connectAsync().flatMapThrowing { conn -> Movement in
-            defer { conn.disconnect() }
+        return ZenPostgres.pool.connectAsync().flatMap { conn -> EventLoopFuture<Movement> in
+           defer { conn.disconnect() }
 
-            let items: [Basket] = try Basket(connection: conn).query(whereclause: "registryId = $1", params: [registryId])
-            
-            if items.count == 0 {
-                throw ZenError.recordNotFound
-            }
-
-            let registry = Registry(connection: conn)
-            try registry.get(registryId)
-            if registry.registryId == 0 {
-                throw ZenError.recordNotFound
-            }
-            
-            var store = Store(connection: conn)
-            let stores: [Store] = try store.query(orderby: ["storeId"], cursor: Cursor(limit: 1, offset: 0))
-            if stores.count == 1 {
-                store = stores.first!
-            }
-            let causals: [Causal] = try Causal(connection: conn).query(
-                whereclause: "causalBooked = $1 AND causalQuantity = $2 AND causalIsPos = $3",
-                params: [1, -1 , true],
-                orderby: ["causalId"],
-                cursor: Cursor(limit: 1, offset: 0)
-            )
-            if causals.count == 0 {
-                throw ZenError.error("no causal found")
-            }
-            
-            let movement = Movement(connection: conn)
-            movement.movementDate = Int.now()
-            movement.movementStore = store
-            movement.movementCausal = causals.first!
-            movement.movementRegistry = registry
-            movement.movementUser = "eCommerce"
-            movement.movementStatus = "New"
-            movement.movementPayment = order.payment
-            movement.movementShipping = order.shipping
-            movement.movementShippingCost = order.shippingCost
-            movement.movementNote = order.paypal.isEmpty ? "" : "paypal authorization: \(order.paypal)"
-            movement.movementDesc = "eCommerce order"
-            
-            try repository.add(item: movement)
-            
-            for item in items {
-                let movementArticle = MovementArticle(connection: conn)
-                movementArticle.movementId = movement.movementId
-                movementArticle.movementArticleBarcode = item.basketBarcode
-                movementArticle.movementArticleProduct = item.basketProduct
-                movementArticle.movementArticlePrice = item.basketPrice
-                movementArticle.movementArticleQuantity = item.basketQuantity
-                movementArticle.movementArticleUpdated = Int.now()
-                try movementArticle.save {
-                    id in movementArticle.movementArticleId = id as! Int
+            let queryItems: EventLoopFuture<[Basket]> = Basket(connection: conn).queryAsync(whereclause: "registryId = $1", params: [registryId])
+            return queryItems.flatMap { items -> EventLoopFuture<Movement> in
+                if items.count == 0 {
+                    return conn.eventLoop.future(error: ZenError.recordNotFound)
                 }
-                try item.delete()
+
+                let registry = Registry(connection: conn)
+                return registry.getAsync(registryId).flatMap { () -> EventLoopFuture<Movement> in
+                    if registry.registryId == 0 {
+                        return conn.eventLoop.future(error: ZenError.error("registry not found"))
+                    }
+
+                    var store = Store(connection: conn)
+                    let queryStore: EventLoopFuture<[Store]> = store.queryAsync(orderby: ["storeId"], cursor: Cursor(limit: 1, offset: 0))
+                    return queryStore.flatMap { stores -> EventLoopFuture<Movement> in
+                        if registry.registryId == 0 {
+                            return conn.eventLoop.future(error: ZenError.error("store not found"))
+                        }
+                        store = stores.first!
+
+                        let queryCausals: EventLoopFuture<[Causal]> = Causal(connection: conn).queryAsync(
+                             whereclause: "causalBooked = $1 AND causalQuantity = $2 AND causalIsPos = $3",
+                             params: [1, -1 , true],
+                             orderby: ["causalId"],
+                             cursor: Cursor(limit: 1, offset: 0)
+                        )
+                        
+                        return queryCausals.flatMap { causals -> EventLoopFuture<Movement> in
+                            if causals.count == 0 {
+                                return conn.eventLoop.future(error: ZenError.error("causal not found"))
+                            }
+                            
+                            let movement = Movement(connection: conn)
+                            movement.movementDate = Int.now()
+                            movement.movementStore = store
+                            movement.movementCausal = causals.first!
+                            movement.movementRegistry = registry
+                            movement.movementUser = "eCommerce"
+                            movement.movementStatus = "New"
+                            movement.movementPayment = order.payment
+                            movement.movementShipping = order.shipping
+                            movement.movementShippingCost = order.shippingCost
+                            movement.movementNote = order.paypal.isEmpty ? "" : "paypal authorization: \(order.paypal)"
+                            movement.movementDesc = "eCommerce order"
+                            
+                            return repository.add(item: movement).flatMap { id -> EventLoopFuture<Movement> in
+                                for item in items {
+                                    let movementArticle = MovementArticle(connection: conn)
+                                    movementArticle.movementId = movement.movementId
+                                    movementArticle.movementArticleBarcode = item.basketBarcode
+                                    movementArticle.movementArticleProduct = item.basketProduct
+                                    movementArticle.movementArticlePrice = item.basketPrice
+                                    movementArticle.movementArticleQuantity = item.basketQuantity
+                                    movementArticle.movementArticleUpdated = Int.now()
+                                    try? movementArticle.save { id in
+                                        movementArticle.movementArticleId = id as! Int
+                                    }
+                                    try? item.delete()
+                                }
+                                
+                                movement.movementStatus = "Processing"
+                                return repository.update(id: movement.movementId, item: movement).map { updated -> Movement in
+                                    return movement
+                                }
+                            }
+                        }
+                    }
+                }
             }
-            
-            movement.movementStatus = "Processing"
-            try repository.update(id: movement.movementId, item: movement)
-            
-            return movement
         }
     }
 

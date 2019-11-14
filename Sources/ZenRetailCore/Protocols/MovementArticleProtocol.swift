@@ -6,17 +6,20 @@
 //
 //
 
+import NIO
+import PostgresNIO
+
 protocol MovementArticleProtocol {
     
-    func get(movementId: Int) throws -> [MovementArticle]
+    func get(movementId: Int, connection: PostgresConnection) -> EventLoopFuture<[MovementArticle]>
     
-    func get(id: Int) throws -> MovementArticle?
+    func get(id: Int, connection: PostgresConnection) -> EventLoopFuture<MovementArticle>
     
-    func add(item: MovementArticle, price: String) throws
+    func add(item: MovementArticle, price: String, connection: PostgresConnection) -> EventLoopFuture<Int>
     
-    func update(id: Int, item: MovementArticle) throws
+    func update(id: Int, item: MovementArticle, connection: PostgresConnection) -> EventLoopFuture<Bool>
     
-    func delete(id: Int) throws
+    func delete(id: Int, connection: PostgresConnection) -> EventLoopFuture<Bool>
 
-	func clone(sourceMovementId: Int, targetMovementId: Int, price: String) throws
+	func clone(sourceMovementId: Int, targetMovementId: Int, price: String, connection: PostgresConnection) -> EventLoopFuture<Void>
 }

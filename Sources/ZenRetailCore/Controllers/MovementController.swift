@@ -7,6 +7,9 @@
 //
 
 import Foundation
+import NIO
+import PostgresNIO
+import ZenPostgres
 import ZenNIO
 
 class MovementController {
@@ -61,15 +64,24 @@ class MovementController {
             return
         }
 
-        self.repository.get(id: id).whenComplete { result in
-            switch result {
-            case .success(let item):
-                let repository = ZenIoC.shared.resolve() as EcommerceProtocol
-                repository.getShippingCost(id: shippingId, registry: item.movementRegistry).whenComplete { res in
-                    switch res {
-                    case .success(let cost):
-                        try! response.send(json: cost)
-                        response.completed()
+        ZenPostgres.pool.connectAsync().whenComplete { res in
+            switch res {
+            case .success(let conn):
+                defer { conn.disconnect() }
+                
+                self.repository.get(id: id, connection: conn).whenComplete { result in
+                    switch result {
+                    case .success(let item):
+                        let repository = ZenIoC.shared.resolve() as EcommerceProtocol
+                        repository.getShippingCost(id: shippingId, registry: item.movementRegistry).whenComplete { res in
+                            switch res {
+                            case .success(let cost):
+                                try! response.send(json: cost)
+                                response.completed()
+                            case .failure(let err):
+                                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
+                            }
+                        }
                     case .failure(let err):
                         response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
                     }
@@ -177,18 +189,27 @@ class MovementController {
             response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter id")
             return
         }
-        
-        self.repository.get(id: id).whenComplete { result in
-            do {
-                switch result {
-                case .success(let item):
-                    try response.send(json: item)
-                    response.completed()
-                case .failure(let err):
-                    throw err
+  
+        ZenPostgres.pool.connectAsync().whenComplete { res in
+            switch res {
+            case .success(let conn):
+                defer { conn.disconnect() }
+                
+                self.repository.get(id: id, connection: conn).whenComplete { result in
+                    do {
+                        switch result {
+                        case .success(let items):
+                            try response.send(json: items)
+                            response.completed()
+                        case .failure(let err):
+                            throw err
+                        }
+                    } catch {
+                        response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
+                    }
                 }
-            } catch {
-                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
     }
@@ -215,51 +236,100 @@ class MovementController {
 	}
 	
 	func movementHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        request.eventLoop.execute {
-            if !request.isAuthenticated() {
-                response.completed(.unauthorized)
-                return
-            }
+        guard let data = request.bodyData,
+            let item = try? JSONDecoder().decode(Movement.self, from: data) else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+        }
 
-            do {
-                guard let data = request.bodyData else {
-                    throw HttpError.badRequest
-                }
-                let item = try JSONDecoder().decode(Movement.self, from: data)
-                try self.repository.add(item: item)
-                try response.send(json: item)
-                
-                if item._items.count > 0 {
-                    var amount = 0.0
-                    let price = item.movementCausal.causalQuantity > 0 ? "purchase" : "selling"
-                    for row in item._items {
-                        row.movementId = item.movementId
-                        try self.articleRepository.add(item: row, price: price)
-                        amount += row._movementArticleAmount
+        ZenPostgres.pool.connectAsync().whenComplete { res in
+            switch res {
+            case .success(let conn):
+                defer { conn.disconnect() }
+                item.connection = conn
+
+                self.repository.add(item: item).whenComplete { result in
+                    switch result {
+                    case .success(let id):
+                        item.movementId = id
+                        
+                        self.saveArticles(item: item, connection: conn).whenComplete { res in
+                           do {
+                                switch res {
+                                case .success(_):
+                                   try response.send(json: item)
+                                   response.completed(.created)
+                                case .failure(let err):
+                                   throw err
+                                }
+                            } catch {
+                                response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
+                            }
+                        }
+                    case .failure(let err):
+                        response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
                     }
-                    
-                    if item.movementCausal.causalBooked == 1 && item.movementCausal.causalQuantity == -1 {
-                        item.movementStatus = "Processing"
-                        try self.repository.process(movement: item, actionTypes: [.Booking])
-                    } else {
-                        item.movementStatus = "Completed"
-                        if item.movementCausal.causalBooked != 0 {
-                            try self.repository.process(movement: item, actionTypes: [.Booking])
-                        } else if item.movementCausal.causalQuantity != 0 {
-                            try self.repository.process(movement: item, actionTypes: [.Delivering, .Stoking])
+                }
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
+            }
+        }
+    }
+    
+    func saveArticles(item: Movement, connection: PostgresConnection) -> EventLoopFuture<Bool> {
+        var amount = 0.0
+        let promise = connection.eventLoop.makePromise(of: Void.self)
+
+        func saveMovement() -> EventLoopFuture<Bool> {
+            return item.updateAsync(
+                cols: ["movementAmount", "movementStatus"],
+                params: [amount, item.movementStatus],
+                id: "movementId",
+                value: item.movementId)
+            .map { count -> Bool in
+                count > 0
+            }
+        }
+        
+        if item._items.count == 0 {
+            promise.succeed(())
+        } else {
+            let price = item.movementCausal.causalQuantity > 0 ? "purchase" : "selling"
+            let count = item._items.count - 1
+            for (i, row) in item._items.enumerated() {
+                row.movementId = item.movementId
+                amount += row._movementArticleAmount
+                self.articleRepository.add(item: row, price: price, connection: connection).whenComplete { result in
+                    if i == count {
+                        switch result {
+                        case .success(_):
+                            promise.succeed(())
+                        case .failure(let err):
+                            promise.fail(err)
                         }
                     }
-
-                    _ = try item.update(
-                        cols: ["movementAmount", "movementStatus"],
-                        params: [amount, item.movementStatus],
-                        id: "movementId",
-                        value: item.movementId)
                 }
-                
-                response.completed(.created)
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            }
+        }
+        
+        return promise.futureResult.flatMap { () -> EventLoopFuture<Bool> in
+            if item.movementCausal.causalBooked == 1 && item.movementCausal.causalQuantity == -1 {
+                item.movementStatus = "Processing"
+                return self.repository.process(movement: item, actionTypes: [.Booking]).flatMap { () -> EventLoopFuture<Bool> in
+                    saveMovement()
+                }
+            } else {
+                item.movementStatus = "Completed"
+                if item.movementCausal.causalBooked != 0 {
+                    return self.repository.process(movement: item, actionTypes: [.Booking]).flatMap { () -> EventLoopFuture<Bool> in
+                        saveMovement()
+                    }
+                } else if item.movementCausal.causalQuantity != 0 {
+                    return self.repository.process(movement: item, actionTypes: [.Delivering, .Stoking]).flatMap { () -> EventLoopFuture<Bool> in
+                        saveMovement()
+                    }
+                }
+                return connection.eventLoop.future(false)
             }
         }
     }
@@ -270,19 +340,34 @@ class MovementController {
             return
         }
 
-        self.repository.clone(sourceId: id).whenComplete { result in
-            do {
-                switch result {
-                case .success(let item):
-                    let price = item.movementCausal.causalQuantity > 0 ? "purchase" : "selling"
-                    try self.articleRepository.clone(sourceMovementId: id, targetMovementId: item.movementId, price: price)
-                    try response.send(json: item)
-                    response.completed(.created)
-                case .failure(let err):
-                    throw err
+        ZenPostgres.pool.connectAsync().whenComplete { res in
+            switch res {
+            case .success(let conn):
+                defer { conn.disconnect() }
+                
+                self.repository.clone(sourceId: id, connection: conn).whenComplete { result in
+                    switch result {
+                    case .success(let item):
+                        let price = item.movementCausal.causalQuantity > 0 ? "purchase" : "selling"
+                        self.articleRepository.clone(sourceMovementId: id, targetMovementId: item.movementId, price: price, connection: conn).whenComplete { r in
+                            do {
+                                switch r {
+                                case .success(_):
+                                    try response.send(json: item)
+                                    response.completed(.created)
+                                case .failure(let err):
+                                    throw err
+                                }
+                            } catch {
+                                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+                            }
+                        }
+                    case .failure(let err):
+                        response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
+                    }
                 }
-            } catch {
-                response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
+            case .failure(let err):
+                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }
 	}

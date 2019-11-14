@@ -58,25 +58,31 @@ class TagGroup: PostgresTable, Codable {
         try container.encodeIfPresent(_values, forKey: ._values)
     }
 
-    func setupMarketplace() throws {
-        let rows: [TagGroup] = try self.query(
+    func setupMarketplace() -> EventLoopFuture<Void> {
+        let query: EventLoopFuture<[TagGroup]> = self.queryAsync(
             whereclause: "tagGroupName = $1",
             params: ["Marketplace"],
             cursor: Cursor(limit: 1, offset: 0)
         )
-        if rows.count == 0 {
-            self.tagGroupId = 0
-            self.tagGroupName = "Marketplace"
-            try self.save {
-                id in self.tagGroupId = id as! Int
+        
+        return query.flatMap { rows -> EventLoopFuture<Void> in
+            if rows.count == 0 {
+                self.tagGroupId = 0
+                self.tagGroupName = "Marketplace"
+                return self.saveAsync().flatMap { id -> EventLoopFuture<Void> in
+                    self.tagGroupId = id as! Int
+
+                    let tagValue = TagValue(connection: self.connection!)
+                    tagValue.tagGroupId = self.tagGroupId
+                    tagValue.tagValueCode = "MWS"
+                    tagValue.tagValueName = "Amazon"
+                    return tagValue.saveAsync().map { id -> Void in
+                        tagValue.tagValueId = id as! Int
+                        return ()
+                    }
+                }
             }
-            let tagValue = TagValue(connection: connection!)
-            tagValue.tagGroupId = self.tagGroupId
-            tagValue.tagValueCode = "MWS"
-            tagValue.tagValueName = "Amazon"
-            try tagValue.save() {
-                id in tagValue.tagValueId = id as! Int
-            }
+            return self.connection!.eventLoop.future()
         }
     }
 }

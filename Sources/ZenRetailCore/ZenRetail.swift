@@ -34,6 +34,7 @@ public class ZenRetail {
         ZenRetail.zenNIO.addCORS()
         ZenRetail.zenNIO.addWebroot(path: ZenRetail.config.documentRoot)
         ZenRetail.zenNIO.addAuthentication(handler: { (username, password) -> (String?) in
+            let promise = ZenRetail.zenNIO.eventLoopGroup.next().makePromise(of: String?)
             do {
                 let user = User()
                 try user.get(usr: username, pwd: password)
@@ -46,6 +47,9 @@ public class ZenRetail {
                 } catch {
                     return nil
                 }
+            }
+            promise.futureResult.whenComplete { _ in
+                <#code#>
             }
         })
 
@@ -168,7 +172,7 @@ public class ZenRetail {
         //try file.importStaticFiles()
         let user = User(connection: connection)
         try user.create()
-        try user.setAdmin()
+        user.setAdmin().whenComplete { _ in }
         let causal = Causal(connection: connection)
         try causal.create()
         try causal.setupDefaults()

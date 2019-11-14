@@ -6,80 +6,96 @@
 //
 //
 
+import NIO
 import PostgresNIO
 import ZenPostgres
 
 
 struct MovementArticleRepository : MovementArticleProtocol {
 
-    func get(movementId: Int) throws -> [MovementArticle] {
-        let items = MovementArticle()
-        return try items.query(
+    func get(movementId: Int, connection: PostgresConnection) -> EventLoopFuture<[MovementArticle]> {
+        return MovementArticle(connection: connection).queryAsync(
             whereclause: "movementId = $1",
             params: [movementId],
             orderby: ["movementArticleId"]
         )
     }
     
-    func get(id: Int) throws -> MovementArticle? {
-        let item = MovementArticle()
-		try item.get(id)
-		
-        return item
+    func get(id: Int, connection: PostgresConnection) -> EventLoopFuture<MovementArticle> {
+        let item = MovementArticle(connection: connection)
+        return item.getAsync(id).map { () -> MovementArticle in
+            item
+        }
     }
     
-    func add(item: MovementArticle, price: String) throws {
-        let connection = try ZenPostgres.pool.connect()
-        defer { connection.disconnect() }
-
+    func add(item: MovementArticle, price: String, connection: PostgresConnection) -> EventLoopFuture<Int> {
         let product = Product(connection: connection)
-        try product.get(barcode: item.movementArticleBarcode)
-        if product.productId == 0 {
-            throw ZenError.recordNotFound
-        }
         
-        if price == "selling" {
-            if let discount = product.productDiscount, discount.discountStartAt < Int.now()
-                && discount.discountFinishAt > Int.now() {
-                item.movementArticlePrice = discount.discountPrice
-            } else {
-                item.movementArticlePrice = product.productPrice.selling
+        return product.getAsync(barcode: item.movementArticleBarcode).flatMap { () -> EventLoopFuture<Int> in
+            if product.productId == 0 {
+                return connection.eventLoop.future(error: ZenError.recordNotFound)
+            }
+            
+            if price == "selling" {
+                if let discount = product.productDiscount, discount.discountStartAt < Int.now()
+                    && discount.discountFinishAt > Int.now() {
+                    item.movementArticlePrice = discount.discountPrice
+                } else {
+                    item.movementArticlePrice = product.productPrice.selling
+                }
+            }
+            if price == "purchase" {
+                item.movementArticlePrice = product.productPrice.purchase
+            }
+            
+            item.movementArticleProduct = product
+            item.movementArticleUpdated = Int.now()
+            item.connection = connection
+            
+            return item.saveAsync().map { id -> Int in
+                item.movementArticleId = id as! Int
+                return item.movementArticleId
             }
         }
-        if price == "purchase" {
-            item.movementArticlePrice = product.productPrice.purchase
-        }
-        
-        item.movementArticleProduct = product
-        item.movementArticleUpdated = Int.now()
-        try item.save {
-            id in item.movementArticleId = id as! Int
+    }
+    
+    func update(id: Int, item: MovementArticle, connection: PostgresConnection) -> EventLoopFuture<Bool> {
+        item.connection = connection
+        return item.updateAsync(
+            cols: ["movementArticleQuantity", "movementArticleUpdated"],
+            params: [item.movementArticleQuantity],
+            id: "movementArticleId",
+            value: id
+        ).map { count -> Bool in
+            count > 0
         }
     }
     
-    func update(id: Int, item: MovementArticle) throws {
-        
-        guard let current = try get(id: id) else {
-            throw ZenError.recordNotFound
-        }
-        
-        current.movementArticleQuantity = item.movementArticleQuantity
-        current.movementArticleUpdated = Int.now()
-        try current.save()
-    }
-    
-    func delete(id: Int) throws {
-        let item = MovementArticle()
-        item.movementArticleId = id
-        try item.delete()
+    func delete(id: Int, connection: PostgresConnection) -> EventLoopFuture<Bool> {
+        return MovementArticle(connection: connection).deleteAsync(id)
     }
 	
-	func clone(sourceMovementId: Int, targetMovementId: Int, price: String) throws {
-        let items = try self.get(movementId: sourceMovementId)
-		for item in items {
-			item.movementArticleId = 0
-			item.movementId = targetMovementId
-            try self.add(item: item, price: price)
-		}
+	func clone(sourceMovementId: Int, targetMovementId: Int, price: String, connection: PostgresConnection) -> EventLoopFuture<Void> {
+        return self.get(movementId: sourceMovementId, connection: connection).flatMap { items -> EventLoopFuture<Void> in
+            let promise = connection.eventLoop.makePromise(of: Void.self)
+            
+            let count = items.count - 1
+            for (i, item) in items.enumerated() {
+                item.movementArticleId = 0
+                item.movementId = targetMovementId
+                self.add(item: item, price: price, connection: connection).whenComplete { result in
+                    if i == count {
+                        switch result {
+                        case .success(_):
+                            promise.succeed(())
+                        case .failure(let err):
+                            promise.fail(err)
+                        }
+                    }
+                }
+            }
+            
+            return promise.futureResult
+        }
 	}
 }
