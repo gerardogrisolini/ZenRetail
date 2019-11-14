@@ -6,6 +6,8 @@
 //
 //
 
+import NIO
+
 protocol MovementProtocol {
     
     func getPayments() -> [Item]
@@ -14,27 +16,27 @@ protocol MovementProtocol {
 
     func getStatus() -> [ItemValue]
 
-	func getAll() throws -> [Movement]
+	func getAll() -> EventLoopFuture<[Movement]>
 	
-    func getAll(device: String, user: String, date: Int) throws -> [Movement]
+    func getAll(device: String, user: String, date: Int) -> EventLoopFuture<[Movement]>
     
-    func getWarehouse(date: Int, store: Int) throws -> [Whouse] 
+    func getWarehouse(date: Int, store: Int) -> EventLoopFuture<[Whouse]>
     
-    func getSales(period: Period) throws -> [MovementArticle]
+    func getSales(period: Period) -> EventLoopFuture<[MovementArticle]>
 	
-	func getReceipted(period: Period) throws -> [Movement]
+	func getReceipted(period: Period) -> EventLoopFuture<[Movement]>
 	
-	func get(registryId: Int) throws -> [Movement]
+	func get(registryId: Int) -> EventLoopFuture<[Movement]>
 
-	func get(id: Int) throws -> Movement?
+	func get(id: Int) throws -> EventLoopFuture<Movement>
     
-    func add(item: Movement) throws
+    func add(item: Movement) -> EventLoopFuture<Int>
     
-    func update(id: Int, item: Movement) throws
+    func update(id: Int, item: Movement) -> EventLoopFuture<Bool>
     
-    func delete(id: Int) throws
+    func delete(id: Int) -> EventLoopFuture<Bool>
 
-	func clone(sourceId: Int) throws -> Movement
+	func clone(sourceId: Int) -> EventLoopFuture<Movement>
 	
-	func process(movement: Movement, actionTypes: [ActionType]) throws
+	func process(movement: Movement, actionTypes: [ActionType]) -> EventLoopFuture<Void>
 }

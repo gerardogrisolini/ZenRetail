@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import NIO
 
 struct StatisticRepository : StatisticProtocol {
     
@@ -16,7 +17,7 @@ struct StatisticRepository : StatisticProtocol {
         "lightskyblue", "lightsalmon", "lightslategray", "lightseagreen", "lightgray"
     ];
     
-    func getDevices() throws -> Statistics {
+    func getDevices() -> EventLoopFuture<Statistics> {
         let sql = """
 SELECT MAX(a."movementId") AS id, a."movementDevice" AS label, SUM(b."movementArticleQuantity" * b."movementArticlePrice") AS value
 FROM "Movement" AS a
@@ -25,11 +26,13 @@ WHERE a."idInvoice" > 0 OR a."movementCausal" ->> 'causalIsPos' = 'true' AND a."
 GROUP BY a."movementDevice"
 ORDER BY a."movementDevice"
 """
-        let rows: [StatisticItem] = try StatisticItem().query(sql: sql)
-        return self.toResult(items: rows)
+        let query: EventLoopFuture<[StatisticItem]> = StatisticItem().queryAsync(sql: sql)
+        return query.map { rows -> Statistics in
+            return self.toResult(items: rows)
+        }
     }
     
-    private func getData(year: Int) throws -> [MovementArticle] {
+    private func getData(year: Int) -> EventLoopFuture<[MovementArticle]> {
         let start = "\(year)-01-01".DateToInt()
         let finish = "\(year)-12-31".DateToInt()
         let sql = """
@@ -40,71 +43,77 @@ WHERE a."movementDate" >= \(start) AND a."movementDate" <= \(finish)
 AND (a."idInvoice" > 0 OR a."movementCausal" ->> 'causalIsPos' = 'true')
 AND a."movementStatus" = 'Completed'
 """
-        return try MovementArticle().query(sql: sql)
+        return MovementArticle().queryAsync(sql: sql)
     }
     
-    func getCategories(year: Int) throws -> Statistics {
-        var data = [StatisticItem]()
-        let movements = Dictionary(grouping: try getData(year: year)) {
-            $0.movementArticleProduct._categories.first?._category.categoryName ?? "None"
+    func getCategories(year: Int) -> EventLoopFuture<Statistics> {
+        return getData(year: year).map { rows -> Statistics in
+            var data = [StatisticItem]()
+            let movements = Dictionary(grouping: rows) {
+                $0.movementArticleProduct._categories.first?._category.categoryName ?? "None"
+            }
+            for movement in movements {
+                let item = StatisticItem()
+                item.label = movement.key
+                item.value = movement.value.map { $0.movementArticleQuantity * $0.movementArticlePrice }.reduce(0, +)
+                data.append(item)
+            }
+            let filtered = Array(data.sorted(by: { $0.value > $1.value }).prefix(15))
+            
+            return self.toResult(items: filtered)
         }
-        for movement in movements {
-            let item = StatisticItem()
-            item.label = movement.key
-            item.value = movement.value.map { $0.movementArticleQuantity * $0.movementArticlePrice }.reduce(0, +)
-            data.append(item)
-        }
-        let filtered = Array(data.sorted(by: { $0.value > $1.value }).prefix(15))
-        
-        return self.toResult(items: filtered)
     }
     
-    func getProducts(year: Int) throws -> Statistics {
-        var data = [StatisticItem]()
-        let movements = Dictionary(grouping: try getData(year: year)) {
-            $0.movementArticleProduct.productName
+    func getProducts(year: Int) -> EventLoopFuture<Statistics> {
+        return getData(year: year).map { rows -> Statistics in
+            var data = [StatisticItem]()
+            let movements = Dictionary(grouping: rows) {
+                $0.movementArticleProduct.productName
+            }
+            for movement in movements {
+                let item = StatisticItem()
+                item.label = movement.key
+                item.value = movement.value.map { $0.movementArticleQuantity * $0.movementArticlePrice }.reduce(0, +)
+                data.append(item)
+            }
+            let filtered = Array(data.sorted(by: { $0.value > $1.value }).prefix(15))
+            
+            return self.toResult(items: filtered)
         }
-        for movement in movements {
-            let item = StatisticItem()
-            item.label = movement.key
-            item.value = movement.value.map { $0.movementArticleQuantity * $0.movementArticlePrice }.reduce(0, +)
-            data.append(item)
-        }
-        let filtered = Array(data.sorted(by: { $0.value > $1.value }).prefix(15))
-        
-        return self.toResult(items: filtered)
     }
     
-    func getCategoriesForMonth(year: Int) throws -> Statistics {
-        var data = [StatisticItem]()
-        let movements = try getData(year: year)
-        let calendar = Calendar.current
-        for movement in movements {
-            let item = StatisticItem()
-            let date = Date(timeIntervalSinceReferenceDate: TimeInterval(movement.movementArticleUpdated))
-            item.id = calendar.component(.month, from: date)
-            item.label = movement.movementArticleProduct._categories.first?._category.categoryName ?? "None"
-            item.value = movement.movementArticleQuantity * movement.movementArticlePrice
-            data.append(item)
+    func getCategoriesForMonth(year: Int) -> EventLoopFuture<Statistics> {
+        return getData(year: year).map { movements -> Statistics in
+            var data = [StatisticItem]()
+            let calendar = Calendar.current
+            for movement in movements {
+                let item = StatisticItem()
+                let date = Date(timeIntervalSinceReferenceDate: TimeInterval(movement.movementArticleUpdated))
+                item.id = calendar.component(.month, from: date)
+                item.label = movement.movementArticleProduct._categories.first?._category.categoryName ?? "None"
+                item.value = movement.movementArticleQuantity * movement.movementArticlePrice
+                data.append(item)
+            }
+            
+            return self.toResultForMonth(items: self.toGrouped(items: data))
         }
-        
-        return toResultForMonth(items: toGrouped(items: data))
     }
     
-    func getProductsForMonth(year: Int) throws -> Statistics {
-        var data = [StatisticItem]()
-        let movements = try getData(year: year)
-        let calendar = Calendar.current
-        for movement in movements {
-            let item = StatisticItem()
-            let date = Date(timeIntervalSinceReferenceDate: TimeInterval(movement.movementArticleUpdated))
-            item.id = calendar.component(.month, from: date)
-            item.label = movement.movementArticleProduct.productName
-            item.value = movement.movementArticleQuantity * movement.movementArticlePrice
-            data.append(item)
+    func getProductsForMonth(year: Int) -> EventLoopFuture<Statistics> {
+        return getData(year: year).map { movements -> Statistics in
+            var data = [StatisticItem]()
+            let calendar = Calendar.current
+            for movement in movements {
+                let item = StatisticItem()
+                let date = Date(timeIntervalSinceReferenceDate: TimeInterval(movement.movementArticleUpdated))
+                item.id = calendar.component(.month, from: date)
+                item.label = movement.movementArticleProduct.productName
+                item.value = movement.movementArticleQuantity * movement.movementArticlePrice
+                data.append(item)
+            }
+            
+            return self.toResultForMonth(items: self.toGrouped(items: data))
         }
-        
-        return toResultForMonth(items: toGrouped(items: data))
     }
     
     private func toResult(items: [StatisticItem]) -> Statistics {

@@ -6,7 +6,7 @@
 //
 //
 
-import PostgresNIO
+import NIO
 import ZenPostgres
 
 
@@ -46,29 +46,47 @@ struct MovementRepository : MovementProtocol {
         return status
     }
     
-    func getAll() throws -> [Movement] {
-        return try Movement().query(cursor: Cursor(limit: 1000, offset: 0))
+    func getAll() -> EventLoopFuture<[Movement]> {
+        return Movement().queryAsync(cursor: Cursor(limit: 1000, offset: 0))
     }
     
-    func getAll(device: String, user: String, date: Int) throws -> [Movement] {
-        let rows: [Movement] = try Movement().query(
-            whereclause: "movementDevice = $1 AND movementUser = $2 AND movementUpdated > $3",
-            params: [device, user, date]
+    func getAll(device: String, user: String, date: Int) -> EventLoopFuture<[Movement]> {
+
+        let movement = Movement()
+        let sql = movement.querySQL(
+            orderby: ["Movement.movementId", "MovementArticle.movementArticleId"],
+            joins: [
+                DataSourceJoin(
+                    table: "MovementArticle",
+                    onCondition: "ProductAttribute.movementId = MovementArticle.movementId",
+                    direction: .LEFT
+                )
+            ]
         )
-        for row in rows {
-            let item = MovementArticle()
-            row._items = try item.query(
-                whereclause: "movementId = $1",
-                params: [row.movementId],
-                orderby: ["movementArticleId"]
-            )
+        
+        return movement.sqlRowsAsync(sql).map { rows -> [Movement] in
+            var movements = [Movement]()
+            
+            let groups = Dictionary(grouping: rows) { row in
+                row.column("movementId")!.int!
+            }
+            
+            for group in groups.sorted(by: { $0.key < $1.key }) {
+                let mov = Movement()
+                mov.decode(row: group.value.first!)
+                for att in group.value {
+                    let a = MovementArticle()
+                    a.decode(row: att)
+                    mov._items.append(a)
+                }
+                movements.append(mov)
+            }
+            
+            return movements
         }
-        return rows
     }
 
-    func getWarehouse(date: Int, store: Int) throws -> [Whouse] {
-        var whouses = [Whouse]()
-        
+    func getWarehouse(date: Int, store: Int) -> EventLoopFuture<[Whouse]> {
         let store = store > 0 ? "AND a.\"movementStore\" ->> 'storeId' = '\(store)'" : ""
         let sql = """
 SELECT CAST (b."movementArticleProduct" ->> 'productId' AS INTEGER) AS id,
@@ -84,13 +102,12 @@ GROUP BY id, sku, name, oper
 ORDER BY name, oper
 """
         let article = Article()
-        let items = try article.sqlRows(sql)
-
-        var whouse = Whouse()
-        if items.count > 0 {
+        return article.sqlRowsAsync(sql).map { items -> [Whouse] in
+            var whouses = [Whouse]()
+            var whouse = Whouse()
             for i in 0...items.count - 1 {
-                
                 let item = items[i]
+                
                 whouse.id = item.column("id")?.int ?? 0
                 whouse.sku = item.column("sku")?.string ?? ""
                 whouse.name = item.column("name")?.string ?? ""
@@ -108,12 +125,12 @@ ORDER BY name, oper
                     whouse = Whouse()
                 }
             }
+            
+            return whouses
         }
-        
-        return whouses
     }
 
-    func getSales(period: Period) throws -> [MovementArticle] {
+    func getSales(period: Period) -> EventLoopFuture<[MovementArticle]> {
         let items = MovementArticle()
         let sql = """
 SELECT "MovementArticle".*, "Movement".*
@@ -125,32 +142,30 @@ AND ("Movement"."idInvoice" > '0' OR "Movement"."movementCausal" ->> 'causalIsPo
 AND "Movement"."movementStatus" = 'Completed'
 ORDER BY "MovementArticle"."movementArticleId"
 """
-        return try items.query(sql: sql)
+        return items.queryAsync(sql: sql)
     }
     
-    func getReceipted(period: Period) throws -> [Movement] {
-        let items = Movement()
-        return try items.query(
+    func getReceipted(period: Period) -> EventLoopFuture<[Movement]> {
+        return Movement().queryAsync(
             whereclause: "movementDate >= $1 AND movementDate <= $2 AND movementCausal ->> $3 = $4 AND movementStatus = $5",
             params: [period.start, period.finish, "causalIsPos", true, "Completed"],
             orderby: ["movementDevice", "movementDate", "movementNumber"])
     }
     
-    func get(id: Int) throws -> Movement? {
+    func get(id: Int) -> EventLoopFuture<Movement> {
         let item = Movement()
-        try item.get(id)
-        
-        return item
+        return item.getAsync(id).map { () -> Movement in
+            item
+        }
     }
     
-    func get(registryId: Int) throws -> [Movement] {
-        let items = Movement()
-        return try items.query(whereclause: "movementRegistry ->> $1 = $2 AND idInvoice = $3 AND movementStatus = $4",
+    func get(registryId: Int) -> EventLoopFuture<[Movement]> {
+        return Movement().queryAsync(whereclause: "movementRegistry ->> $1 = $2 AND idInvoice = $3 AND movementStatus = $4",
                         params: ["registryId", registryId, 0, "Completed"],
                         orderby: ["movementId"])
     }
     
-    func add(item: Movement) throws {
+    func add(item: Movement) -> EventLoopFuture<Int> {
         if item.movementNumber == 0 {
             try item.newNumber()
         }
@@ -179,7 +194,7 @@ ORDER BY "MovementArticle"."movementArticleId"
         }
     }
     
-    func update(id: Int, item: Movement) throws {
+    func update(id: Int, item: Movement) -> EventLoopFuture<Bool> {
         guard let current = try get(id: id) else {
             throw ZenError.recordNotFound
         }
@@ -223,15 +238,16 @@ ORDER BY "MovementArticle"."movementArticleId"
         try current.save()
     }
     
-    func delete(id: Int) throws {
-        let item = Movement()
-        item.movementId = id
-        try item.delete()
-        
-        _ = try MovementArticle().delete(key: "movementId", value: id)
+    func delete(id: Int) -> EventLoopFuture<Bool> {
+        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Bool> in
+            defer { connection.disconnect() }
+            return MovementArticle(connection: connection).deleteAsync(key: "movementId", value: id).flatMap { id -> EventLoopFuture<Bool> in
+                return Movement(connection: connection).deleteAsync(id)
+            }
+        }
     }
     
-    fileprivate func makeBarcodesForTags(_ movement: Movement, _ item: MovementArticle, _ article: Article, _ company: Company) throws {
+    fileprivate func makeBarcodesForTags(_ movement: Movement, _ item: MovementArticle, _ article: Article, _ company: Company) -> EventLoopFuture<Void> {
         
         if movement.movementTags.count == 0 { return }
             
@@ -280,7 +296,7 @@ ORDER BY "MovementArticle"."movementArticleId"
         try article.save()
    }
     
-    func process(movement: Movement, actionTypes: [ActionType]) throws {
+    func process(movement: Movement, actionTypes: [ActionType]) -> EventLoopFuture<Void> {
         
         let storeId = movement.movementStore.storeId
         let quantity = movement.movementCausal.causalQuantity
@@ -347,7 +363,7 @@ ORDER BY "MovementArticle"."movementArticleId"
         try company.save()
     }
     
-    func clone(sourceId: Int) throws -> Movement {
+    func clone(sourceId: Int) -> EventLoopFuture<Movement> {
         let item = (try self.get(id: sourceId))!
         item.movementId = 0
         item.movementNumber = 0
