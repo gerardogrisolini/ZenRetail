@@ -54,32 +54,43 @@ class Attribute: PostgresTable, Codable {
         try container.encode(attributeTranslates, forKey: .attributeTranslates)
     }
 
-    fileprivate func addAttribute(name: String) throws {
+    fileprivate func addAttribute(name: String) -> EventLoopFuture<Int> {
         let item = Attribute(connection: connection!)
         item.attributeName = name
         item.attributeCreated = Int.now()
         item.attributeUpdated = Int.now()
-        try item.save { id in
+        return item.saveAsync().flatMap { id -> EventLoopFuture<Int> in
             item.attributeId = id as! Int
-        }
-        
-        if name == "None" {
-            let value = AttributeValue(connection: connection!)
-            value.attributeId = item.attributeId
-            value.attributeValueName = name
-            value.attributeValueCreated = Int.now()
-            value.attributeValueUpdated = Int.now()
-            try value.save()
+            
+            if name == "None" {
+                let value = AttributeValue(connection: self.connection!)
+                value.attributeId = item.attributeId
+                value.attributeValueName = name
+                value.attributeValueCreated = Int.now()
+                value.attributeValueUpdated = Int.now()
+                return value.saveAsync().map { id -> Int in
+                    value.attributeValueId = id as! Int
+                    return item.attributeId
+                }
+            }
+            
+            return self.connection!.eventLoop.future(item.attributeId)
         }
     }
 
-    func setupMarketplace() throws {
-        let rows: [Attribute] = try query(cursor: Cursor(limit: 1, offset: 0))
-        if rows.count == 0 {
-            try addAttribute(name: "None")
-            try addAttribute(name: "Material")
-            try addAttribute(name: "Color")
-            try addAttribute(name: "Size")
+    func setupMarketplace() -> EventLoopFuture<Void> {
+        let query: EventLoopFuture<[Attribute]> = queryAsync(cursor: Cursor(limit: 1, offset: 0))
+        return query.flatMap { rows -> EventLoopFuture<Void> in
+            if rows.count == 0 {
+                return self.addAttribute(name: "None").flatMap { _ -> EventLoopFuture<Void> in
+                    return self.addAttribute(name: "Material").flatMap { _ -> EventLoopFuture<Void> in
+                        return self.addAttribute(name: "Color").flatMap { _ -> EventLoopFuture<Void> in
+                            return self.addAttribute(name: "Size").map { _ -> Void in }
+                        }
+                    }
+                }
+            }
+            return self.connection!.eventLoop.future()
         }
     }
 }

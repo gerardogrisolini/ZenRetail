@@ -183,7 +183,7 @@ public class ZenRetail {
         try attribute.createAsync().wait()
         let attributeValue = AttributeValue(connection: connection)
         try attributeValue.createAsync().wait()
-        try attribute.setupMarketplace()
+        try attribute.setupMarketplace().wait()
         let tagGroup = TagGroup(connection: connection)
         try tagGroup.createAsync().wait()
         let tagValue = TagValue(connection: connection)
