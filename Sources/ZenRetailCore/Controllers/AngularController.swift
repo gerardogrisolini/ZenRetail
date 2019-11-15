@@ -11,10 +11,10 @@ import ZenNIO
 
 public class AngularController {
 
-    private let repository: EcommerceProtocol
+//    private let repository: EcommerceProtocol
 
     init(router: Router) {
-        self.repository = ZenIoC.shared.resolve() as EcommerceProtocol
+//        self.repository = ZenIoC.shared.resolve() as EcommerceProtocol
 
         router.get("/", handler: angularHandler(webapi: false))
         router.get("/home", handler: angularHandler(webapi: false))

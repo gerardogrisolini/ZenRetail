@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import NIO
 import ZenNIO
 import ZenMWS
 import CryptoSwift
@@ -143,18 +144,19 @@ extension Array where Element: Comparable {
     }
 }
 
-extension HttpRequest {
-    func isAuthenticated() -> Bool {
-        if self.isAuthenticated { return true }
-        let info = self.authorization.replacingOccurrences(of: "Basic ", with: "").split(separator: "#")
-        let deviceName = info.first?.description ?? ""
-        let deviceToken = info.last?.description ?? ""
-        
-        let device = Device()
-        try? device.get(token: deviceToken, name: deviceName)
-        return device.idStore > 0
-    }
-}
+//extension HttpRequest {
+//    func isAuthenticated() -> EventLoopFuture<Bool> {
+//        if self.isAuthenticated { return ZenRetail.zenNIO.eventLoopGroup.next().future(true }
+//        let info = self.authorization.replacingOccurrences(of: "Basic ", with: "").split(separator: "#")
+//        let deviceName = info.first?.description ?? ""
+//        let deviceToken = info.last?.description ?? ""
+//        
+//        let device = Device()
+//        return device.get(token: deviceToken, name: deviceName).map { () -> Bool in
+//            return device.idStore > 0
+//        }
+//    }
+//}
 
 extension HttpResponse {
     struct JsonError: Codable {

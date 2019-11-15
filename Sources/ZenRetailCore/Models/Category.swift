@@ -84,11 +84,11 @@ class Category: PostgresTable, Codable {
         }
         item.categoryCreated = Int.now()
         item.categoryUpdated = Int.now()
-        _ = try item.save()
+        _ = try item.saveAsync().wait()
     }
     
     func setupMarketplace() throws {
-        let rows: [Category] = try query(cursor: Cursor(limit: 1, offset: 0))
+        let rows: [Category] = try queryAsync(cursor: Cursor(limit: 1, offset: 0)).wait()
         if rows.count == 0 {
             for item in ClothingType.allCases {
                 if item != .jewelry {
