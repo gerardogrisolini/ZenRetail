@@ -134,7 +134,7 @@ class Product: PostgresTable, PostgresJson {
     }
 
     func rowsAsync(sql: String, barcodes: Bool, storeIds: String = "0") -> EventLoopFuture<[Product]> {
-        return ZenPostgres.pool.connectAsync().flatMap { conn -> EventLoopFuture<[Product]> in
+        return ZenPostgres.pool.connect().flatMap { conn -> EventLoopFuture<[Product]> in
             defer { conn.disconnect() }
             self.connection = conn
             
@@ -312,7 +312,7 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
         self._articles = [article]
 	}
 
-    override func getAsync(_ id: Int) -> EventLoopFuture<Void> {
+    override func get(_ id: Int) -> EventLoopFuture<Void> {
         let brandJoin = DataSourceJoin(
             table: "Brand",
             onCondition: "Product.brandId = Brand.brandId",
@@ -339,7 +339,7 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
             ]
         )
         
-        return ZenPostgres.pool.connectAsync().flatMap { conn -> EventLoopFuture<Void> in
+        return ZenPostgres.pool.connect().flatMap { conn -> EventLoopFuture<Void> in
             defer { conn.disconnect() }
             self.connection = conn
             
@@ -374,7 +374,7 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
         }
     }
     
-    func getAsync(barcode: String) -> EventLoopFuture<Void> {
+    func get(barcode: String) -> EventLoopFuture<Void> {
         let brandJoin = DataSourceJoin(
             table: "Brand",
             onCondition: "Product.brandId = Brand.brandId",
@@ -417,7 +417,7 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
             ])
 
         
-        return ZenPostgres.pool.connectAsync().flatMap { conn -> EventLoopFuture<Void> in
+        return ZenPostgres.pool.connect().flatMap { conn -> EventLoopFuture<Void> in
             defer { conn.disconnect() }
             self.connection = conn
             

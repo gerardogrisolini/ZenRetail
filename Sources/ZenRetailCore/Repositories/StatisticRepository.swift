@@ -26,7 +26,7 @@ WHERE a."idInvoice" > 0 OR a."movementCausal" ->> 'causalIsPos' = 'true' AND a."
 GROUP BY a."movementDevice"
 ORDER BY a."movementDevice"
 """
-        let query: EventLoopFuture<[StatisticItem]> = StatisticItem().queryAsync(sql: sql)
+        let query: EventLoopFuture<[StatisticItem]> = StatisticItem().query(sql: sql)
         return query.map { rows -> Statistics in
             return self.toResult(items: rows)
         }
@@ -43,7 +43,7 @@ WHERE a."movementDate" >= \(start) AND a."movementDate" <= \(finish)
 AND (a."idInvoice" > 0 OR a."movementCausal" ->> 'causalIsPos' = 'true')
 AND a."movementStatus" = 'Completed'
 """
-        return MovementArticle().queryAsync(sql: sql)
+        return MovementArticle().query(sql: sql)
     }
     
     func getCategories(year: Int) -> EventLoopFuture<Statistics> {

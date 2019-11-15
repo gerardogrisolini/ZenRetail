@@ -14,7 +14,7 @@ import ZenPostgres
 struct MovementArticleRepository : MovementArticleProtocol {
 
     func get(movementId: Int, connection: PostgresConnection) -> EventLoopFuture<[MovementArticle]> {
-        return MovementArticle(connection: connection).queryAsync(
+        return MovementArticle(connection: connection).query(
             whereclause: "movementId = $1",
             params: [movementId],
             orderby: ["movementArticleId"]
@@ -23,7 +23,7 @@ struct MovementArticleRepository : MovementArticleProtocol {
     
     func get(id: Int, connection: PostgresConnection) -> EventLoopFuture<MovementArticle> {
         let item = MovementArticle(connection: connection)
-        return item.getAsync(id).map { () -> MovementArticle in
+        return item.get(id).map { () -> MovementArticle in
             item
         }
     }
@@ -31,7 +31,7 @@ struct MovementArticleRepository : MovementArticleProtocol {
     func add(item: MovementArticle, price: String, connection: PostgresConnection) -> EventLoopFuture<Int> {
         let product = Product(connection: connection)
         
-        return product.getAsync(barcode: item.movementArticleBarcode).flatMap { () -> EventLoopFuture<Int> in
+        return product.get(barcode: item.movementArticleBarcode).flatMap { () -> EventLoopFuture<Int> in
             if product.productId == 0 {
                 return connection.eventLoop.future(error: ZenError.recordNotFound)
             }
@@ -52,7 +52,7 @@ struct MovementArticleRepository : MovementArticleProtocol {
             item.movementArticleUpdated = Int.now()
             item.connection = connection
             
-            return item.saveAsync().map { id -> Int in
+            return item.save().map { id -> Int in
                 item.movementArticleId = id as! Int
                 return item.movementArticleId
             }
@@ -61,7 +61,7 @@ struct MovementArticleRepository : MovementArticleProtocol {
     
     func update(id: Int, item: MovementArticle, connection: PostgresConnection) -> EventLoopFuture<Bool> {
         item.connection = connection
-        return item.updateAsync(
+        return item.update(
             cols: ["movementArticleQuantity", "movementArticleUpdated"],
             params: [item.movementArticleQuantity],
             id: "movementArticleId",
@@ -72,7 +72,7 @@ struct MovementArticleRepository : MovementArticleProtocol {
     }
     
     func delete(id: Int, connection: PostgresConnection) -> EventLoopFuture<Bool> {
-        return MovementArticle(connection: connection).deleteAsync(id)
+        return MovementArticle(connection: connection).delete(id)
     }
 	
 	func clone(sourceMovementId: Int, targetMovementId: Int, price: String, connection: PostgresConnection) -> EventLoopFuture<Void> {

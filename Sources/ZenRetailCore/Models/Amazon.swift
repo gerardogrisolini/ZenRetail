@@ -19,9 +19,9 @@ class Amazon: Codable {
     public var authToken: String = ""
     public var userAgent: String = "ZenRetail/1.0 (Language=Swift/5.1)"
     
-    func createAsync(connection: PostgresConnection) -> EventLoopFuture<Void> {
+    func create(connection: PostgresConnection) -> EventLoopFuture<Void> {
         let settings = Settings(connection: connection)
-        let query: EventLoopFuture<[Settings]> = settings.queryAsync()
+        let query: EventLoopFuture<[Settings]> = settings.query()
         return query.map { rows -> Void in
             if rows.count == 30 {
                 let mirror = Mirror(reflecting: self)
@@ -29,14 +29,14 @@ class Amazon: Codable {
                     let setting = Settings(connection: connection)
                     setting.key = label
                     setting.value = "\(value)"
-                    setting.saveAsync().whenComplete { _ in }
+                    setting.save().whenComplete { _ in }
                 }
             }
         }
     }
     
-    func selectAsync() -> EventLoopFuture<Void> {
-        let query: EventLoopFuture<[Settings]> = Settings().queryAsync()
+    func select() -> EventLoopFuture<Void> {
+        let query: EventLoopFuture<[Settings]> = Settings().query()
         return query.map { rows -> Void in
             let data = rows.reduce(into: [String: String]()) {
                 $0[$1.key] = $1.value
@@ -52,7 +52,7 @@ class Amazon: Codable {
         }
     }
     
-    func saveAsync(connection: PostgresConnection) -> EventLoopFuture<Void> {
+    func save(connection: PostgresConnection) -> EventLoopFuture<Void> {
         let promise = connection.eventLoop.makePromise(of: Void.self)
         
         let settings = Settings(connection: connection)
@@ -60,7 +60,7 @@ class Amazon: Codable {
         var index = 0
         let count = mirror.children.count
         for case (let label?, let value) in mirror.children {
-           settings.updateAsync(cols: ["value"], params: [value], id: "key", value: label).whenComplete { result in
+           settings.update(cols: ["value"], params: [value], id: "key", value: label).whenComplete { result in
                 index += 1
                 if index == count {
                     switch result {
@@ -75,31 +75,4 @@ class Amazon: Codable {
 
         return promise.futureResult
     }
-    
-    /*
-    func create(connection: PostgresConnection) throws {
-        let settings = Settings(connection: connection)
-        let rows: [Settings] = try settings.query()
-        if rows.count == 30 {
-            let mirror = Mirror(reflecting: self)
-            for case let (label?, value) in mirror.children {
-                let setting = Settings(connection: connection)
-                setting.key = label
-                setting.value = "\(value)"
-                try setting.save()
-            }
-        }
-    }
-    
-    func save() throws {
-        let connection = try ZenPostgres.pool.connect()
-        defer { connection.disconnect() }
-
-        let settings = Settings(connection: connection)
-        let mirror = Mirror(reflecting: self)
-        for case let (label?, value) in mirror.children {
-            _ = try settings.update(cols: ["value"], params: [value], id: "key", value: label)
-        }
-    }
-    */
 }

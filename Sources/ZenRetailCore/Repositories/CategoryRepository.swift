@@ -12,12 +12,12 @@ import ZenPostgres
 struct CategoryRepository : CategoryProtocol {
 
     func getAll() -> EventLoopFuture<[Category]> {
-        return Category().queryAsync(orderby: ["categoryId"])
+        return Category().query(orderby: ["categoryId"])
     }
     
     func get(id: Int) -> EventLoopFuture<Category> {
         let item = Category()
-		return item.getAsync(id).map { () -> Category in
+		return item.get(id).map { () -> Category in
             return item
         }
     }
@@ -34,7 +34,7 @@ struct CategoryRepository : CategoryProtocol {
         item.categoryDescription = item.categoryDescription.filter({ !$0.value.isEmpty })
         item.categoryCreated = Int.now()
         item.categoryUpdated = Int.now()
-        return item.saveAsync().map { id -> Int in
+        return item.save().map { id -> Int in
             item.categoryId = id as! Int
             return item.categoryId
         }
@@ -49,12 +49,12 @@ struct CategoryRepository : CategoryProtocol {
             }
         }
         item.categoryUpdated = Int.now()
-        return item.saveAsync().map { count -> Bool in
+        return item.save().map { count -> Bool in
             count as! Int > 0
         }
     }
     
     func delete(id: Int) -> EventLoopFuture<Bool> {
-        return Category().deleteAsync(id)
+        return Category().delete(id)
     }
 }

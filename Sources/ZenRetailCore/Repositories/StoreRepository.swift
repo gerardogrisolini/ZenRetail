@@ -11,12 +11,12 @@ import NIO
 struct StoreRepository : StoreProtocol {
 
     func getAll() -> EventLoopFuture<[Store]> {
-        return Store().queryAsync()
+        return Store().query()
     }
     
     func get(id: Int) -> EventLoopFuture<Store> {
         let item = Store()
-        return item.getAsync(id).map { () -> Store in
+        return item.get(id).map { () -> Store in
             item
         }
     }
@@ -24,7 +24,7 @@ struct StoreRepository : StoreProtocol {
     func add(item: Store) -> EventLoopFuture<Int> {
         item.storeCreated = Int.now()
         item.storeUpdated = Int.now()
-        return item.saveAsync().map { id -> Int in
+        return item.save().map { id -> Int in
             item.storeId = id as! Int
             return item.storeId
         }
@@ -33,12 +33,12 @@ struct StoreRepository : StoreProtocol {
     func update(id: Int, item: Store) -> EventLoopFuture<Bool> {
         item.storeId = id
         item.storeUpdated = Int.now()
-        return item.saveAsync().map { id -> Bool in
+        return item.save().map { id -> Bool in
             id as! Int > 0
         }
     }
     
     func delete(id: Int) -> EventLoopFuture<Bool> {
-        return Store().deleteAsync(id)
+        return Store().delete(id)
     }
 }

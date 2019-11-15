@@ -55,10 +55,10 @@ public class AmazonController: NSObject {
             userAgent: amazon.userAgent
         )
         
-        ZenPostgres.pool.connectAsync().whenComplete { result in
+        ZenPostgres.pool.connect().whenComplete { result in
             switch result {
             case .success(let conn):
-                amazon.saveAsync(connection: conn).whenComplete { res in
+                amazon.save(connection: conn).whenComplete { res in
                     switch res {
                     case .success(_):
                         try? response.send(json: self.config)
@@ -100,7 +100,7 @@ public class AmazonController: NSObject {
     
     fileprivate func loadConfig() -> EventLoopFuture<Void> {
         let amazon = Amazon()
-        return amazon.selectAsync().map { () -> Void in
+        return amazon.select().map { () -> Void in
             self.config = Config(
                 endpoint: amazon.endpoint,
                 marketplaceId: amazon.marketplaceId,
@@ -159,7 +159,7 @@ public class AmazonController: NSObject {
     func callBack(request: RequestFeed) {
         do {
             let mwsRequest = MwsRequest()
-            try mwsRequest.get("requestId", request.requestId)
+            try mwsRequest.get("requestId", request.requestId).wait()
             mwsRequest.request = request.requestId
             mwsRequest.requestParent = request.requestParentId
             mwsRequest.requestSubmissionId = request.requestSubmissionId
@@ -173,9 +173,9 @@ public class AmazonController: NSObject {
             mwsRequest.messagesWithError = request.messagesWithError
             mwsRequest.messagesWithWarning = request.messagesWithWarning
             mwsRequest.errorDescription = request.errorDescription
-            try mwsRequest.save()
+            mwsRequest.id = try mwsRequest.save().wait() as! Int
             if mwsRequest.requestCompletedAt > 0 {
-                _ = try Product().update(cols: ["productAmazonUpdated"], params: [Int.now()], id: "productCode", value: mwsRequest.requestSku)
+                _ = try Product().update(cols: ["productAmazonUpdated"], params: [Int.now()], id: "productCode", value: mwsRequest.requestSku).wait()
             }
         } catch {
             print("callBack: \(error)")

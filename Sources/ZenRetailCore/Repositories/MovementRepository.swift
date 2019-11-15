@@ -48,7 +48,7 @@ struct MovementRepository : MovementProtocol {
     }
     
     func getAll() -> EventLoopFuture<[Movement]> {
-        return Movement().queryAsync(cursor: Cursor(limit: 1000, offset: 0))
+        return Movement().query(cursor: Cursor(limit: 1000, offset: 0))
     }
     
     func getAll(device: String, user: String, date: Int) -> EventLoopFuture<[Movement]> {
@@ -143,11 +143,11 @@ AND ("Movement"."idInvoice" > '0' OR "Movement"."movementCausal" ->> 'causalIsPo
 AND "Movement"."movementStatus" = 'Completed'
 ORDER BY "MovementArticle"."movementArticleId"
 """
-        return items.queryAsync(sql: sql)
+        return items.query(sql: sql)
     }
     
     func getReceipted(period: Period) -> EventLoopFuture<[Movement]> {
-        return Movement().queryAsync(
+        return Movement().query(
             whereclause: "movementDate >= $1 AND movementDate <= $2 AND movementCausal ->> $3 = $4 AND movementStatus = $5",
             params: [period.start, period.finish, "causalIsPos", true, "Completed"],
             orderby: ["movementDevice", "movementDate", "movementNumber"])
@@ -155,13 +155,13 @@ ORDER BY "MovementArticle"."movementArticleId"
     
     func get(id: Int, connection: PostgresConnection) -> EventLoopFuture<Movement> {
         let item = Movement(connection: connection)
-        return item.getAsync(id).map { () -> Movement in
+        return item.get(id).map { () -> Movement in
             item
         }
     }
     
     func get(registryId: Int) -> EventLoopFuture<[Movement]> {
-        return Movement().queryAsync(whereclause: "movementRegistry ->> $1 = $2 AND idInvoice = $3 AND movementStatus = $4",
+        return Movement().query(whereclause: "movementRegistry ->> $1 = $2 AND idInvoice = $3 AND movementStatus = $4",
                         params: ["registryId", registryId, 0, "Completed"],
                         orderby: ["movementId"])
     }
@@ -172,7 +172,7 @@ ORDER BY "MovementArticle"."movementArticleId"
             item.movementUpdated = Int.now()
             
             func saveItem() -> EventLoopFuture<Int> {
-                return item.saveAsync().map { id -> Int in
+                return item.save().map { id -> Int in
                     item.movementId = id as! Int
                     return item.movementId
                 }
@@ -183,16 +183,16 @@ ORDER BY "MovementArticle"."movementArticleId"
                 if registry.registryId <= 0 {
                     registry.registryId = 0
                     registry.registryCreated = registry.registryUpdated
-                    return registry.saveAsync().flatMap { id -> EventLoopFuture<Int> in
+                    return registry.save().flatMap { id -> EventLoopFuture<Int> in
                         registry.registryId = id as! Int
                         item.movementRegistry = registry
                         return saveItem()
                     }
                 } else if registry.registryUpdated > 0 {
                     let current = Registry()
-                    return current.getAsync(registry.registryId).flatMap { () -> EventLoopFuture<Int> in
+                    return current.get(registry.registryId).flatMap { () -> EventLoopFuture<Int> in
                         if current.registryUpdated < registry.registryUpdated {
-                            registry.saveAsync().whenComplete { _ in }
+                            registry.save().whenComplete { _ in }
                         }
                         return saveItem()
                     }
@@ -221,7 +221,7 @@ ORDER BY "MovementArticle"."movementArticleId"
                 current.movementStatus = item.movementStatus
                 current.movementNote = item.movementNote
                 current.movementUpdated = item.movementUpdated
-                return current.saveAsync().map { id -> Bool in
+                return current.save().map { id -> Bool in
                     id as! Int > 0
                 }
             }
@@ -277,10 +277,10 @@ ORDER BY "MovementArticle"."movementArticleId"
     }
     
     func delete(id: Int) -> EventLoopFuture<Bool> {
-        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Bool> in
+        return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<Bool> in
             defer { connection.disconnect() }
-            return MovementArticle(connection: connection).deleteAsync(key: "movementId", value: id).flatMap { id -> EventLoopFuture<Bool> in
-                return Movement(connection: connection).deleteAsync(id)
+            return MovementArticle(connection: connection).delete(key: "movementId", value: id).flatMap { id -> EventLoopFuture<Bool> in
+                return Movement(connection: connection).delete(id)
             }
         }
     }
@@ -304,14 +304,14 @@ ORDER BY "MovementArticle"."movementArticleId"
         }
         
         func saveBarcode(_ barcode: String) -> EventLoopFuture<Void> {
-            return item.updateAsync(cols: ["movementArticleBarcode"], params: [barcode], id: "movementArticleId", value: item.movementArticleId).flatMap { count -> EventLoopFuture<Void> in
+            return item.update(cols: ["movementArticleBarcode"], params: [barcode], id: "movementArticleId", value: item.movementArticleId).flatMap { count -> EventLoopFuture<Void> in
                 if count == 0 {
                     return connection.eventLoop.future(error: ZenError.recordNotSave)
                 }
                 article.articleIsValid = true;
                 article.productId = item.movementArticleProduct.productId
                 article.articleUpdated = Int.now()
-                return article.saveAsync().map { id -> Void in
+                return article.save().map { id -> Void in
                     article.articleId = id as! Int
                 }
             }
@@ -331,7 +331,7 @@ ORDER BY "MovementArticle"."movementArticleId"
                 let counter = Int(company.barcodeCounterPublic)! + 1
                 company.barcodeCounterPublic = counter.description
                 barcode.barcode = String(company.barcodeCounterPublic).checkdigit()
-                Product(connection: connection).updateAsync(cols: ["productAmazonUpdated"], params: [1], id: "productId", value: article.productId).whenComplete { _ in }
+                Product(connection: connection).update(cols: ["productAmazonUpdated"], params: [1], id: "productId", value: article.productId).whenComplete { _ in }
             } else {
                 let counter = Int(company.barcodeCounterPrivate)! + 1
                 company.barcodeCounterPrivate = counter.description
@@ -352,10 +352,10 @@ ORDER BY "MovementArticle"."movementArticleId"
         let booked = movement.movementCausal.causalBooked
         
         let company = Company()
-        company.selectAsync(connection: connection).whenComplete { result in
+        company.select(connection: connection).whenComplete { result in
             switch result {
             case .success(_):
-                let query: EventLoopFuture<[MovementArticle]> = MovementArticle(connection: connection).queryAsync(whereclause: "movementId = $1", params: [movement.movementId])
+                let query: EventLoopFuture<[MovementArticle]> = MovementArticle(connection: connection).query(whereclause: "movementId = $1", params: [movement.movementId])
                 query.whenSuccess { articles in
                     let count = articles.count - 1
                     for actionType in actionTypes {
@@ -364,7 +364,7 @@ ORDER BY "MovementArticle"."movementArticleId"
                             if actionType == .Delivering {
                                 item.connection = connection
                                 item.movementArticleDelivered = item.movementArticleQuantity
-                                item.updateAsync(
+                                item.update(
                                     cols: ["movementArticleDelivered"],
                                     params: [item.movementArticleQuantity],
                                     id: "movementArticleId",
@@ -380,7 +380,7 @@ ORDER BY "MovementArticle"."movementArticleId"
                             let article = item.movementArticleProduct._articles.first!
                             let articleId = article.articleId
                             var stock = Stock(connection: connection)
-                            let stocksQuery: EventLoopFuture<[Stock]> = stock.queryAsync(
+                            let stocksQuery: EventLoopFuture<[Stock]> = stock.query(
                                 whereclause: "articleId = $1 AND storeId = $2",
                                 params: [ articleId, storeId ],
                                 cursor: Cursor(limit: 1, offset: 0))
@@ -389,7 +389,7 @@ ORDER BY "MovementArticle"."movementArticleId"
                                 func finalProcess() {
 
                                     func finalSubProcess() {
-                                        stock.saveAsync().whenComplete { _ in
+                                        stock.save().whenComplete { _ in
                                             if i == count && actionType == actionTypes.last! {
                                                 promise.succeed(())
                                             }
@@ -433,7 +433,7 @@ ORDER BY "MovementArticle"."movementArticleId"
                                 } else {
                                     stock.storeId = storeId
                                     stock.articleId = articleId
-                                    stock.saveAsync().whenComplete { res in
+                                    stock.save().whenComplete { res in
                                         switch res {
                                         case .success(let id):
                                             stock.stockId = id as! Int
@@ -459,7 +459,7 @@ ORDER BY "MovementArticle"."movementArticleId"
         }
         
         return promise.futureResult.flatMap { () -> EventLoopFuture<Void> in
-            return company.saveAsync()
+            return company.save()
         }
     }
     

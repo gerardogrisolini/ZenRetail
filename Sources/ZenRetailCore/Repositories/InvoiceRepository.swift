@@ -28,18 +28,18 @@ struct InvoiceRepository : InvoiceProtocol {
 	}
 
 	func getAll() -> EventLoopFuture<[Invoice]> {
-		return Invoice().queryAsync()
+		return Invoice().query()
 	}
 	
 	func get(id: Int) -> EventLoopFuture<Invoice> {
 		let item = Invoice()
-        return item.getAsync(id).map { () -> Invoice in
+        return item.get(id).map { () -> Invoice in
             return item
         }
 	}
 	
 	func getMovements(invoiceId: Int) -> EventLoopFuture<[Movement]> {
-		return Movement().queryAsync(whereclause: "idInvoice = $1", params: [invoiceId])
+		return Movement().query(whereclause: "idInvoice = $1", params: [invoiceId])
 	}
 	
 	func getMovementArticles(invoiceId: Int) -> EventLoopFuture<[MovementArticle]> {
@@ -48,7 +48,7 @@ struct InvoiceRepository : InvoiceProtocol {
 			onCondition:"MovementArticle.movementId = Movement.movementId",
 			direction: .INNER);
 
-		return MovementArticle().queryAsync(whereclause: "Movement.idInvoice = $1",
+		return MovementArticle().query(whereclause: "Movement.idInvoice = $1",
                                        params: [invoiceId],
                                        joins: [join])
 	}
@@ -56,7 +56,7 @@ struct InvoiceRepository : InvoiceProtocol {
 	func add(item: Invoice) -> EventLoopFuture<Int> {
         func saveItem() -> EventLoopFuture<Int> {
             item.invoiceUpdated = Int.now()
-            return item.saveAsync().map { id -> Int in
+            return item.save().map { id -> Int in
                 item.invoiceId = id as! Int
                 return item.invoiceId
             }
@@ -74,25 +74,25 @@ struct InvoiceRepository : InvoiceProtocol {
 	func update(id: Int, item: Invoice) -> EventLoopFuture<Bool> {
         item.invoiceId = id
 		item.invoiceUpdated = Int.now()
-        return item.saveAsync().map { id -> Bool in
+        return item.save().map { id -> Bool in
             id as! Int > 0
         }
 	}
 	
 	func delete(id: Int) -> EventLoopFuture<Bool> {
-        return Movement().updateAsync(cols: ["idInvoice"], params: [0], id: "idInvoice", value: id).flatMap { count -> EventLoopFuture<Bool> in
-            return Invoice().deleteAsync(id)
+        return Movement().update(cols: ["idInvoice"], params: [0], id: "idInvoice", value: id).flatMap { count -> EventLoopFuture<Bool> in
+            return Invoice().delete(id)
         }
 	}
 	
 	func addMovement(invoiceId: Int, id: Int) -> EventLoopFuture<Bool> {
-		return Movement().updateAsync(cols: ["idInvoice"], params: [invoiceId], id: "movementId", value: id).map { count -> Bool in
+		return Movement().update(cols: ["idInvoice"], params: [invoiceId], id: "movementId", value: id).map { count -> Bool in
             count > 0
         }
 	}
 	
 	func removeMovement(id: Int) -> EventLoopFuture<Bool> {
-        return Movement().updateAsync(cols: ["idInvoice"], params: [0], id: "movementId", value: id).map { count -> Bool in
+        return Movement().update(cols: ["idInvoice"], params: [0], id: "movementId", value: id).map { count -> Bool in
             count > 0
         }
 	}

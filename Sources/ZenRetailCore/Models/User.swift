@@ -78,7 +78,7 @@ VALUES ('\(uniqueID)','\(username)','\(password)','\(firstname)','\(lastname)','
     
     /// Performs a find on supplied username, and matches hashed password
     open func get(usr: String, pwd: String) -> EventLoopFuture<Void> {
-        return self.getAsync("username", usr).flatMapThrowing { () -> Void in
+        return self.get("username", usr).flatMapThrowing { () -> Void in
             if self.uniqueID.isEmpty {
                 throw ZenError.recordNotFound
             }
@@ -104,13 +104,13 @@ VALUES ('\(uniqueID)','\(username)','\(password)','\(firstname)','\(lastname)','
     }
 
 	func setAdmin() -> EventLoopFuture<Void> {
-        let query: EventLoopFuture<[User]> = queryAsync(whereclause: "isAdmin = $1", params: [true], cursor: Cursor(limit: 1, offset: 0))
+        let query: EventLoopFuture<[User]> = self.query(whereclause: "isAdmin = $1", params: [true], cursor: Cursor(limit: 1, offset: 0))
         return query.flatMap { rows -> EventLoopFuture<Void> in
             if rows.count == 0 {
                 return self.exists("admin").flatMap { exist -> EventLoopFuture<Void> in
                     if exist {
                         self.isAdmin = true
-                        return self.updateAsync(cols: ["isAdmin"], params: [true], id: "uniqueID", value: self.uniqueID).map { count -> Void in
+                        return self.update(cols: ["isAdmin"], params: [true], id: "uniqueID", value: self.uniqueID).map { count -> Void in
                             ()
                         }
                     } else {

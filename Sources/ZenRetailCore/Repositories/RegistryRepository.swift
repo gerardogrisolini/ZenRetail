@@ -13,12 +13,12 @@ import ZenPostgres
 struct RegistryRepository : RegistryProtocol {
 
 	func getAll(date: Int) -> EventLoopFuture<[Registry]> {
-		return Registry().queryAsync(whereclause: "registryUpdated > $1", params: [date])
+		return Registry().query(whereclause: "registryUpdated > $1", params: [date])
 	}
 	
 	func get(id: Int) -> EventLoopFuture<Registry> {
 		let item = Registry()
-        return item.getAsync(id).map { () -> Registry in
+        return item.get(id).map { () -> Registry in
             item
         }
 	}
@@ -31,7 +31,7 @@ struct RegistryRepository : RegistryProtocol {
 		item.registryCreated = Int.now()
 		item.registryUpdated = Int.now()
         
-        return item.saveAsync().map { id -> Int in
+        return item.save().map { id -> Int in
             item.registryId = id as! Int
             return item.registryId
 		}
@@ -54,13 +54,13 @@ struct RegistryRepository : RegistryProtocol {
             current.registryFiscalCode = item.registryFiscalCode
             current.registryVatNumber = item.registryVatNumber
             current.registryUpdated = Int.now()
-            return current.saveAsync().map { id -> Bool in
+            return current.save().map { id -> Bool in
                 id as! Int > 0
             }
         }
 	}
 	
 	func delete(id: Int) -> EventLoopFuture<Bool> {
-		return Registry().deleteAsync(id)
+		return Registry().delete(id)
 	}
 }

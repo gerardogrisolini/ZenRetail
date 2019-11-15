@@ -54,11 +54,11 @@ class MwsRequest : PostgresTable, Codable {
     }
     
     public func currentRequests() -> EventLoopFuture<[MwsRequest]> {
-        return self.queryAsync(orderby: ["requestCreatedAt DESC", "request"])
+        return self.query(orderby: ["requestCreatedAt DESC", "request"])
      }
     
     public func rangeRequests(startDate: Int, finishDate: Int) -> EventLoopFuture<[MwsRequest]> {
-        return self.queryAsync(
+        return self.query(
             whereclause: "requestCreatedAt >= $1 && requestCreatedAt <= $2 ",
             params: [startDate, finishDate],
             orderby: ["requestCreatedAt DESC", "requestId"]

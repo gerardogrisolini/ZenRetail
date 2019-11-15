@@ -83,26 +83,26 @@ struct ProductRepository : ProductProtocol {
     
 	func get(id: Int) -> EventLoopFuture<Product> {
         let product = Product()
-        return product.getAsync(id).map { () -> Product in
+        return product.get(id).map { () -> Product in
             return product
         }
 	}
 
     func get(barcode: String) -> EventLoopFuture<Product> {
         let product = Product()
-        return product.getAsync(barcode: barcode).map { () -> Product in
+        return product.get(barcode: barcode).map { () -> Product in
             return product
         }
     }
     
     func reset(id: Int) -> EventLoopFuture<Int> {
-        return Product().updateAsync(cols: ["productAmazonUpdated"], params: [1], id: "productId", value: id)
+        return Product().update(cols: ["productAmazonUpdated"], params: [1], id: "productId", value: id)
     }
     
     func add(item: Product) -> EventLoopFuture<Int> {
         let promise: EventLoopPromise<Int> = ZenRetail.zenNIO.eventLoopGroup.next().makePromise()
 
-        let q = ZenPostgres.pool.connectAsync()
+        let q = ZenPostgres.pool.connect()
         q.whenSuccess { connection in
             defer { connection.disconnect() }
 
@@ -110,7 +110,7 @@ struct ProductRepository : ProductProtocol {
             
             /// Brand
             let brand = Brand(connection: connection)
-            brand.getAsync("brandName", item._brand.brandName).whenComplete { _ in
+            brand.get("brandName", item._brand.brandName).whenComplete { _ in
                 if brand.brandId == 0 {
                     brand.brandName = item._brand.brandName
                     brand.brandDescription = item._brand.brandDescription
@@ -118,7 +118,7 @@ struct ProductRepository : ProductProtocol {
                     brand.brandSeo = item._brand.brandSeo
                     brand.brandCreated = Int.now()
                     brand.brandUpdated = Int.now()
-                    brand.saveAsync().whenComplete { result in
+                    brand.save().whenComplete { result in
                         switch result {
                         case .success(let id):
                             item.brandId = id as! Int
@@ -135,7 +135,7 @@ struct ProductRepository : ProductProtocol {
             /// Categories
             for c in item._categories.sorted(by: { $0._category.categoryIsPrimary.hashValue < $1._category.categoryIsPrimary.hashValue }) {
                 var category = Category(connection: connection)
-                let query: EventLoopFuture<[Category]> = category.queryAsync(
+                let query: EventLoopFuture<[Category]> = category.query(
                     whereclause: "categoryName = $1", params: [c._category.categoryName],
                     cursor: Cursor(limit: 1, offset: 0)
                 )
@@ -151,7 +151,7 @@ struct ProductRepository : ProductProtocol {
                         category.categorySeo = c._category.categorySeo
                         category.categoryCreated = Int.now()
                         category.categoryUpdated = Int.now()
-                        category.saveAsync().whenComplete { result in
+                        category.save().whenComplete { result in
                             switch result {
                             case .success(let id):
                                 category.categoryId = id as! Int
@@ -189,7 +189,7 @@ struct ProductRepository : ProductProtocol {
             item.productDescription = item.productDescription.filter({ !$0.value.isEmpty })
             item.productCreated = Int.now()
             item.productUpdated = Int.now()
-            return item.saveAsync().whenComplete { result in
+            return item.save().whenComplete { result in
                 switch result {
                 case .success(let id):
                     item.productId = id as! Int
@@ -200,7 +200,7 @@ struct ProductRepository : ProductProtocol {
                         let productCategory = ProductCategory(connection: connection)
                         productCategory.productId = item.productId
                         productCategory.categoryId = c.categoryId
-                        productCategory.saveAsync().whenComplete { result in
+                        productCategory.save().whenComplete { result in
                             switch result {
                             case .success(let id):
                                 c.productCategoryId = id as! Int
@@ -228,12 +228,12 @@ struct ProductRepository : ProductProtocol {
     func update(id: Int, item: Product) -> EventLoopFuture<Bool> {
         let promise: EventLoopPromise<Bool> = ZenRetail.zenNIO.eventLoopGroup.next().makePromise()
 
-        let q = ZenPostgres.pool.connectAsync()
+        let q = ZenPostgres.pool.connect()
         q.whenSuccess { connection in
             defer { connection.disconnect() }
 
             let current = Product(connection: connection)
-            let get = current.getAsync(id)
+            let get = current.get(id)
             get.whenSuccess { _ in
                 current.connection = connection
                 current.productCode = item.productCode
@@ -249,7 +249,7 @@ struct ProductRepository : ProductProtocol {
                 /// Categories
                 for c in item._categories.sorted(by: { $0._category.categoryIsPrimary.hashValue < $1._category.categoryIsPrimary.hashValue }) {
                     var category = Category(connection: connection)
-                    let query: EventLoopFuture<[Category]> = category.queryAsync(
+                    let query: EventLoopFuture<[Category]> = category.query(
                         whereclause: "categoryName = $1", params: [c._category.categoryName],
                         cursor: Cursor(limit: 1, offset: 0)
                     )
@@ -265,7 +265,7 @@ struct ProductRepository : ProductProtocol {
                             category.categorySeo = c._category.categorySeo
                             category.categoryCreated = Int.now()
                             category.categoryUpdated = Int.now()
-                            category.saveAsync().whenComplete { result in
+                            category.save().whenComplete { result in
                                 switch result {
                                 case .success(let id):
                                     category.categoryId = id as! Int
@@ -284,13 +284,13 @@ struct ProductRepository : ProductProtocol {
                 /// ProductCategories
                 for c in current._categories {
                     c.connection = connection
-                    c.deleteAsync().whenComplete { _ in }
+                    c.delete().whenComplete { _ in }
                 }
                 for c in item._categories {
                     c.productCategoryId = 0
                     c.productId = id
                     c.connection = connection
-                    c.saveAsync().whenComplete { result in
+                    c.save().whenComplete { result in
                         switch result {
                         case .success(let id):
                             c.productCategoryId = id as! Int
@@ -308,7 +308,7 @@ struct ProductRepository : ProductProtocol {
                             let currentBarcode = currentArticle.articleBarcodes.first(where: { $0.tags.count == 0 })!
                             currentBarcode.barcode = itemBarcode.barcode
                             currentArticle.connection = connection
-                            currentArticle.saveAsync().whenComplete { result in
+                            currentArticle.save().whenComplete { result in
                                 switch result {
                                 case .success(let id):
                                     currentArticle.articleId = id as! Int
@@ -323,7 +323,7 @@ struct ProductRepository : ProductProtocol {
                             itemArticle.productId = id
                             itemArticle.articleUpdated = Int.now()
                             itemArticle.connection = connection
-                            itemArticle.saveAsync().whenComplete { result in
+                            itemArticle.save().whenComplete { result in
                                 switch result {
                                 case .success(let id):
                                     itemArticle.articleId = id as! Int
@@ -374,7 +374,7 @@ struct ProductRepository : ProductProtocol {
                 current.productDescription = item.productDescription.filter({ !$0.value.isEmpty })
                 item.productUpdated = Int.now()
                 current.productUpdated = item.productUpdated
-                current.saveAsync().whenComplete { result in
+                current.save().whenComplete { result in
                     switch result {
                     case .success(let id):
                         item.productId = id as! Int
@@ -409,7 +409,7 @@ struct ProductRepository : ProductProtocol {
         big.fileType = MediaType.media.rawValue
         big.fileContentType = media.contentType
         big.setData(data: data)
-        try big.save()
+        _ = try big.save().wait()
         
         if let thumb = try Image(data: data).resizedTo(width: 380) {
 //            let url = URL(fileURLWithPath: "\(ZenNIO.htdocsPath)/thumb/\(media.name)")
@@ -421,12 +421,12 @@ struct ProductRepository : ProductProtocol {
             small.fileType = MediaType.thumb.rawValue
             small.fileContentType = media.contentType
             small.setData(data: try thumb.export())
-            try small.save()
+            _ = try small.save().wait()
         }
     }
     
     func sync(item: Product) -> EventLoopFuture<Product> {
-        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Product> in
+        return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<Product> in
             defer { connection.disconnect() }
 
             let promise = connection.eventLoop.makePromise(of: Product.self)
@@ -444,7 +444,7 @@ struct ProductRepository : ProductProtocol {
             for (i, a) in item._attributes.enumerated() {
                 
                 let attribute = Attribute(connection: connection)
-                let getAttributeId = attribute.getAsync("attributeName", a._attribute.attributeName).flatMap { () -> EventLoopFuture<Void> in
+                let getAttributeId = attribute.get("attributeName", a._attribute.attributeName).flatMap { () -> EventLoopFuture<Void> in
                     a.attributeId = attribute.attributeId
                     return connection.eventLoop.future()
                 }.flatMapError { error -> EventLoopFuture<Void> in
@@ -452,7 +452,7 @@ struct ProductRepository : ProductProtocol {
                     attribute.attributeTranslates = a._attribute.attributeTranslates
                     attribute.attributeCreated = Int.now()
                     attribute.attributeUpdated = Int.now()
-                    return attribute.saveAsync().map { id -> Void in
+                    return attribute.save().map { id -> Void in
                         a.attributeId = id as! Int
                     }
                 }
@@ -463,7 +463,7 @@ struct ProductRepository : ProductProtocol {
                     for (ii, v) in sorted.enumerated() {
                         let attributeValue = AttributeValue(connection: connection)
                         let getAttributeValueId = attributeValue
-                            .getAsync("attributeId\" = \(a.attributeId) AND \"attributeValueName", v._attributeValue.attributeValueName)
+                            .get("attributeId\" = \(a.attributeId) AND \"attributeValueName", v._attributeValue.attributeValueName)
                             .flatMap { () -> EventLoopFuture<Void> in
                             v.attributeValueId = attributeValue.attributeValueId
                             return connection.eventLoop.future()
@@ -475,7 +475,7 @@ struct ProductRepository : ProductProtocol {
                             attributeValue.attributeValueTranslates = v._attributeValue.attributeValueTranslates
                             attributeValue.attributeValueCreated = Int.now()
                             attributeValue.attributeValueUpdated = Int.now()
-                            return attributeValue.saveAsync().map { id -> Void in
+                            return attributeValue.save().map { id -> Void in
                                 v.attributeValueId = id as! Int
                             }
                         }
@@ -500,13 +500,13 @@ struct ProductRepository : ProductProtocol {
                     /// ProductAttributes
                     for (i, a) in item._attributes.enumerated() {
                         let productAttribute = ProductAttribute(connection: connection)
-                        let getProductAttributeId = productAttribute.getAsync("productId\" = \(item.productId) AND \"attributeId", a.attributeId).flatMap { () -> EventLoopFuture<Void> in
+                        let getProductAttributeId = productAttribute.get("productId\" = \(item.productId) AND \"attributeId", a.attributeId).flatMap { () -> EventLoopFuture<Void> in
                             a.productAttributeId = productAttribute.productAttributeId
                             return connection.eventLoop.future()
                         }.flatMapError { error -> EventLoopFuture<Void> in
                             productAttribute.productId = item.productId
                             productAttribute.attributeId = a.attributeId
-                            return productAttribute.saveAsync().map { id -> Void in
+                            return productAttribute.save().map { id -> Void in
                                 productAttribute.productAttributeId = id as! Int
                             }
                         }
@@ -520,7 +520,7 @@ struct ProductRepository : ProductProtocol {
                             // ProductAttributeValues
                             for (ii, v) in a._attributeValues.enumerated() {
                                 let productAttributeValue = ProductAttributeValue(connection: connection)
-                                let g = productAttributeValue.getAsync("productAttributeId\" = \(a.productAttributeId) AND \"attributeValueId", v.attributeValueId).flatMap { () -> EventLoopFuture<Void> in
+                                let g = productAttributeValue.get("productAttributeId\" = \(a.productAttributeId) AND \"attributeValueId", v.attributeValueId).flatMap { () -> EventLoopFuture<Void> in
                                     v.productAttributeValueId = productAttributeValue.productAttributeValueId
                                     if let index = current?._attributeValues.firstIndex(of: productAttributeValue) {
                                         current?._attributeValues.remove(at: index)
@@ -529,7 +529,7 @@ struct ProductRepository : ProductProtocol {
                                 }.flatMapError { error -> EventLoopFuture<Void> in
                                     productAttributeValue.productAttributeId = a.productAttributeId
                                     productAttributeValue.attributeValueId = v.attributeValueId
-                                    return productAttributeValue.saveAsync().map { id -> Void in
+                                    return productAttributeValue.save().map { id -> Void in
                                         productAttributeValue.productAttributeValueId = id as! Int
                                         if let index = current?._attributeValues.firstIndex(of: productAttributeValue) {
                                             current?._attributeValues.remove(at: index)
@@ -552,12 +552,12 @@ struct ProductRepository : ProductProtocol {
                         for a in p._attributes {
                             if a.productId > 0 {
                                 a.connection = connection
-                                a.deleteAsync().whenComplete { _ in }
+                                a.delete().whenComplete { _ in }
                                 continue
                             }
                             for v in a._attributeValues {
                                 v.connection = connection
-                                v.deleteAsync().whenComplete { _ in }
+                                v.delete().whenComplete { _ in }
                             }
                         }
                         promise.succeed(item)
@@ -572,7 +572,7 @@ struct ProductRepository : ProductProtocol {
     func syncImport(item: Product) throws -> EventLoopFuture<Result> {
         return (ZenIoC.shared.resolve() as ArticleProtocol).build(productId: item.productId).flatMap { result -> EventLoopFuture<Result> in
             
-            return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Result> in
+            return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<Result> in
                 defer { connection.disconnect() }
                 
                 let promise = connection.eventLoop.makePromise(of: Result.self)
@@ -582,7 +582,7 @@ struct ProductRepository : ProductProtocol {
                 publication.productId = item.productId
                 publication.publicationStartAt = "2019-01-01".DateToInt()
                 publication.publicationFinishAt = "2030-12-31".DateToInt()
-                publication.saveAsync().whenSuccess { id in
+                publication.save().whenSuccess { id in
                     publication.publicationId = id as! Int
                 }
 
@@ -603,7 +603,7 @@ GROUP BY a."articleId" HAVING count(b."attributeValueId") = \(item._attributes.c
                         if current.count > 0 {
                             article.decode(row: current[0])
                             article.articleBarcodes = a.articleBarcodes
-                            article.saveAsync().whenComplete { _ in
+                            article.save().whenComplete { _ in
                             }
                         }
                         if i == filtered.count - 1 {
@@ -618,12 +618,12 @@ GROUP BY a."articleId" HAVING count(b."attributeValueId") = \(item._attributes.c
     }
 
     func delete(id: Int) -> EventLoopFuture<Void> {
-        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Void> in
+        return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<Void> in
             defer { connection.disconnect() }
 
             let item = Product(connection: connection)
             item.productId = id
-            return item.deleteAsync().map { deleted -> Void in
+            return item.delete().map { deleted -> Void in
 
                 item.sqlRowsAsync("DELETE FROM \"ProductCategory\" WHERE \"productId\" = \(id)").whenComplete { _ in }
                 item.sqlRowsAsync("""

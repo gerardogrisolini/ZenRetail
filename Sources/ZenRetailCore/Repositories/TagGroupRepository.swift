@@ -11,7 +11,7 @@ import ZenPostgres
 struct TagGroupRepository : TagGroupProtocol {
     
     func getAll() -> EventLoopFuture<[TagGroup]> {
-        return TagGroup().queryAsync()
+        return TagGroup().query()
     }
     
     func getAllAndValues() -> EventLoopFuture<[TagGroup]> {
@@ -49,19 +49,19 @@ struct TagGroupRepository : TagGroupProtocol {
 
     func get(id: Int) -> EventLoopFuture<TagGroup> {
         let item = TagGroup()
-        return item.getAsync(id).map { () -> TagGroup in
+        return item.get(id).map { () -> TagGroup in
             item
         }
     }
     
     func getValues(id: Int) -> EventLoopFuture<[TagValue]> {
-        return TagValue().queryAsync(whereclause: "tagGroupId = $1", params: [id])
+        return TagValue().query(whereclause: "tagGroupId = $1", params: [id])
     }
     
     func add(item: TagGroup) -> EventLoopFuture<Int> {
         item.tagGroupCreated = Int.now()
         item.tagGroupUpdated = Int.now()
-        return item.saveAsync().map { id -> Int in
+        return item.save().map { id -> Int in
             item.tagGroupId = id as! Int
             return item.tagGroupId
         }
@@ -69,16 +69,16 @@ struct TagGroupRepository : TagGroupProtocol {
     
     func update(id: Int, item: TagGroup) -> EventLoopFuture<Bool> {
       item.tagGroupUpdated = Int.now()
-        return item.saveAsync().map { id -> Bool in
+        return item.save().map { id -> Bool in
             id as! Int > 0
         }
     }
     
     func delete(id: Int) -> EventLoopFuture<Bool> {
-        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Bool> in
+        return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<Bool> in
             defer { connection.disconnect() }
-            return TagValue(connection: connection).deleteAsync(key: "tagId", value: id).flatMap { id -> EventLoopFuture<Bool> in
-                return TagGroup(connection: connection).deleteAsync(id)
+            return TagValue(connection: connection).delete(key: "tagId", value: id).flatMap { id -> EventLoopFuture<Bool> in
+                return TagGroup(connection: connection).delete(id)
             }
         }
     }

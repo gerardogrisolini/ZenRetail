@@ -59,7 +59,7 @@ class Attribute: PostgresTable, Codable {
         item.attributeName = name
         item.attributeCreated = Int.now()
         item.attributeUpdated = Int.now()
-        return item.saveAsync().flatMap { id -> EventLoopFuture<Int> in
+        return item.save().flatMap { id -> EventLoopFuture<Int> in
             item.attributeId = id as! Int
             
             if name == "None" {
@@ -68,7 +68,7 @@ class Attribute: PostgresTable, Codable {
                 value.attributeValueName = name
                 value.attributeValueCreated = Int.now()
                 value.attributeValueUpdated = Int.now()
-                return value.saveAsync().map { id -> Int in
+                return value.save().map { id -> Int in
                     value.attributeValueId = id as! Int
                     return item.attributeId
                 }
@@ -79,7 +79,7 @@ class Attribute: PostgresTable, Codable {
     }
 
     func setupMarketplace() -> EventLoopFuture<Void> {
-        let query: EventLoopFuture<[Attribute]> = queryAsync(cursor: Cursor(limit: 1, offset: 0))
+        let query: EventLoopFuture<[Attribute]> = self.query(cursor: Cursor(limit: 1, offset: 0))
         return query.flatMap { rows -> EventLoopFuture<Void> in
             if rows.count == 0 {
                 return self.addAttribute(name: "None").flatMap { _ -> EventLoopFuture<Void> in

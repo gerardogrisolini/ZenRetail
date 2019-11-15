@@ -22,7 +22,7 @@ struct DeviceRepository : DeviceProtocol {
 
 	func getAll(date: Int) -> EventLoopFuture<[Device]> {
 		let items = Device()
-		return items.queryAsync(
+		return items.query(
 			whereclause: "Device.deviceUpdated > $1", params: [date],
 			orderby: ["Device.deviceId"],
 			joins: [self.getJoin()]
@@ -31,7 +31,7 @@ struct DeviceRepository : DeviceProtocol {
 	
 	func get(id: Int) -> EventLoopFuture<Device> {
 		let item = Device()
-        let rows: EventLoopFuture<[Device]> = item.queryAsync(
+        let rows: EventLoopFuture<[Device]> = item.query(
 			whereclause: "Device.deviceId = $1",
 			params: [id],
 			joins: [self.getJoin()]
@@ -47,7 +47,7 @@ struct DeviceRepository : DeviceProtocol {
 	func add(item: Device) -> EventLoopFuture<Int> {
 		item.deviceCreated = Int.now()
 		item.deviceUpdated = Int.now()
-		return item.saveAsync().map { id -> Int in
+		return item.save().map { id -> Int in
             item.deviceId = id as! Int
             return item.deviceId
 		}
@@ -56,12 +56,12 @@ struct DeviceRepository : DeviceProtocol {
 	func update(id: Int, item: Device) -> EventLoopFuture<Bool> {
         item.deviceId = id
 		item.deviceUpdated = Int.now()
-        return item.saveAsync().map { id -> Bool in
+        return item.save().map { id -> Bool in
             id as! Int > 0
         }
 	}
 	
 	func delete(id: Int) -> EventLoopFuture<Bool> {
-		return Device().deleteAsync(id)
+		return Device().delete(id)
 	}
 }

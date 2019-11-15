@@ -22,7 +22,7 @@ struct ArticleRepository : ArticleProtocol {
     }
 
     func build(productId: Int) -> EventLoopFuture<Result> {
-        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Result> in
+        return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<Result> in
             defer { connection.disconnect() }
 
             let product = Product(connection: connection)
@@ -70,14 +70,14 @@ struct ArticleRepository : ArticleProtocol {
                     var number = newNumber
                     
                     // Invalidate product and articles
-                    product.updateAsync(
+                    product.update(
                         cols: ["productIsValid", "productUpdated"],
                         params: [false, Int.now()],
                         id: "productId",
                         value: productId
                     ).whenComplete { _ in }
 
-                    Article(connection: connection).updateAsync(
+                    Article(connection: connection).update(
                         cols: ["articleIsValid"],
                         params: [false],
                         id: "productId",
@@ -86,7 +86,7 @@ struct ArticleRepository : ArticleProtocol {
 
                     // Creation articles
                     let company = Company()
-                    return company.selectAsync(connection: connection).flatMap { () -> EventLoopFuture<Result> in
+                    return company.select(connection: connection).flatMap { () -> EventLoopFuture<Result> in
                         let promise = connection.eventLoop.makePromise(of: Result.self)
                         let promiseCheck = connection.eventLoop.makePromise(of: Void.self)
                         
@@ -113,7 +113,7 @@ struct ArticleRepository : ArticleProtocol {
                             newArticle.sqlRowsAsync(sql).whenSuccess { rows in
                                 if rows.count > 0 {
                                     newArticle.decode(row: rows[0])
-                                    newArticle.updateAsync(
+                                    newArticle.update(
                                         cols: ["articleIsValid"],
                                         params: [true],
                                         id: "articleId",
@@ -180,12 +180,12 @@ struct ArticleRepository : ArticleProtocol {
                                     if !item.articleIsValid {
                                         if item._attributeValues.count == 0 {
                                             item.articleIsValid = true
-                                            item.updateAsync(cols: ["articleIsValid"], params: [true], id:"articleId", value: item.articleId).whenComplete { _ in }
+                                            item.update(cols: ["articleIsValid"], params: [true], id:"articleId", value: item.articleId).whenComplete { _ in }
                                             continue
                                         }
-                                        ArticleAttributeValue(connection: connection).deleteAsync(key: "articleId", value: item.articleId).whenComplete { _ in
+                                        ArticleAttributeValue(connection: connection).delete(key: "articleId", value: item.articleId).whenComplete { _ in
                                             item.connection = connection
-                                            item.deleteAsync().whenComplete { _ in }
+                                            item.delete().whenComplete { _ in }
                                         }
                                         result.articles.remove(at: i - result.deleted)
                                         result.deleted += 1
@@ -208,8 +208,8 @@ struct ArticleRepository : ArticleProtocol {
                                     }
 
                                     // Commit update product and barcode counter
-                                    company.updateAsync(connection: connection, key: "barcodeCounterPrivate", value: company.barcodeCounterPrivate).whenComplete { _ in }
-                                    product.updateAsync(cols: ["productIsValid", "productUpdated"], params: [true, Int.now()], id:"productId", value: product.productId).whenComplete { _ in
+                                    company.update(connection: connection, key: "barcodeCounterPrivate", value: company.barcodeCounterPrivate).whenComplete { _ in }
+                                    product.update(cols: ["productIsValid", "productUpdated"], params: [true, Int.now()], id:"productId", value: product.productId).whenComplete { _ in
                                         promise.succeed(result)
                                     }
                                 }
@@ -224,7 +224,7 @@ struct ArticleRepository : ArticleProtocol {
     }
     
     func get(productId: Int, storeIds: String) -> EventLoopFuture<[Article]> {
-        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<[Article]> in
+        return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<[Article]> in
             defer { connection.disconnect() }
             return self.get(connection: connection, productId: productId, storeIds: storeIds)
         }
@@ -240,13 +240,13 @@ struct ArticleRepository : ArticleProtocol {
 
     func get(id: Int) -> EventLoopFuture<Article> {
         let article = Article()
-        return article.getAsync(id).map { () -> Article in
+        return article.get(id).map { () -> Article in
             article
         }
     }
     
     func getStock(productId: Int, storeIds: String, tagId: Int) -> EventLoopFuture<ArticleForm> {
-        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<ArticleForm> in
+        return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<ArticleForm> in
             defer { connection.disconnect() }
 
             var header = [String]()
@@ -329,11 +329,11 @@ struct ArticleRepository : ArticleProtocol {
 	}
 	
     func getGrouped(productId: Int) -> EventLoopFuture<[GroupItem]> {
-        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<[GroupItem]> in
+        return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<[GroupItem]> in
             defer { connection.disconnect() }
 
             let query: EventLoopFuture<[Article]> = Article(connection: connection)
-                .queryAsync(whereclause: "productId = $1", orderby: ["articleId"])
+                .query(whereclause: "productId = $1", orderby: ["articleId"])
 
             return query.flatMap { articles -> EventLoopFuture<[GroupItem]> in
                 let promise = connection.eventLoop.makePromise(of:  [GroupItem].self)
@@ -342,7 +342,7 @@ struct ArticleRepository : ArticleProtocol {
                     let data = row.articleBarcodes.first(where: { $0.tags.count == 0 })
                     if let barcode = data?.barcode {
                         let product = Product(connection: connection)
-                        product.getAsync(barcode: barcode).whenComplete { _ in
+                        product.get(barcode: barcode).whenComplete { _ in
                             if product.productId != productId {
                                 rows.append(GroupItem(id: row.articleId, barcode: barcode, product: product))
                             }
@@ -363,24 +363,24 @@ struct ArticleRepository : ArticleProtocol {
     func add(item: Article) -> EventLoopFuture<Int> {
         item.articleCreated = Int.now()
         item.articleUpdated = Int.now()
-        return item.saveAsync().map { id -> Int in
+        return item.save().map { id -> Int in
             item.articleId = id as! Int
             return item.articleId
         }
     }
     
     func addGroup(item: Article) -> EventLoopFuture<GroupItem> {
-        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<GroupItem> in
+        return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<GroupItem> in
             defer { connection.disconnect() }
             item.connection = connection
             
             let barcode = item.articleBarcodes.first!.barcode
             let product = Product(connection: connection)
-            return product.getAsync(barcode: barcode).flatMap { () -> EventLoopFuture<GroupItem> in
+            return product.get(barcode: barcode).flatMap { () -> EventLoopFuture<GroupItem> in
                 item.productId = product.productId
                 item.articleCreated = Int.now()
                 item.articleUpdated = Int.now()
-                return item.saveAsync().map { id -> GroupItem in
+                return item.save().map { id -> GroupItem in
                     item.articleId = id as! Int
                     return GroupItem(id: item.articleId, barcode: barcode, product: product)
                 }
@@ -389,11 +389,11 @@ struct ArticleRepository : ArticleProtocol {
     }
 
     func update(id: Int, item: Article) -> EventLoopFuture<Bool> {
-        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Bool> in
+        return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<Bool> in
             defer { connection.disconnect() }
 
             let item = Article(connection: connection)
-            return item.getAsync(id).flatMap { () -> EventLoopFuture<Bool> in
+            return item.get(id).flatMap { () -> EventLoopFuture<Bool> in
                 // TODO: check this in test
                 if let newBarcode = item.articleBarcodes.first {
                     var barcode: Barcode?
@@ -407,7 +407,7 @@ struct ArticleRepository : ArticleProtocol {
                     if let barcode = barcode {
                         barcode.barcode = newBarcode.barcode
                         item.articleUpdated = Int.now()
-                        return item.saveAsync().map { id -> Bool in
+                        return item.save().map { id -> Bool in
                             return true
                         }
                     }
@@ -418,20 +418,20 @@ struct ArticleRepository : ArticleProtocol {
     }
     
     func delete(id: Int) -> EventLoopFuture<Bool> {
-        return Article().deleteAsync(id).map { bool -> Bool in
+        return Article().delete(id).map { bool -> Bool in
             bool
         }
     }
 
     func addAttributeValue(item: ArticleAttributeValue) -> EventLoopFuture<Int> {
-        return item.saveAsync().map { id -> Int in
+        return item.save().map { id -> Int in
             item.articleAttributeValueId = id as! Int
             return item.articleAttributeValueId
         }
     }
     
     func removeAttributeValue(id: Int) -> EventLoopFuture<Bool> {
-        return ArticleAttributeValue().deleteAsync(id).map { bool -> Bool in
+        return ArticleAttributeValue().delete(id).map { bool -> Bool in
             bool
         }
     }

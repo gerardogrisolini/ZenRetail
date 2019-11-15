@@ -13,11 +13,11 @@ import NIO
 struct UserRepository : UserProtocol {
     
    	func getAll() -> EventLoopFuture<[User]> {
-        return User().queryAsync()
+        return User().query()
     }
     
     func get(id: String) -> EventLoopFuture<User> {
-        let rows: EventLoopFuture<[User]> = User().queryAsync(whereclause: "uniqueID = $1", params: [id], cursor: Cursor(limit: 1, offset: 0))
+        let rows: EventLoopFuture<[User]> = User().query(whereclause: "uniqueID = $1", params: [id], cursor: Cursor(limit: 1, offset: 0))
         return rows.flatMapThrowing { users -> User in
             if let user = users.first {
                 return user
@@ -29,7 +29,7 @@ struct UserRepository : UserProtocol {
     func add(item: User) -> EventLoopFuture<String> {
         item.uniqueID = UUID().uuidString
         item.password = item.password.encrypted
-        return item.saveAsync().map { id -> String in
+        return item.save().map { id -> String in
             item.uniqueID = id as! String
             return item.uniqueID
         }
@@ -48,14 +48,14 @@ struct UserRepository : UserProtocol {
             }
             current.email = item.email
             
-            return current.saveAsync().map { id -> Bool in
+            return current.save().map { id -> Bool in
                 id as! Int > 0
             }
         }
     }
     
     func delete(id: String) -> EventLoopFuture<Bool> {
-        return User().deleteAsync(key: "uniqueID", value: id).map { count -> Bool in
+        return User().delete(key: "uniqueID", value: id).map { count -> Bool in
             count > 0
         }
     }

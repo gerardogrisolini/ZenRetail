@@ -64,7 +64,7 @@ class MovementController {
             return
         }
 
-        ZenPostgres.pool.connectAsync().whenComplete { res in
+        ZenPostgres.pool.connect().whenComplete { res in
             switch res {
             case .success(let conn):
                 defer { conn.disconnect() }
@@ -190,7 +190,7 @@ class MovementController {
             return
         }
   
-        ZenPostgres.pool.connectAsync().whenComplete { res in
+        ZenPostgres.pool.connect().whenComplete { res in
             switch res {
             case .success(let conn):
                 defer { conn.disconnect() }
@@ -242,7 +242,7 @@ class MovementController {
             return
         }
 
-        ZenPostgres.pool.connectAsync().whenComplete { res in
+        ZenPostgres.pool.connect().whenComplete { res in
             switch res {
             case .success(let conn):
                 defer { conn.disconnect() }
@@ -281,7 +281,7 @@ class MovementController {
         let promise = connection.eventLoop.makePromise(of: Void.self)
 
         func saveMovement() -> EventLoopFuture<Bool> {
-            return item.updateAsync(
+            return item.update(
                 cols: ["movementAmount", "movementStatus"],
                 params: [amount, item.movementStatus],
                 id: "movementId",
@@ -340,7 +340,7 @@ class MovementController {
             return
         }
 
-        ZenPostgres.pool.connectAsync().whenComplete { res in
+        ZenPostgres.pool.connect().whenComplete { res in
             switch res {
             case .success(let conn):
                 defer { conn.disconnect() }

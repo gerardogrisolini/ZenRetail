@@ -29,7 +29,7 @@ class MovementArticleController {
             return
         }
         
-        ZenPostgres.pool.connectAsync().whenComplete { res in
+        ZenPostgres.pool.connect().whenComplete { res in
             switch res {
             case .success(let conn):
                 defer { conn.disconnect() }
@@ -61,7 +61,7 @@ class MovementArticleController {
             return
         }
 
-        ZenPostgres.pool.connectAsync().whenComplete { res in
+        ZenPostgres.pool.connect().whenComplete { res in
             switch res {
             case .success(let conn):
                 defer { conn.disconnect() }
@@ -94,7 +94,7 @@ class MovementArticleController {
             return
         }
 
-        ZenPostgres.pool.connectAsync().whenComplete { res in
+        ZenPostgres.pool.connect().whenComplete { res in
             switch res {
             case .success(let conn):
                 defer { conn.disconnect() }
@@ -124,7 +124,7 @@ class MovementArticleController {
             return
         }
 
-        ZenPostgres.pool.connectAsync().whenComplete { res in
+        ZenPostgres.pool.connect().whenComplete { res in
             switch res {
             case .success(let conn):
                 defer { conn.disconnect() }

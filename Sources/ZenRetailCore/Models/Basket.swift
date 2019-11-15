@@ -90,13 +90,13 @@ class Basket: PostgresTable, Codable {
 //    func getProduct(barcode: String) -> EventLoopFuture<Product> {
 //        func getProduct() -> EventLoopFuture<Product> {
 //            let product = Product(connection: connection!)
-//            return product.getAsync(barcode: barcode).map { () -> Product in
+//            return product.get(barcode: barcode).map { () -> Product in
 //                return product
 //            }
 //        }
 //
 //        if connection == nil {
-//            return ZenPostgres.pool.connectAsync().flatMap { conn -> EventLoopFuture<Product> in
+//            return ZenPostgres.pool.connect().flatMap { conn -> EventLoopFuture<Product> in
 //                self.connection = conn
 //                defer { conn.disconnect() }
 //                return getProduct()

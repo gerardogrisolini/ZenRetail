@@ -159,7 +159,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                 } else {
                     registry.registryEmail = account.username
                     registry.registryPassword = account.password.encrypted
-                    registry.saveAsync().whenComplete { result in
+                    registry.save().whenComplete { result in
                         do {
                             switch result {
                             case .success(let id):
@@ -429,7 +429,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
         basket.registryId = id
         
         let product = Product()
-        product.getAsync(barcode: basket.basketBarcode).whenComplete { result in
+        product.get(barcode: basket.basketBarcode).whenComplete { result in
             switch result {
             case .success(_):
                 if product.productId == 0 {

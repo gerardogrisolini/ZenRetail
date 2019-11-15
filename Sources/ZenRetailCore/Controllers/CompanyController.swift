@@ -56,7 +56,7 @@ class CompanyController {
         media.contentType = fileName.contentType
         media.name = fileName != "logo.png" && fileName != "header.png" ? fileName.uniqueName() : fileName
 
-        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Media> in
+        return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<Media> in
             defer { connection.disconnect() }
 
             let big = File(connection: connection)
@@ -64,7 +64,7 @@ class CompanyController {
             big.fileType = fileName.hasSuffix(".csv") ? MediaType.csv.rawValue : MediaType.media.rawValue
             big.fileContentType = media.contentType
             big.setData(data: data)
-            return big.saveAsync().flatMap { id -> EventLoopFuture<Media> in
+            return big.save().flatMap { id -> EventLoopFuture<Media> in
                 if fileName.contentType.hasPrefix("image/"),
                     let thumb = try? Image(data: data).resizedTo(width: 380),
                     let export = try? thumb.export() {
@@ -73,7 +73,7 @@ class CompanyController {
                     small.fileType = MediaType.thumb.rawValue
                     small.fileContentType = media.contentType
                     small.setData(data: export)
-                    return big.saveAsync().map { id -> Media in
+                    return big.save().map { id -> Media in
                         return media
                     }
                 }
@@ -84,7 +84,7 @@ class CompanyController {
 
     func companyHandlerGET(request: HttpRequest, response: HttpResponse) {
         let item = Company()
-        item.selectAsync().whenComplete { result in
+        item.select().whenComplete { result in
             do {
                 switch result {
                 case .success(_):
@@ -106,7 +106,7 @@ class CompanyController {
             return
         }
         
-        item.saveAsync().whenComplete { result in
+        item.save().whenComplete { result in
             do {
                 switch result {
                 case .success(_):
@@ -184,7 +184,7 @@ class CompanyController {
             }
             
             let company = Company()
-            company.selectAsync().whenComplete { result in
+            company.select().whenComplete { result in
                 if company.companyEmailInfo.isEmpty {
                     response.badRequest(error: "\(request.head.uri) \(request.head.method): email address from is empty")
                     return

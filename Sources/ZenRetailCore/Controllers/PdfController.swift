@@ -54,7 +54,7 @@ class PdfController {
         }
 
         let company = Company()
-        company.selectAsync().whenComplete { _ in
+        company.select().whenComplete { _ in
             do {
                 if company.companyEmailInfo.isEmpty {
                     throw HttpError.systemError(0, "email address from is empty")

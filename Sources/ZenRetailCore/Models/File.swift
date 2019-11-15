@@ -41,7 +41,7 @@ class File: PostgresTable, Codable {
         fileSize = data.count
     }
     
-    override func saveAsync() -> EventLoopFuture<Any> {
+    override func save() -> EventLoopFuture<Any> {
         let sql = """
 INSERT INTO "File" ("fileName", "fileContentType", "fileType", "fileData", "fileSize", "fileCreated")
 VALUES ($1, $2, $3, $4, $5, $6)
@@ -65,7 +65,7 @@ VALUES ($1, $2, $3, $4, $5, $6)
         }
         
         if connection == nil {
-            return ZenPostgres.pool.connectAsync().flatMap { conn -> EventLoopFuture<Any> in
+            return ZenPostgres.pool.connect().flatMap { conn -> EventLoopFuture<Any> in
                 self.connection = conn
                 defer { conn.disconnect() }
                 return saveFile()
@@ -76,7 +76,7 @@ VALUES ($1, $2, $3, $4, $5, $6)
     }
     
     func getDataAsync(filename: String, size: MediaType) -> EventLoopFuture<[UInt8]> {
-        let query: EventLoopFuture<[File]> = queryAsync(
+        let query: EventLoopFuture<[File]> = self.query(
             whereclause: "fileName = $1 AND fileType = $2",
             params: [filename, size.rawValue],
             cursor: Cursor(limit: 1, offset: 0)
@@ -98,7 +98,8 @@ VALUES ($1, $2, $3, $4, $5, $6)
                 whereclause: "fileName = $1",
                 params: [fileName],
                 cursor: Cursor(limit: 1, offset: 0)
-            )
+            ).wait()
+            
             if files.count == 0 {
                 if let data = FileManager.default.contents(atPath: "./Assets/\(fileName)") {
                     let file = File(connection: connection!)
@@ -106,7 +107,7 @@ VALUES ($1, $2, $3, $4, $5, $6)
                     file.fileContentType = fileName.hasSuffix(".csv") ? "text/csv" : "image/png"
                     file.fileType = fileName.hasSuffix(".csv") ? MediaType.csv.rawValue : MediaType.media.rawValue
                     file.setData(data: data)
-                    try file.save()
+                    _ = try file.save().wait()
                 }
             }
         }

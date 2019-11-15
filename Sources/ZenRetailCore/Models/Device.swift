@@ -63,7 +63,7 @@ class Device: PostgresTable, Codable {
             } else {
                 self.deviceName = name
                 self.deviceToken = token
-                return self.saveAsync().map { id -> Void in
+                return self.save().map { id -> Void in
                     self.deviceId = id as! Int
                 }
             }

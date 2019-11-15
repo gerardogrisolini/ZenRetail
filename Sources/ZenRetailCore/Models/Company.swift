@@ -59,7 +59,7 @@ class Company: Codable {
 
     
     func create() throws {
-        let connection = try ZenPostgres.pool.connectAsync().wait()
+        let connection = try ZenPostgres.pool.connect().wait()
         defer { connection.disconnect() }
         return try create(connection: connection)
     }
@@ -67,7 +67,7 @@ class Company: Codable {
     func create(connection: PostgresConnection) throws {
         let encoder = JSONEncoder()
         let settings = Settings(connection: connection)
-        let rows: [Settings] = try settings.queryAsync().wait()
+        let rows: [Settings] = try settings.query().wait()
         if rows.count == 0 {
             let mirror = Mirror(reflecting: self)
             for case let (label?, value) in mirror.children {
@@ -82,19 +82,19 @@ class Company: Codable {
                 } else {
                     setting.value = "\(value)"
                 }
-                _ = try setting.saveAsync().wait()
+                _ = try setting.save().wait()
             }
         }
     }
 
-    func saveAsync() -> EventLoopFuture<Void> {
-        return ZenPostgres.pool.connectAsync().flatMap { connection -> EventLoopFuture<Void> in
+    func save() -> EventLoopFuture<Void> {
+        return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<Void> in
             defer { connection.disconnect() }
-            return self.saveAsync(connection: connection)
+            return self.save(connection: connection)
         }
     }
 
-    func saveAsync(connection: PostgresConnection) -> EventLoopFuture<Void> {
+    func save(connection: PostgresConnection) -> EventLoopFuture<Void> {
         let promise = connection.eventLoop.makePromise(of: Void.self)
         
         do {
@@ -113,7 +113,7 @@ class Company: Codable {
                     value = String(data: jsonData, encoding: .utf8)!
                 }
                 
-                settings.updateAsync(cols: ["value"], params: [value], id: "key", value: label).whenComplete { result in
+                settings.update(cols: ["value"], params: [value], id: "key", value: label).whenComplete { result in
                     index += 1
                     if index == count {
                         switch result {
@@ -132,21 +132,21 @@ class Company: Codable {
         return promise.futureResult
     }
 
-    func updateAsync(connection: PostgresConnection, key: String, value: String) -> EventLoopFuture<Bool> {
-        return Settings(connection: connection).updateAsync(cols: ["value"], params: [value], id: "key", value: key).map { count -> Bool in
+    func update(connection: PostgresConnection, key: String, value: String) -> EventLoopFuture<Bool> {
+        return Settings(connection: connection).update(cols: ["value"], params: [value], id: "key", value: key).map { count -> Bool in
             return count > 0
         }
     }
     
-    func selectAsync() -> EventLoopFuture<Void> {
-        return ZenPostgres.pool.connectAsync().flatMap { conn -> EventLoopFuture<Void> in
+    func select() -> EventLoopFuture<Void> {
+        return ZenPostgres.pool.connect().flatMap { conn -> EventLoopFuture<Void> in
             defer { conn.disconnect() }
-            return self.selectAsync(connection: conn)
+            return self.select(connection: conn)
         }
     }
 
-    func selectAsync(connection: PostgresConnection) -> EventLoopFuture<Void> {
-        let query: EventLoopFuture<[Settings]> = Settings(connection: connection).queryAsync()
+    func select(connection: PostgresConnection) -> EventLoopFuture<Void> {
+        let query: EventLoopFuture<[Settings]> = Settings(connection: connection).query()
         return query.flatMapThrowing { rows -> Void in
             let data = rows.reduce(into: [String: String]()) {
                 $0[$1.key] = $1.value
@@ -220,52 +220,4 @@ class Company: Codable {
         shippingStandard = data["shippingStandard"]! == "true"
         shippingExpress = data["shippingExpress"]! == "true"
     }
-    
-    
-    /*
-    func save() throws {
-        let connection = try ZenPostgres.pool.connect()
-        defer { connection.disconnect() }
-        return try save(connection: connection)
-    }
-
-    func save(connection: PostgresConnection) throws {
-        let encoder = JSONEncoder()
-        let settings = Settings(connection: connection)
-        let mirror = Mirror(reflecting: self)
-        for case let (label?, value) in mirror.children {
-            if value is [Translation] {
-                let jsonData = try encoder.encode(value as! [Translation])
-                let valueString = String(data: jsonData, encoding: .utf8)!
-                _ = try settings.update(cols: ["value"], params: [valueString], id: "key", value: label)
-            } else if value is Seo {
-                let jsonData = try encoder.encode(value as! Seo)
-                let valueString = String(data: jsonData, encoding: .utf8)!
-                _ = try settings.update(cols: ["value"], params: [valueString], id: "key", value: label)
-            } else {
-                _ = try settings.update(cols: ["value"], params: [value], id: "key", value: label)
-            }
-        }
-    }
-
-    func update(connection: PostgresConnection, key: String, value: String) throws {
-        _ = try Settings(connection: connection).update(cols: ["value"], params: [value], id: "key", value: key)
-    }
-    
-    func select() throws {
-        let connection = try ZenPostgres.pool.connect()
-        defer { connection.disconnect() }
-        return try select(connection: connection)
-    }
-    
-    func select(connection: PostgresConnection) throws {
-        let settings = Settings(connection: connection)
-        let rows: [Settings] = try settings.query()
-        let data = rows.reduce(into: [String: String]()) {
-            $0[$1.key] = $1.value
-        }
-        
-        try loadData(data)
-    }
-    */
 }
