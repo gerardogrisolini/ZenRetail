@@ -33,18 +33,14 @@ public class ZenRetail {
         ZenRetail.zenNIO = ZenNIO(host: "0.0.0.0", port: ZenRetail.config.serverPort, router: router)
         ZenRetail.zenNIO.addCORS()
         ZenRetail.zenNIO.addWebroot(path: ZenRetail.config.documentRoot)
-        ZenRetail.zenNIO.addAuthentication(handler: { (username, password) -> (String?) in
-            do {
-                let user = User()
-                try user.get(usr: username, pwd: password).wait()
+        ZenRetail.zenNIO.addAuthentication(handler: { (username, password) -> EventLoopFuture<String> in
+            let user = User()
+            return user.get(usr: username, pwd: password).map { () -> String in
                 return user.uniqueID
-            } catch {
-                do {
-                    let registry = Registry()
-                    try registry.get(email: username, pwd: password).wait()
+            }.flatMapError { error -> EventLoopFuture<String> in
+                let registry = Registry()
+                return registry.get(email: username, pwd: password).map { () -> String in
                     return registry.uniqueID
-                } catch {
-                    return nil
                 }
             }
         })
