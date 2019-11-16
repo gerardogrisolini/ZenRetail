@@ -5,11 +5,12 @@
 //  Created by Gerardo Grisolini on 22/04/18.
 //
 
+/*
 import Foundation
 import NIO
 import ZenNIO
-import ZenMWS
 import ZenPostgres
+import ZenMWS
 
 public class AmazonController: NSObject {
     
@@ -187,4 +188,4 @@ public class AmazonController: NSObject {
 //        }
     }
 }
-
+*/

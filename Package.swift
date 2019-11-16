@@ -16,15 +16,27 @@ let package = Package(
         .package(url: "https://github.com/gerardogrisolini/ZenNIO.git", .branch("master")),
         .package(url: "https://github.com/gerardogrisolini/ZenPostgres.git", .branch("master")),
         .package(url: "https://github.com/gerardogrisolini/ZenSMTP.git", .branch("master")),
-        .package(url: "https://github.com/gerardogrisolini/ZenMWS.git", .branch("master")),
-        .package(url: "https://github.com/gerardogrisolini/ZenEBAY.git", .branch("master")),
+        .package(url: "https://github.com/tadija/AEXML.git", .branch("master")),
+//        .package(url: "https://github.com/gerardogrisolini/ZenMWS.git", .branch("master")),
+//        .package(url: "https://github.com/gerardogrisolini/ZenEBAY.git", .branch("master")),
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .branch("master")),
         .package(url: "https://github.com/twostraws/SwiftGD.git", .branch("master")),
     ],
     targets: [
         .target(
             name: "ZenRetailCore",
-            dependencies: ["ZenNIO", "ZenNIOSSL", "ZenPostgres", "ZenSMTP", "ZenMWS", "ZenEBAY", "CryptoSwift", "SwiftGD"]),
+            dependencies: [
+                "ZenNIO",
+                "ZenNIOSSL",
+                "ZenPostgres",
+                "ZenSMTP",
+                "AEXML",
+                "CryptoSwift",
+//                "ZenMWS",
+//                "ZenEBAY",
+                "SwiftGD"
+            ]
+        ),
         .target(
             name: "ZenRetail",
             dependencies: ["ZenRetailCore"]),

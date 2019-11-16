@@ -267,7 +267,7 @@ public class ZenRetail {
         _ = StatisticController(router: router)
         _ = PublicationController(router: router)
         _ = EcommerceController(router: router)
-        _ = AmazonController(router: router)
+        //_ = AmazonController(router: router)
     }
     
     private func addFilters() {

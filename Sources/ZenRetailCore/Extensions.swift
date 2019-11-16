@@ -8,9 +8,9 @@
 import Foundation
 import NIO
 import ZenNIO
-import ZenMWS
 import CryptoSwift
 import ZenPostgres
+//import ZenMWS
 
 extension Int {
     static func now() -> Int {
@@ -197,6 +197,7 @@ extension Array where Element:Translation {
     }
 }
 
+/*
 // Amazon MWS
 
 protocol EnumCollection : Hashable {}
@@ -500,4 +501,4 @@ extension Product {
         )
     }
 }
-
+*/

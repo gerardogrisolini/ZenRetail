@@ -9,7 +9,7 @@
 import Foundation
 import PostgresNIO
 import ZenPostgres
-import ZenMWS
+//import ZenMWS
 
 class Category: PostgresTable, Codable {
     
@@ -87,14 +87,14 @@ class Category: PostgresTable, Codable {
         _ = try item.save().wait()
     }
     
-    func setupMarketplace() throws {
-        let rows: [Category] = try query(cursor: Cursor(limit: 1, offset: 0)).wait()
-        if rows.count == 0 {
-            for item in ClothingType.allCases {
-                if item != .jewelry {
-                    try addCategory(name: item.rawValue, description: "Clothing: \(item.rawValue)", isPrimary: true)
-                }
-            }
-        }
-    }
+//    func setupMarketplace() throws {
+//        let rows: [Category] = try query(cursor: Cursor(limit: 1, offset: 0)).wait()
+//        if rows.count == 0 {
+//            for item in ClothingType.allCases {
+//                if item != .jewelry {
+//                    try addCategory(name: item.rawValue, description: "Clothing: \(item.rawValue)", isPrimary: true)
+//                }
+//            }
+//        }
+//    }
 }
