@@ -287,7 +287,7 @@ public class ZenRetail {
     
     private func createFolders() throws {
         let fileManager = FileManager.default
-        let paths = ["csv", "media", "thumb"]
+        let paths = ["media", "thumb"]
         for path in paths {
             var isDirectory: ObjCBool = true
             let p = "\(ZenNIO.htdocsPath)/\(path)"

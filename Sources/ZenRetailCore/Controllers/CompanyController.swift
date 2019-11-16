@@ -31,25 +31,29 @@ class CompanyController {
 //            request, response in
 //            self.getFile(request, response, .thumb)
 //        })
-//        router.get("/csv/:filename", handler: {
-//            request, response in
-//            self.getFile(request, response, .csv)
-//        })
+        router.get("/csv/:filename", handler: {
+            request, response in
+            self.getFile(request, response, .csv)
+        })
     }
     
     
-//    fileprivate func getFile(_ request: HttpRequest, _ response: HttpResponse, _ size: MediaType) {
-//        
-//        let file = File()
-//        if let filename: String = request.getParam("filename"),
-//            let data = try? file.getData(filename: filename, size: size) {
-//                response.addHeader(.contentType, value: file.fileContentType)
-//                response.send(data: Data(data))
-//                response.completed()
-//        } else {
-//            response.completed( .notFound)
-//        }
-//    }
+    fileprivate func getFile(_ request: HttpRequest, _ response: HttpResponse, _ size: MediaType) {
+        if let filename: String = request.getParam("filename") {
+            File().getFileAsync(filename: filename, size: size).whenComplete { result in
+                switch result {
+                case .success(let file):
+                    response.addHeader(.contentType, value: file.fileContentType)
+                    response.send(data: Data(data))
+                    response.completed()
+                case .failure(let err):
+                    response.completed(.notFound)
+                }
+            }
+        } else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter filename")
+        }
+    }
 
     fileprivate func saveFiles(_ fileName: String, _ data: Data) -> EventLoopFuture<Media> {
         let media = Media()

@@ -128,33 +128,44 @@ struct EcommerceRepository : EcommerceProtocol {
     
     
     func getProductsFeatured() -> EventLoopFuture<[Product]> {
-        let obj = Product()
-        let sql = obj.querySQL(
-            whereclause: "Publication.publicationFeatured = $1 AND Product.productIsActive = $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2",
-            params: [true, Int.now()],
-            orderby: ["Publication.publicationStartAt DESC"],
-            joins: defaultJoins()
-        )
-        
-        return obj.rowsAsync(sql: sql, barcodes: false)
+        return ZenPostgres.pool.connect().flatMap { conn -> EventLoopFuture<[Product]> in
+            defer { conn.disconnect() }
+            
+            let obj = Product(connection: conn)
+            let sql = obj.querySQL(
+                whereclause: "Publication.publicationFeatured = $1 AND Product.productIsActive = $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2",
+                params: [true, Int.now()],
+                orderby: ["Publication.publicationStartAt DESC"],
+                joins: self.defaultJoins()
+            )
+            
+            return obj.rowsAsync(sql: sql, barcodes: false)
+        }
     }
     
     func getProductsNews() -> EventLoopFuture<[Product]> {
-        let obj = Product()
-        let sql = obj.querySQL(
-            whereclause: "Publication.publicationNew = $1 AND Product.productIsActive = $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2",
-            params: [true, Int.now()],
-            orderby: ["Publication.publicationStartAt DESC"],
-            joins: defaultJoins()
-        )
-        
-        return obj.rowsAsync(sql: sql, barcodes: false)
+        return ZenPostgres.pool.connect().flatMap { conn -> EventLoopFuture<[Product]> in
+            defer { conn.disconnect() }
+            
+            let obj = Product(connection: conn)
+            let sql = obj.querySQL(
+                whereclause: "Publication.publicationNew = $1 AND Product.productIsActive = $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2",
+                params: [true, Int.now()],
+                orderby: ["Publication.publicationStartAt DESC"],
+                joins: self.defaultJoins()
+            )
+            
+            return obj.rowsAsync(sql: sql, barcodes: false)
+        }
     }
     
     func getProductsDiscount() -> EventLoopFuture<[Product]> {
-        let obj = Product()
-        let now = Int.now()
-        let sql = """
+        return ZenPostgres.pool.connect().flatMap { conn -> EventLoopFuture<[Product]> in
+            defer { conn.disconnect() }
+
+            let obj = Product(connection: conn)
+            let now = Int.now()
+            let sql = """
 SELECT "Product".*, "Brand".*, "ProductCategory".*, "Category".*, "Publication".*
 FROM "Product"
 INNER JOIN "Brand" ON "Product"."brandId" = "Brand"."brandId"
@@ -168,23 +179,30 @@ AND "Publication"."publicationStartAt" <= \(now)
 AND "Publication"."publicationFinishAt" >= \(now)
 ORDER BY "Publication"."publicationStartAt" DESC
 """
-        return obj.rowsAsync(sql: sql, barcodes: false)
+            return obj.rowsAsync(sql: sql, barcodes: false)
+        }
     }
 
     func getProducts(brand: String) -> EventLoopFuture<[Product]> {
-        let obj = Product()
-        let sql = obj.querySQL(
-            whereclause: "Brand.brandSeo ->> $1 = $2 AND Publication.publicationStartAt <= $3 AND Publication.publicationFinishAt >= $3 AND Product.productIsActive = $4",
-            params: ["permalink", brand, Int.now(), true],
-            orderby: ["Product.productName"],
-            joins: defaultJoins()
-        )
-        
-        return obj.rowsAsync(sql: sql, barcodes: false)
+        return ZenPostgres.pool.connect().flatMap { conn -> EventLoopFuture<[Product]> in
+            defer { conn.disconnect() }
+            
+            let obj = Product(connection: conn)
+            let sql = obj.querySQL(
+                whereclause: "Brand.brandSeo ->> $1 = $2 AND Publication.publicationStartAt <= $3 AND Publication.publicationFinishAt >= $3 AND Product.productIsActive = $4",
+                params: ["permalink", brand, Int.now(), true],
+                orderby: ["Product.productName"],
+                joins: self.defaultJoins()
+            )
+            
+            return obj.rowsAsync(sql: sql, barcodes: false)
+        }
     }
     
     func getProducts(category: String) -> EventLoopFuture<[Product]> {
-        let sql = """
+        return ZenPostgres.pool.connect().flatMap { conn -> EventLoopFuture<[Product]> in
+            defer { conn.disconnect() }
+            let sql = """
 SELECT "Product".*, "Brand".*, "ProductCategory".*, "Category".*, "Publication".*
 FROM "Product"
 INNER JOIN "Brand" ON "Product"."brandId" = "Brand"."brandId"
@@ -203,18 +221,23 @@ AND "Publication"."publicationStartAt" <= \(Int.now())
 AND "Publication"."publicationFinishAt" >= \(Int.now())
 ORDER BY "Product"."productName"
 """
-        return Product().rowsAsync(sql: sql, barcodes: false)
+            return Product(connection: conn).rowsAsync(sql: sql, barcodes: false)
+        }
     }
 
     func findProducts(text: String) -> EventLoopFuture<[Product]> {
-        let obj = Product()
-        let sql = obj.querySQL(
-            whereclause: "LOWER(Product.productName) LIKE $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2 AND Product.productIsActive = $3",
-            params: ["%\(text.lowercased())%", Int.now(), true],
-            joins: defaultJoins()
-        )
-        
-        return obj.rowsAsync(sql: sql, barcodes: false)
+        return ZenPostgres.pool.connect().flatMap { conn -> EventLoopFuture<[Product]> in
+            defer { conn.disconnect() }
+            
+            let obj = Product(connection: conn)
+            let sql = obj.querySQL(
+                whereclause: "LOWER(Product.productName) LIKE $1 AND Publication.publicationStartAt <= $2 AND Publication.publicationFinishAt >= $2 AND Product.productIsActive = $3",
+                params: ["%\(text.lowercased())%", Int.now(), true],
+                joins: self.defaultJoins()
+            )
+            
+            return obj.rowsAsync(sql: sql, barcodes: false)
+        }
     }
 
     func getProduct(name: String) -> EventLoopFuture<Product> {
