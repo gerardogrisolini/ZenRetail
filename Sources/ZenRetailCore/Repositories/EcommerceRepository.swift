@@ -370,9 +370,9 @@ ORDER BY "Product"."productName"
 //        }
         
         return File()
-            .getDataAsync(filename: "shippingcost.csv", size: .csv)
-            .flatMapThrowing { bytes -> Cost in
-                let string = String(bytes: bytes, encoding: .utf8)!
+            .getFileAsync(filename: "shippingcost.csv", size: .csv)
+            .flatMapThrowing { file -> Cost in
+                let string = String(bytes: file.fileData, encoding: .utf8)!
                 let lines = string.split(separator: "\n")
                 for line in lines {
                     let columns = line.split(separator: ",", omittingEmptySubsequences: false)

@@ -13,8 +13,8 @@ import ZenPostgres
 
 struct ArticleRepository : ArticleProtocol {
 
-    private func newNumber(productId: Int) -> EventLoopFuture<Int> {
-        let article = Article()
+    private func newNumber(productId: Int, connection: PostgresConnection) -> EventLoopFuture<Int> {
+        let article = Article(connection: connection)
         let sql = "SELECT COALESCE(MAX(\"articleNumber\"),0) AS counter FROM \"\(article.table)\" WHERE \"productId\" = \(productId)";
         return article.sqlRowsAsync(sql).map { rows -> Int in
             return (rows.first?.column("counter")?.int ?? 0) + 1
@@ -66,7 +66,7 @@ struct ArticleRepository : ArticleProtocol {
                 let lastIndex = indexes.count - 1
                 
                 // Number of variation
-                return self.newNumber(productId: productId).flatMap { newNumber -> EventLoopFuture<Result> in
+                return self.newNumber(productId: productId, connection: connection).flatMap { newNumber -> EventLoopFuture<Result> in
                     var number = newNumber
                     
                     // Invalidate product and articles

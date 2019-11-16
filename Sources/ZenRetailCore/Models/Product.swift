@@ -103,7 +103,7 @@ class Product: PostgresTable, PostgresJson {
         productMedia = try container.decode([Media].self, forKey: .productMedia)
         productSeo = try? container.decodeIfPresent(Seo.self, forKey: .productSeo)
         productIsActive = try container.decode(Bool.self, forKey: .productIsActive)
-        _brand = try container.decodeIfPresent(Brand.self, forKey: ._brand) ?? Brand()
+        _brand = try container.decodeIfPresent(Brand.self, forKey: ._brand) ?? _brand
         brandId = try container.decodeIfPresent(Int.self, forKey: .brandId) ?? _brand.brandId
 
         _categories = try container.decodeIfPresent([ProductCategory].self, forKey: ._categories) ?? [ProductCategory]()
@@ -134,46 +134,42 @@ class Product: PostgresTable, PostgresJson {
     }
 
     func rowsAsync(sql: String, barcodes: Bool, storeIds: String = "0") -> EventLoopFuture<[Product]> {
-        return ZenPostgres.pool.connect().flatMap { conn -> EventLoopFuture<[Product]> in
-            defer { conn.disconnect() }
-            self.connection = conn
+        
+        return self.sqlRowsAsync(sql).flatMap { rows -> EventLoopFuture<[Product]> in
+            let promise = self.connection!.eventLoop.makePromise(of: [Product].self)
             
-            let promise = conn.eventLoop.makePromise(of: [Product].self)
+            let groups = Dictionary(grouping: rows) { row -> Int in
+                row.column("productId")!.int!
+            }
+            
+            var results = [Product]()
+            for group in groups {
+                let row = Product(connection: self.connection!)
+                row.decode(row: group.value.first!)
 
-            _ = self.sqlRowsAsync(sql).map { rows -> Void in
-
-                let groups = Dictionary(grouping: rows) { row -> Int in
-                    row.column("productId")!.int!
+                for cat in group.value {
+                    let productCategory = ProductCategory()
+                    productCategory.decode(row: cat)
+                    row._categories.append(productCategory)
                 }
-                
-                var results = [Product]()
-                for group in groups {
-                    let row = Product(connection: self.connection!)
-                    row.decode(row: group.value.first!)
 
-                    for cat in group.value {
-                        let productCategory = ProductCategory()
-                        productCategory.decode(row: cat)
-                        row._categories.append(productCategory)
-                    }
-
-                    if barcodes {
-                        row.makeAttributesAsync().whenComplete { _ in
-                            row.makeArticlesAsync(storeIds).whenComplete { _ in
-                                results.append(row)
-                                if results.count == group.value.count {
-                                    promise.succeed(results)
-                                }
+                if barcodes {
+                    let count = group.value.count
+                    row.makeAttributesAsync().whenComplete { _ in
+                        row.makeArticlesAsync(storeIds).whenComplete { _ in
+                            results.append(row)
+                            if results.count == count {
+                                promise.succeed(results)
                             }
                         }
-                    } else {
-                        results.append(row)
                     }
+                } else {
+                    results.append(row)
                 }
-                
-                if !barcodes { promise.succeed(results) }
             }
-
+            
+            if !barcodes { promise.succeed(results) }
+            
             return promise.futureResult
         }
     }
@@ -339,38 +335,24 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
             ]
         )
         
-        return ZenPostgres.pool.connect().flatMap { conn -> EventLoopFuture<Void> in
-            defer { conn.disconnect() }
-            self.connection = conn
-            
-            let promise = conn.eventLoop.makePromise(of: Void.self)
-
-            self.sqlRowsAsync(sql).whenComplete { result in
-                switch result {
-                case .success(let rows):
-                    if let item = rows.first {
-                        self.decode(row: item)
-                        
-                        for cat in rows {
-                            let productCategory = ProductCategory()
-                            productCategory.decode(row: cat)
-                            self._categories.append(productCategory)
-                        }
-
-                        self.makeAttributesAsync().whenComplete { _ in
-                            self.makeArticlesAsync().whenComplete { _ in
-                                promise.succeed(())
-                            }
-                        }
-                    } else {
-                        promise.fail(ZenError.recordNotFound)
-                    }
-                case .failure(let err):
-                    promise.fail(err)
+        return self.sqlRowsAsync(sql).flatMap { rows -> EventLoopFuture<Void> in
+            if let item = rows.first {
+                self.decode(row: item)
+                
+                for cat in rows {
+                    let productCategory = ProductCategory()
+                    productCategory.decode(row: cat)
+                    self._categories.append(productCategory)
                 }
-            }
 
-            return promise.futureResult
+                return self.makeAttributesAsync().flatMap { () -> EventLoopFuture<Void> in
+                    self.makeArticlesAsync().map { () -> Void in
+                        return
+                    }
+                }
+            } else {
+                return self.connection!.eventLoop.future(error: ZenError.recordNotFound)
+            }
         }
     }
     
@@ -417,226 +399,24 @@ ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
             ])
 
         
-        return ZenPostgres.pool.connect().flatMap { conn -> EventLoopFuture<Void> in
-            defer { conn.disconnect() }
-            self.connection = conn
-            
-            return self.sqlRowsAsync(sql).flatMapThrowing { rows -> Void in
-                if let item = rows.first {
-                    self.decode(row: item)
-                    for cat in rows {
-                        let productCategory = ProductCategory()
-                        productCategory.decode(row: cat)
-                        self._categories.append(productCategory)
-                    }
-                    
-                    self.makeArticle(barcode: barcode, rows: rows)
-                    return self.makeArticlesAsync().whenComplete { _ in
-                    }
-                } else {
-                    throw ZenError.recordNotFound
+        return self.sqlRowsAsync(sql).flatMap { rows -> EventLoopFuture<Void> in
+            if let item = rows.first {
+                self.decode(row: item)
+                
+                for cat in rows {
+                    let productCategory = ProductCategory()
+                    productCategory.decode(row: cat)
+                    self._categories.append(productCategory)
                 }
+
+                return self.makeAttributesAsync().flatMap { () -> EventLoopFuture<Void> in
+                    self.makeArticlesAsync().map { () -> Void in
+                        return
+                    }
+                }
+            } else {
+                return self.connection!.eventLoop.future(error: ZenError.recordNotFound)
             }
         }
     }
-
-    /*
-    func makeArticles(_ storeIds: String = "") throws {
-        let item = Article(connection: connection!)
-
-        let join = DataSourceJoin(
-            table: "ArticleAttributeValue",
-            onCondition: "Article.articleId = ArticleAttributeValue.articleId",
-            direction: .LEFT
-        )
-
-        let sql = storeIds.isEmpty
-            ? item.querySQL(
-                whereclause: "Article.productId = $1",
-                params: [self.productId],
-                orderby: ["Article.articleId", "ArticleAttributeValue.articleId"],
-                joins: [join]
-            )
-            : """
-SELECT "Article"."articleId",
-"Article"."productId",
-"Article"."articleNumber",
-"Article"."articleBarcodes",
-"Article"."articlePackaging",
-"Article"."articleIsValid",
-"Article"."articleCreated",
-"Article"."articleUpdated",
-"ArticleAttributeValue"."articleAttributeValueId",
-"ArticleAttributeValue"."articleId",
-"ArticleAttributeValue"."attributeValueId",
-SUM ("Stock"."stockQuantity") as stockQuantity,
-SUM ("Stock"."stockBooked") as stockBooked
-FROM "Article"
-LEFT JOIN "ArticleAttributeValue" ON "Article"."articleId" = "ArticleAttributeValue"."articleId"
-LEFT JOIN "Stock" ON "Article"."articleId" = "Stock"."articleId"
-WHERE "Article"."productId" = \(productId) AND ("Stock"."storeId" IN (\(storeIds)) OR "Stock"."storeId" IS NULL)
-GROUP BY "Article"."articleId",
-"Article"."productId",
-"Article"."articleNumber",
-"Article"."articleBarcodes",
-"Article"."articlePackaging",
-"Article"."articleIsValid",
-"Article"."articleCreated",
-"Article"."articleUpdated",
-"ArticleAttributeValue"."articleAttributeValueId",
-"ArticleAttributeValue"."articleId",
-"ArticleAttributeValue"."attributeValueId"
-ORDER BY "Article"."articleId","ArticleAttributeValue"."articleAttributeValueId"
-"""
-        let rows = try item.sqlRows(sql)
-        let groups = Dictionary(grouping: rows) { row -> Int in
-            row.column("articleId")!.int!
-        }
-        
-        for group in groups {
-            let article = Article()
-            article.decode(row: group.value.first!)
-            for art in group.value {
-                let attributeValue = ArticleAttributeValue()
-                attributeValue.decode(row: art)
-                article._attributeValues.append(attributeValue)
-            }
-            _articles.append(article)
-        }
-     }
-
-     func rows(sql: String, barcodes: Bool, storeIds: String = "") throws -> [Product] {
-       var results = [Product]()
-       let rows = try self.sqlRows(sql)
-
-       let groups = Dictionary(grouping: rows) { row -> Int in
-           row.column("productId")!.int!
-       }
-       
-       for group in groups {
-           let row = Product(connection: connection!)
-           row.decode(row: group.value.first!)
-           
-           for cat in group.value {
-               let productCategory = ProductCategory()
-               productCategory.decode(row: cat)
-               row._categories.append(productCategory)
-           }
-           
-           if barcodes {
-               try row.makeAttributes();
-               try row.makeArticles(storeIds);
-           }
-
-           results.append(row)
-       }
-       
-       return results
-     }
-
-     func makeAttributes() throws {
-        let attributeJoin = DataSourceJoin(
-            table: "Attribute",
-            onCondition: "ProductAttribute.attributeId = Attribute.attributeId",
-            direction: .INNER
-        )
-        let productAttributeValueJoin = DataSourceJoin(
-            table: "ProductAttributeValue",
-            onCondition: "ProductAttribute.productAttributeId = ProductAttributeValue.productAttributeId",
-            direction: .LEFT
-        )
-        let attributeValueJoin = DataSourceJoin(
-            table: "AttributeValue",
-            onCondition: "ProductAttributeValue.attributeValueId = AttributeValue.attributeValueId",
-            direction: .INNER
-        )
-
-        let productAttribute = ProductAttribute(connection: connection!)
-        let sql = productAttribute.querySQL(
-            whereclause: "ProductAttribute.productId = $1",
-            params: [self.productId],
-            orderby: ["ProductAttribute.productAttributeId", "ProductAttributeValue.attributeValueId"],
-            joins: [attributeJoin, productAttributeValueJoin, attributeValueJoin]
-        )
-        
-        let rows = try productAttribute.sqlRows(sql)
-        let groups = Dictionary(grouping: rows) { row -> Int in
-            row.column("productAttributeId")!.int!
-        }
-        
-        for group in groups.sorted(by: { $0.key < $1.key }) {
-            let pa = ProductAttribute()
-            pa.decode(row: group.value.first!)
-            for att in group.value {
-                let productAttributeValue = ProductAttributeValue()
-                productAttributeValue.decode(row: att)
-                pa._attributeValues.append(productAttributeValue)
-            }
-            _attributes.append(pa)
-        }
-     }
-    
-     func get(barcode: String) throws {
-        let brandJoin = DataSourceJoin(
-            table: "Brand",
-            onCondition: "Product.brandId = Brand.brandId",
-            direction: .INNER
-        )
-        let productCategoryJoin = DataSourceJoin(
-            table: "ProductCategory",
-            onCondition: "Product.productId = ProductCategory.productId",
-            direction: .LEFT
-        )
-        let categoryJoin = DataSourceJoin(
-            table: "Category",
-            onCondition: "ProductCategory.categoryId = Category.categoryId",
-            direction: .INNER
-        )
-        let articleJoin = DataSourceJoin(
-            table: "Article",
-            onCondition: "Product.productId = Article.productId",
-            direction: .INNER
-        )
-        let articleAttributeJoin = DataSourceJoin(
-            table: "ArticleAttributeValue",
-            onCondition: "ArticleAttributeValue.articleId = Article.articleId",
-            direction: .LEFT
-        )
-
-        let param = """
-'[{"barcode": "\(barcode)"}]'::jsonb
-"""
-        let sql = querySQL(
-            whereclause: "Article.articleBarcodes @> $1",
-            params: [param],
-            orderby: ["ArticleAttributeValue.articleAttributeValueId"],
-            joins: [
-                brandJoin,
-                productCategoryJoin,
-                categoryJoin,
-                articleJoin,
-                articleAttributeJoin
-            ])
-        
-        let rows = try self.sqlRows(sql)
-        if rows.count == 0 { throw ZenError.recordNotFound }
-
-        let groups = Dictionary(grouping: rows) { row -> Int in
-            row.column("productId")!.int!
-        }
-        
-        for group in groups {
-            decode(row: group.value.first!)
-            
-            for cat in group.value {
-                let productCategory = ProductCategory()
-                productCategory.decode(row: cat)
-                _categories.append(productCategory)
-            }
-        }
-        
-        try self.makeAttributes()
-        self.makeArticle(barcode: barcode, rows: rows)
-    }
-    */
 }

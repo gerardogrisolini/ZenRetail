@@ -212,67 +212,69 @@ ORDER BY "MovementArticle"."movementArticleId"
     }
     
     func update(id: Int, item: Movement) -> EventLoopFuture<Bool> {
-        let conn = item.connection!
+        return ZenPostgres.pool.connect().flatMap { conn -> EventLoopFuture<Bool> in
+            defer { conn.disconnect() }
 
-        return self.get(id: id, connection: conn).flatMap { current -> EventLoopFuture<Bool> in
-            current.connection = conn
-            
-            func save() -> EventLoopFuture<Bool> {
-                current.movementStatus = item.movementStatus
-                current.movementNote = item.movementNote
-                current.movementUpdated = item.movementUpdated
-                return current.save().map { id -> Bool in
-                    id as! Int > 0
-                }
-            }
-
-            item.movementUpdated = Int.now()
-            if item.movementStatus == "New" {
-                current.movementNumber = item.movementNumber
-                current.movementDate = item.movementDate
-                current.movementDesc = item.movementDesc
-                current.movementUser = item.movementUser
-                current.movementDevice = item.movementDevice
-                current.movementCausal = item.movementCausal
-                current.movementStore = item.movementStore
-                current.movementRegistry = item.movementRegistry
-                current.movementTags = item.movementTags
-                current.movementPayment = item.movementPayment
-                current.movementShipping = item.movementShipping
-                current.movementShippingCost = item.movementShippingCost
-                return current.getAmount().flatMap { () -> EventLoopFuture<Bool> in
-                    return save()
-                }
+            return self.get(id: id, connection: conn).flatMap { current -> EventLoopFuture<Bool> in
+                current.connection = conn
                 
-            } else if current.movementStatus == "New" && item.movementStatus == "Processing" {
-                return self.process(movement: current, actionTypes: [.Delivering, .Booking]).flatMap { () -> EventLoopFuture<Bool> in
+                func save() -> EventLoopFuture<Bool> {
+                    current.movementStatus = item.movementStatus
+                    current.movementNote = item.movementNote
+                    current.movementUpdated = item.movementUpdated
+                    return current.save().map { id -> Bool in
+                        id as! Int > 0
+                    }
+                }
+
+                item.movementUpdated = Int.now()
+                if item.movementStatus == "New" {
+                    current.movementNumber = item.movementNumber
+                    current.movementDate = item.movementDate
+                    current.movementDesc = item.movementDesc
+                    current.movementUser = item.movementUser
+                    current.movementDevice = item.movementDevice
+                    current.movementCausal = item.movementCausal
+                    current.movementStore = item.movementStore
+                    current.movementRegistry = item.movementRegistry
+                    current.movementTags = item.movementTags
+                    current.movementPayment = item.movementPayment
+                    current.movementShipping = item.movementShipping
+                    current.movementShippingCost = item.movementShippingCost
                     return current.getAmount().flatMap { () -> EventLoopFuture<Bool> in
                         return save()
                     }
+                    
+                } else if current.movementStatus == "New" && item.movementStatus == "Processing" {
+                    return self.process(movement: current, actionTypes: [.Delivering, .Booking]).flatMap { () -> EventLoopFuture<Bool> in
+                        return current.getAmount().flatMap { () -> EventLoopFuture<Bool> in
+                            return save()
+                        }
+                    }
                 }
-            }
-            else if current.movementStatus == "Processing" && item.movementStatus == "Canceled" {
-                return self.process(movement: current, actionTypes: [.Unbooking]).flatMap { () -> EventLoopFuture<Bool> in
-                    return save()
-                }
-            }
-            else if current.movementStatus != "Completed" && item.movementStatus == "Completed" {
-                var actions: [ActionType] = [.Stoking]
-                if current.movementStatus == "New" {
-                    actions = [.Delivering, .Stoking]
-                }
-                else if current.movementStatus == "Processing" {
-                    actions = [.Unbooking, .Stoking]
-                }
-                
-                return self.process(movement: current, actionTypes: actions).flatMap { () -> EventLoopFuture<Bool> in
-                    return current.getAmount().flatMap { () -> EventLoopFuture<Bool> in
+                else if current.movementStatus == "Processing" && item.movementStatus == "Canceled" {
+                    return self.process(movement: current, actionTypes: [.Unbooking]).flatMap { () -> EventLoopFuture<Bool> in
                         return save()
                     }
                 }
+                else if current.movementStatus != "Completed" && item.movementStatus == "Completed" {
+                    var actions: [ActionType] = [.Stoking]
+                    if current.movementStatus == "New" {
+                        actions = [.Delivering, .Stoking]
+                    }
+                    else if current.movementStatus == "Processing" {
+                        actions = [.Unbooking, .Stoking]
+                    }
+                    
+                    return self.process(movement: current, actionTypes: actions).flatMap { () -> EventLoopFuture<Bool> in
+                        return current.getAmount().flatMap { () -> EventLoopFuture<Bool> in
+                            return save()
+                        }
+                    }
+                }
+                
+                return conn.eventLoop.future(true)
             }
-            
-            return conn.eventLoop.future(true)
         }
     }
     

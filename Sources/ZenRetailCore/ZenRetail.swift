@@ -297,63 +297,43 @@ public class ZenRetail {
         }
     }
 
-    private func getFile(response: HttpResponse, fileName: String, size: MediaType) {
-        let file = File()
-        let query = file.getDataAsync(filename: fileName, size: size)
-        query.whenSuccess { bytes in
-            response.addHeader(.contentType, value: file.fileContentType)
-            response.body.reserveCapacity(bytes.count)
-            response.body.writeBytes(bytes)
-            response.completed()
-            
-            ZenRetail.zenNIO.eventLoopGroup.next().execute {
-                let path = "\(ZenRetail.config.documentRoot)/\(size)/\(fileName)"
-                let url = URL(fileURLWithPath: path)
-                try? Data(bytes).write(to: url)
-            }
+    private func getFile(ctx: ChannelHandlerContext, fileName: String, size: MediaType) -> EventLoopFuture<HttpResponse> {
+        let promise = ctx.eventLoop.makePromise(of: File.self)
+
+        File().getFileAsync(filename: fileName, size: size).whenComplete { result in
+           switch result {
+           case .success(let file):
+                promise.succeed(file)
+
+                ctx.eventLoop.scheduleTask(in: .seconds(3), { () -> Void in
+                    print("Local saving file \(size)/\(file.fileName) - \(file.fileSize / 1024)Kb")
+                    let path = "\(ZenRetail.config.documentRoot)/\(size)/\(fileName)"
+                    let url = URL(fileURLWithPath: path)
+                    try? Data(file.fileData).write(to: url)
+                })
+
+           case .failure(let err):
+                promise.fail(err)
+           }
         }
-        query.whenFailure { err in
-            response.completed(.notFound)
+
+        return promise.futureResult.map { f -> HttpResponse in
+           let response = HttpResponse(body: ctx.channel.allocator.buffer(capacity: f.fileSize))
+           response.addHeader(.contentType, value: f.fileContentType)
+           //response.body.reserveCapacity(f.fileSize)
+           response.body.writeBytes(f.fileData)
+           response.completed()
+           return response
         }
     }
     
     private func addErrorHandler() {
-        ZenRetail.zenNIO.addError { (ctx, request, error) -> HttpResponse in
-            let response = HttpResponse(body: ctx.channel.allocator.buffer(capacity: 0))
-
+        ZenRetail.zenNIO.addError { (ctx, request, error) -> EventLoopFuture<HttpResponse> in
             var html = ""
             var status: HTTPResponseStatus
-            switch error {
-            case let e as IOError where e.errnoCode == ENOENT:
-                html += "<h3>IOError (not found)</h3>"
-                status = .notFound
-      
-                // syncronize from database
-                switch request.uri {
-                case let str where str.contains("/thumb/"):
-                    let fileName = request.uri.replacingOccurrences(of: "/thumb/", with: "")
-                    self.getFile(response: response, fileName: fileName, size: .thumb)
-                    return response
-                case let str where str.contains("/media/"):
-                    let fileName = request.uri.replacingOccurrences(of: "/media/", with: "")
-                    self.getFile(response: response, fileName: fileName, size: .media)
-                    return response
-                case let str where str.contains("/csv/"):
-                    let fileName = request.uri.replacingOccurrences(of: "/csv/", with: "")
-                    self.getFile(response: response, fileName: fileName, size: .csv)
-                    return response
-                default:
-                    break
-                }
-            case let e as IOError:
-                html += "<h3>IOError (other)</h3><h4>\(e.description)</h4>"
-                status = .expectationFailed
-            default:
-                html += "<h3>\(type(of: error)) error</h3>"
-                status = .internalServerError
-            }
-            
-            html = """
+
+            func responseComplete() -> EventLoopFuture<HttpResponse> {
+                html = """
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">
 <html>
 <head><title>ZenRetail</title></head>
@@ -363,9 +343,37 @@ public class ZenRetail {
 </body>
 </html>
 """
-            response.send(html: html)
-            response.completed(status)
-            return response
+                let response = HttpResponse(body: ctx.channel.allocator.buffer(capacity: 0))
+                response.send(html: html)
+                response.completed(status)
+                return ctx.eventLoop.future(response)
+            }
+            
+            switch error {
+            case let e as IOError where e.errnoCode == ENOENT:
+                html += "<h3>IOError (not found)</h3>"
+                status = .notFound
+
+                // syncronize from database
+                if request.uri.hasPrefix("/thumb/") || request.uri.hasPrefix("/media/") {
+                    let size: MediaType = request.uri.hasPrefix("/thumb/") ? .thumb : .media
+                    let fileName = request.uri.dropFirst(7).description
+                    return self.getFile(ctx: ctx, fileName: fileName, size: size).map { response -> HttpResponse in
+                        return response
+                    }.flatMapError { error -> EventLoopFuture<HttpResponse> in
+                        return responseComplete()
+                    }
+                }
+
+            case let e as IOError:
+                html += "<h3>IOError (other)</h3><h4>\(e.description)</h4>"
+                status = .expectationFailed
+            default:
+                html += "<h3>\(type(of: error)) error</h3>"
+                status = .internalServerError
+            }
+            
+            return responseComplete()
         }
     }
 

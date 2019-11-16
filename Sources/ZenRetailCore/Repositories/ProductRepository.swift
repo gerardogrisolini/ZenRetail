@@ -51,14 +51,18 @@ struct ProductRepository : ProductProtocol {
 	}
 		
 	func getAll(date: Int) -> EventLoopFuture<[Product]> {
-        let obj = Product()
-        let sql = obj.querySQL(
-			whereclause: "Product.productUpdated > $1", params: [date],
-			orderby: ["Product.productId"],
-			joins: defaultJoins()
-		)
+        return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<[Product]> in
+            defer { connection.disconnect() }
 
-        return obj.rowsAsync(sql: sql, barcodes: date > 0)
+            let obj = Product(connection: connection)
+            let sql = obj.querySQL(
+                whereclause: "Product.productUpdated > $1", params: [date],
+                orderby: ["Product.productId"],
+                joins: self.defaultJoins()
+            )
+
+            return obj.rowsAsync(sql: sql, barcodes: date > 0)
+        }
     }
 	
     func getAmazonChanges() -> EventLoopFuture<[Product]> {
@@ -82,16 +86,24 @@ struct ProductRepository : ProductProtocol {
     }
     
 	func get(id: Int) -> EventLoopFuture<Product> {
-        let product = Product()
-        return product.get(id).map { () -> Product in
-            return product
+        return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<Product> in
+            defer { connection.disconnect() }
+            
+            let product = Product(connection: connection)
+            return product.get(id).map { () -> Product in
+                return product
+            }
         }
 	}
 
     func get(barcode: String) -> EventLoopFuture<Product> {
-        let product = Product()
-        return product.get(barcode: barcode).map { () -> Product in
-            return product
+        return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<Product> in
+            defer { connection.disconnect() }
+            
+            let product = Product(connection: connection)
+            return product.get(barcode: barcode).map { () -> Product in
+                return product
+            }
         }
     }
     
@@ -100,17 +112,14 @@ struct ProductRepository : ProductProtocol {
     }
     
     func add(item: Product) -> EventLoopFuture<Int> {
-        let promise: EventLoopPromise<Int> = ZenRetail.zenNIO.eventLoopGroup.next().makePromise()
-
-        let q = ZenPostgres.pool.connect()
-        q.whenSuccess { connection in
+        return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<Int> in
             defer { connection.disconnect() }
 
             item.connection = connection
             
             /// Brand
             let brand = Brand(connection: connection)
-            brand.get("brandName", item._brand.brandName).whenComplete { _ in
+            let b = brand.get("brandName", item._brand.brandName).flatMap { () -> EventLoopFuture<Void> in
                 if brand.brandId == 0 {
                     brand.brandName = item._brand.brandName
                     brand.brandDescription = item._brand.brandDescription
@@ -118,136 +127,22 @@ struct ProductRepository : ProductProtocol {
                     brand.brandSeo = item._brand.brandSeo
                     brand.brandCreated = Int.now()
                     brand.brandUpdated = Int.now()
-                    brand.save().whenComplete { result in
-                        switch result {
-                        case .success(let id):
-                            item.brandId = id as! Int
-                        case .failure(let err):
-                            promise.fail(err)
-                            return
-                        }
+                    return brand.save().map { id -> Void in
+                        item.brandId = id as! Int
                     }
                 } else {
                     item.brandId = brand.brandId
+                    return connection.eventLoop.future()
                 }
             }
 
-            /// Categories
-            for c in item._categories.sorted(by: { $0._category.categoryIsPrimary.hashValue < $1._category.categoryIsPrimary.hashValue }) {
-                var category = Category(connection: connection)
-                let query: EventLoopFuture<[Category]> = category.query(
-                    whereclause: "categoryName = $1", params: [c._category.categoryName],
-                    cursor: Cursor(limit: 1, offset: 0)
-                )
-                query.whenSuccess { categories in
-                    if categories.count == 1 {
-                        category = categories.first!
-                        c.categoryId = category.categoryId
-                    } else {
-                        category.categoryName = c._category.categoryName
-                        category.categoryIsPrimary = c._category.categoryIsPrimary
-                        category.categoryDescription = c._category.categoryDescription
-                        category.categoryMedia = c._category.categoryMedia
-                        category.categorySeo = c._category.categorySeo
-                        category.categoryCreated = Int.now()
-                        category.categoryUpdated = Int.now()
-                        category.save().whenComplete { result in
-                            switch result {
-                            case .success(let id):
-                                category.categoryId = id as! Int
-                            case .failure(let err):
-                                promise.fail(err)
-                                return
-                            }
-                        }
-                    }
-                }
-                query.whenFailure { err in
-                    promise.fail(err)
-                }
-            }
-            
-            /// Medias
-            for var m in item.productMedia {
-                if m.name.hasPrefix("http") || m.name.hasPrefix("ftp") {
-                    try? self.download(media: &m)
-                }
-            }
-            
-            /// Seo
-            if let seo = item.productSeo {
-                if (seo.permalink.isEmpty) {
-                    seo.permalink = item.productName.permalink()
-                }
-                seo.description = seo.description.filter({ !$0.value.isEmpty })
-            }
-            
-            /// Discount
-            item.productDiscount?.makeDiscount(sellingPrice: item.productPrice.selling)
-
-            /// Product
-            item.productDescription = item.productDescription.filter({ !$0.value.isEmpty })
-            item.productCreated = Int.now()
-            item.productUpdated = Int.now()
-            return item.save().whenComplete { result in
-                switch result {
-                case .success(let id):
-                    item.productId = id as! Int
-                    
-                    /// ProductCategories
-                    let count = item._categories.count - 1
-                    for (i, c) in item._categories.enumerated() {
-                        let productCategory = ProductCategory(connection: connection)
-                        productCategory.productId = item.productId
-                        productCategory.categoryId = c.categoryId
-                        productCategory.save().whenComplete { result in
-                            switch result {
-                            case .success(let id):
-                                c.productCategoryId = id as! Int
-                                if i == count {
-                                    promise.succeed(item.productId)
-                                }
-                            case .failure(let err):
-                                promise.fail(err)
-                                return
-                            }
-                        }
-                    }
-                case .failure(let err):
-                    promise.fail(err)
-                }
-            }
-        }
-        q.whenFailure { err in
-            promise.fail(err)
-        }
-
-        return promise.futureResult
-    }
-    
-    func update(id: Int, item: Product) -> EventLoopFuture<Bool> {
-        let promise: EventLoopPromise<Bool> = ZenRetail.zenNIO.eventLoopGroup.next().makePromise()
-
-        let q = ZenPostgres.pool.connect()
-        q.whenSuccess { connection in
-            defer { connection.disconnect() }
-
-            let current = Product(connection: connection)
-            let get = current.get(id)
-            get.whenSuccess { _ in
-                current.connection = connection
-                current.productCode = item.productCode
-                current.productName = item.productName
-                //current.productType = item.productType
-                current.productUm = item.productUm
-                current.productPrice = item.productPrice
-                current.productDiscount = item.productDiscount
-                current.productPackaging = item.productPackaging
-                current.productIsActive = item.productIsActive
-                current.brandId = item.brandId
-
+            return b.flatMap { () -> EventLoopFuture<Int> in
+                
                 /// Categories
-                for c in item._categories.sorted(by: { $0._category.categoryIsPrimary.hashValue < $1._category.categoryIsPrimary.hashValue }) {
+                let promise = connection.eventLoop.makePromise(of: Void.self)
+
+                let count = item._categories.count - 1
+                for (i, c) in item._categories.sorted(by: { $0._category.categoryIsPrimary.hashValue < $1._category.categoryIsPrimary.hashValue }).enumerated() {
                     var category = Category(connection: connection)
                     let query: EventLoopFuture<[Category]> = category.query(
                         whereclause: "categoryName = $1", params: [c._category.categoryName],
@@ -257,6 +152,9 @@ struct ProductRepository : ProductProtocol {
                         if categories.count == 1 {
                             category = categories.first!
                             c.categoryId = category.categoryId
+                            if i == count {
+                                promise.succeed(())
+                            }
                         } else {
                             category.categoryName = c._category.categoryName
                             category.categoryIsPrimary = c._category.categoryIsPrimary
@@ -269,130 +167,271 @@ struct ProductRepository : ProductProtocol {
                                 switch result {
                                 case .success(let id):
                                     category.categoryId = id as! Int
+                                    if i == count {
+                                        promise.succeed(())
+                                    }
                                 case .failure(let err):
-                                    promise.fail(err)
+                                    if i == count {
+                                        promise.fail(err)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    query.whenFailure { err in
+                        if i == count {
+                            promise.fail(err)
+                        }
+                    }
+                }
+                
+                return promise.futureResult.flatMap { () -> EventLoopFuture<Int> in
+
+                    /// Medias
+                    for var m in item.productMedia {
+                        if m.name.hasPrefix("http") || m.name.hasPrefix("ftp") {
+                            try? self.download(media: &m)
+                        }
+                    }
+                    
+                    /// Seo
+                    if let seo = item.productSeo {
+                        if (seo.permalink.isEmpty) {
+                            seo.permalink = item.productName.permalink()
+                        }
+                        seo.description = seo.description.filter({ !$0.value.isEmpty })
+                    }
+                    
+                    /// Discount
+                    item.productDiscount?.makeDiscount(sellingPrice: item.productPrice.selling)
+
+                    /// Product
+                    item.productDescription = item.productDescription.filter({ !$0.value.isEmpty })
+                    item.productCreated = Int.now()
+                    item.productUpdated = Int.now()
+                    
+                    return item.save().flatMap { id -> EventLoopFuture<Int> in
+                        item.productId = id as! Int
+                        
+                        let p = connection.eventLoop.makePromise(of: Int.self)
+
+                        /// ProductCategories
+                        let count = item._categories.count - 1
+                        for (i, c) in item._categories.enumerated() {
+                            let productCategory = ProductCategory(connection: connection)
+                            productCategory.productId = item.productId
+                            productCategory.categoryId = c.categoryId
+                            productCategory.save().whenComplete { result in
+                                switch result {
+                                case .success(let id):
+                                    c.productCategoryId = id as! Int
+                                    if i == count {
+                                        p.succeed(item.productId)
+                                    }
+                                case .failure(let err):
+                                    if i == count {
+                                        p.fail(err)
+                                    }
+                                    return
+                                }
+                            }
+                        }
+                        
+                        return p.futureResult
+                    }
+                }
+            }
+        }
+    }
+    
+    func update(id: Int, item: Product) -> EventLoopFuture<Bool> {
+        return ZenPostgres.pool.connect().flatMap { connection -> EventLoopFuture<Bool> in
+            defer { connection.disconnect() }
+
+            let current = Product(connection: connection)
+            return current.get(id).flatMap { () -> EventLoopFuture<Bool> in
+                current.connection = connection
+                current.productCode = item.productCode
+                current.productName = item.productName
+                //current.productType = item.productType
+                current.productUm = item.productUm
+                current.productPrice = item.productPrice
+                current.productDiscount = item.productDiscount
+                current.productPackaging = item.productPackaging
+                current.productIsActive = item.productIsActive
+                current.brandId = item.brandId
+
+                /// Categories
+                let promise = connection.eventLoop.makePromise(of: Void.self)
+
+                let count = item._categories.count - 1
+                for (i, c) in item._categories.sorted(by: { $0._category.categoryIsPrimary.hashValue < $1._category.categoryIsPrimary.hashValue }).enumerated() {
+                    var category = Category(connection: connection)
+                    let query: EventLoopFuture<[Category]> = category.query(
+                        whereclause: "categoryName = $1", params: [c._category.categoryName],
+                        cursor: Cursor(limit: 1, offset: 0)
+                    )
+                    query.whenSuccess { categories in
+                        if categories.count == 1 {
+                            category = categories.first!
+                            c.categoryId = category.categoryId
+                            if i == count {
+                                promise.succeed(())
+                            }
+                        } else {
+                            category.categoryName = c._category.categoryName
+                            category.categoryIsPrimary = c._category.categoryIsPrimary
+                            category.categoryDescription = c._category.categoryDescription
+                            category.categoryMedia = c._category.categoryMedia
+                            category.categorySeo = c._category.categorySeo
+                            category.categoryCreated = Int.now()
+                            category.categoryUpdated = Int.now()
+                            category.save().whenComplete { result in
+                                switch result {
+                                case .success(let id):
+                                    category.categoryId = id as! Int
+                                    if i == count {
+                                        promise.succeed(())
+                                    }
+                                case .failure(let err):
+                                    print(err.localizedDescription)
+                                    if i == count {
+                                        promise.fail(err)
+                                    }
                                     return
                                 }
                             }
                         }
                     }
                     query.whenFailure { err in
-                        promise.fail(err)
-                    }
-                }
-                
-                /// ProductCategories
-                for c in current._categories {
-                    c.connection = connection
-                    c.delete().whenComplete { _ in }
-                }
-                for c in item._categories {
-                    c.productCategoryId = 0
-                    c.productId = id
-                    c.connection = connection
-                    c.save().whenComplete { result in
-                        switch result {
-                        case .success(let id):
-                            c.productCategoryId = id as! Int
-                        case .failure(let err):
+                        print(err.localizedDescription)
+                        if i == count {
                             promise.fail(err)
-                            return
                         }
                     }
                 }
                 
-                /// Articles
-                if let itemArticle = item._articles.first(where: { $0._attributeValues.count == 0 }) {
-                    if let itemBarcode = itemArticle.articleBarcodes.first(where: { $0.tags.count == 0 }) {
-                        if let currentArticle = current._articles.first(where: { $0._attributeValues.count == 0 }) {
-                            let currentBarcode = currentArticle.articleBarcodes.first(where: { $0.tags.count == 0 })!
-                            currentBarcode.barcode = itemBarcode.barcode
-                            currentArticle.connection = connection
-                            currentArticle.save().whenComplete { result in
-                                switch result {
-                                case .success(let id):
-                                    currentArticle.articleId = id as! Int
-                                case .failure(let err):
-                                    promise.fail(err)
-                                    return
+                return promise.futureResult.flatMap { () -> EventLoopFuture<Bool> in
+                                        
+                    let subPromise = connection.eventLoop.makePromise(of: Void.self)
+
+                    /// Articles
+                    if let itemArticle = item._articles.first(where: { $0._attributeValues.count == 0 }) {
+                        if let itemBarcode = itemArticle.articleBarcodes.first(where: { $0.tags.count == 0 }) {
+                            if let currentArticle = current._articles.first(where: { $0._attributeValues.count == 0 }) {
+                                let currentBarcode = currentArticle.articleBarcodes.first(where: { $0.tags.count == 0 })!
+                                currentBarcode.barcode = itemBarcode.barcode
+                                currentArticle.connection = connection
+                                currentArticle.save().whenComplete { result in
+                                    switch result {
+                                    case .success(let id):
+                                        currentArticle.articleId = id as! Int
+                                        subPromise.succeed(())
+                                    case .failure(let err):
+                                        print(err.localizedDescription)
+                                        subPromise.fail(err)
+                                    }
+                                }
+                            } else {
+                                itemArticle.articleIsValid = true
+                                itemArticle.articleId = 0
+                                itemArticle.productId = id
+                                itemArticle.articleUpdated = Int.now()
+                                itemArticle.connection = connection
+                                itemArticle.save().whenComplete { result in
+                                    switch result {
+                                    case .success(let id):
+                                        itemArticle.articleId = id as! Int
+                                        subPromise.succeed(())
+                                    case .failure(let err):
+                                        print(err.localizedDescription)
+                                        subPromise.fail(err)
+                                    }
                                 }
                             }
                         } else {
-                            itemArticle.articleIsValid = true
-                            itemArticle.articleId = 0
-                            itemArticle.productId = id
-                            itemArticle.articleUpdated = Int.now()
-                            itemArticle.connection = connection
-                            itemArticle.save().whenComplete { result in
-                                switch result {
-                                case .success(let id):
-                                    itemArticle.articleId = id as! Int
-                                case .failure(let err):
-                                    promise.fail(err)
-                                    return
+                            subPromise.succeed(())
+                        }
+                    } else {
+                        subPromise.succeed(())
+                    }
+
+                    return subPromise.futureResult.flatMap { () -> EventLoopFuture<Bool> in
+                    
+//                        if item.productType == "Grouped" {
+//                            for a in current._articles.filter({ $0._attributeValues.count > 0 }) {
+//                                try a.delete()
+//                            }
+//                            for a in item._articles.filter({ $0._attributeValues.count > 0 }) {
+//                                a.articleId = 0
+//                                a.productId = id
+//                                try a.save {
+//                                    id in a.articleId = id as! Int
+//                                }
+//                            }
+//                        }
+                        
+                        /// Medias
+                        for var m in item.productMedia {
+                            if m.name.hasPrefix("http") || m.name.hasPrefix("ftp") {
+                                try? self.download(media: &m)
+                            }
+                        }
+                        current.productMedia = item.productMedia
+
+                        /// Seo
+                        if let seo = item.productSeo {
+                            if (seo.permalink.isEmpty) {
+                                seo.permalink = item.productName.permalink()
+                            }
+                            seo.description = seo.description.filter({ !$0.value.isEmpty })
+                            current.productSeo = seo
+                        }
+                        
+                        /// Discount
+                        item.productDiscount?.makeDiscount(sellingPrice: item.productPrice.selling)
+                        current.productDiscount = item.productDiscount;
+                        
+                        /// Product
+                        current.productDescription = item.productDescription.filter({ !$0.value.isEmpty })
+                        item.productUpdated = Int.now()
+                        current.productUpdated = item.productUpdated
+                        return current.save().flatMap { id -> EventLoopFuture<Bool> in
+                            current.productId = id as! Int
+                            
+                            let p = connection.eventLoop.makePromise(of: Bool.self)
+
+                            /// ProductCategories
+                            let count = item._categories.count - 1
+                            for (i, c) in current._categories.enumerated() {
+                                c.connection = connection
+                                c.delete().whenComplete { _ in
+                                    c.productCategoryId = 0
+                                    c.productId = current.productId
+                                    c.connection = connection
+                                    c.save().whenComplete { result in
+                                        switch result {
+                                        case .success(let id):
+                                            c.productCategoryId = id as! Int
+                                            if i == count {
+                                                p.succeed(true)
+                                            }
+                                        case .failure(let err):
+                                            print(err.localizedDescription)
+                                            if i == count {
+                                                promise.fail(err)
+                                            }
+                                        }
+                                    }
                                 }
                             }
+
+                            return p.futureResult
                         }
                     }
                 }
-                
-//                if item.productType == "Grouped" {
-//                    for a in current._articles.filter({ $0._attributeValues.count > 0 }) {
-//                        try a.delete()
-//                    }
-//                    for a in item._articles.filter({ $0._attributeValues.count > 0 }) {
-//                        a.articleId = 0
-//                        a.productId = id
-//                        try a.save {
-//                            id in a.articleId = id as! Int
-//                        }
-//                    }
-//                }
-                
-                /// Medias
-                for var m in item.productMedia {
-                    if m.name.hasPrefix("http") || m.name.hasPrefix("ftp") {
-                        try? self.download(media: &m)
-                    }
-                }
-                current.productMedia = item.productMedia
-
-                /// Seo
-                if let seo = item.productSeo {
-                    if (seo.permalink.isEmpty) {
-                        seo.permalink = item.productName.permalink()
-                    }
-                    seo.description = seo.description.filter({ !$0.value.isEmpty })
-                    current.productSeo = seo
-                }
-                
-                /// Discount
-                item.productDiscount?.makeDiscount(sellingPrice: item.productPrice.selling)
-                current.productDiscount = item.productDiscount;
-                
-                /// Product
-                current.productDescription = item.productDescription.filter({ !$0.value.isEmpty })
-                item.productUpdated = Int.now()
-                current.productUpdated = item.productUpdated
-                current.save().whenComplete { result in
-                    switch result {
-                    case .success(let id):
-                        item.productId = id as! Int
-                        promise.succeed(item.productId > 0)
-                    case .failure(let err):
-                        promise.fail(err)
-                    }
-                }
-            }
-            get.whenFailure { err in
-                promise.fail(err)
             }
         }
-        q.whenFailure { err in
-            promise.fail(err)
-        }
-
-        return promise.futureResult
     }
 
     fileprivate func download(media: inout Media) throws {

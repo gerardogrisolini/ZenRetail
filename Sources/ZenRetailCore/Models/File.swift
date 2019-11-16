@@ -75,16 +75,16 @@ VALUES ($1, $2, $3, $4, $5, $6)
         return saveFile()
     }
     
-    func getDataAsync(filename: String, size: MediaType) -> EventLoopFuture<[UInt8]> {
+    func getFileAsync(filename: String, size: MediaType) -> EventLoopFuture<File> {
         let query: EventLoopFuture<[File]> = self.query(
             whereclause: "fileName = $1 AND fileType = $2",
             params: [filename, size.rawValue],
             cursor: Cursor(limit: 1, offset: 0)
         )
         
-        return query.flatMapThrowing { files -> [UInt8] in
+        return query.flatMapThrowing { files -> File in
             if let file = files.first {
-                return file.fileData
+                return file
             } else {
                 throw ZenError.recordNotFound
             }
