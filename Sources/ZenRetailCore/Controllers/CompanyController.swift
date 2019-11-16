@@ -44,9 +44,10 @@ class CompanyController {
                 switch result {
                 case .success(let file):
                     response.addHeader(.contentType, value: file.fileContentType)
-                    response.send(data: Data(data))
+                    response.body.reserveCapacity(file.fileData.count)
+                    response.body.writeBytes(file.fileData)
                     response.completed()
-                case .failure(let err):
+                case .failure(_):
                     response.completed(.notFound)
                 }
             }
