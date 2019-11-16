@@ -110,7 +110,7 @@ public class ZenRetail {
             cert: nil,
             key: nil
         )
-        zenSMTP = try ZenSMTP(config: config)
+        zenSMTP = try ZenSMTP(config: config, eventLoopGroup: ZenRetail.zenNIO.eventLoopGroup)
     }
     
     private func parseConnectionString(databaseUrl: String) {
@@ -147,7 +147,7 @@ public class ZenRetail {
             maximumConnections: ZenRetail.config.postgresMaxConn
         )
 
-        zenPostgres = try ZenPostgres(config: config)
+        zenPostgres = try ZenPostgres(config: config, eventLoopGroup: ZenRetail.zenNIO.eventLoopGroup)
     }
  
     private func createTables() throws {
