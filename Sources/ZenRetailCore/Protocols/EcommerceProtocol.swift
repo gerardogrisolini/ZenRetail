@@ -6,6 +6,7 @@
 //
 
 import NIO
+import ZenNIO
 
 struct Cost: Codable {
     public var value: Double
@@ -24,6 +25,8 @@ struct Order: Codable {
 
 protocol EcommerceProtocol {
     
+    func register(account: Account) -> EventLoopFuture<Registry>
+
     func getSettings() -> EventLoopFuture<Setting>
     
     func getBrands() -> EventLoopFuture<[Brand]>

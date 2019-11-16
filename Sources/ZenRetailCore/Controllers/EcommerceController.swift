@@ -151,34 +151,16 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                 return
             }
 
-            let registry = Registry()
-            let query = registry.exists(account.username)
-            query.whenSuccess { exist in
-                if exist {
-                    response.completed(.notAcceptable)
-                } else {
-                    registry.registryEmail = account.username
-                    registry.registryPassword = account.password.encrypted
-                    registry.save().whenComplete { result in
-                        do {
-                            switch result {
-                            case .success(let id):
-                                registry.registryId = id as! Int
-                                let base64 = UUID().uuidString.data(using: .utf8)!.base64EncodedString()
-                                request.session!.token = Token(bearer: base64)
-                                request.session!.uniqueID = registry.registryId.description
-                                try response.send(json: request.session!.token!)
-                                response.completed()
-                            case .failure(let err):
-                                throw err
-                            }
-                        } catch {
-                            response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
-                        }
-                    }
-                }
+            let promise = self.repository.register(account: account)
+            promise.whenSuccess { registry in
+                let session = HttpSession.new(id: request.session!.id, uniqueID: registry.uniqueID)
+                request.session = session
+
+                response.addHeader(.setCookie, value: "token=\(session.token!.bearer); expires=Sat, 01 Jan 2050 00:00:00 UTC; path=/;")
+                try? response.send(json: session.token)
+                response.completed()
             }
-            query.whenFailure { err in
+            promise.whenFailure { err in
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
         }

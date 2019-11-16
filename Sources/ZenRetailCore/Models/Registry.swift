@@ -97,9 +97,9 @@ class Registry: PostgresTable, PostgresJson {
     }
 
     /// Returns a true / false depending on if the email exits in the database.
-    func exists(_ email: String) -> EventLoopFuture<Bool> {
-        return get(email: email).map { () -> Bool in
-            return !self.uniqueID.isEmpty
+    func exists(_ email: String) -> EventLoopFuture<Void> {
+        return get(email: email).map { () -> Void in
+            return ()
         }
     }
 }

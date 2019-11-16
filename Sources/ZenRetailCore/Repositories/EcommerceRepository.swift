@@ -12,6 +12,24 @@ import ZenPostgres
 
 struct EcommerceRepository : EcommerceProtocol {
 
+    func register(account: Account) -> EventLoopFuture<Registry> {
+        return ZenPostgres.pool.connect().flatMap { conn -> EventLoopFuture<Registry> in
+            defer { conn.disconnect() }
+            
+            let registry = Registry(connection: conn)
+            return registry.exists(account.username).flatMap { () -> EventLoopFuture<Registry> in
+                return conn.eventLoop.future(registry)
+            }.flatMapError { error -> EventLoopFuture<Registry> in
+                registry.registryEmail = account.username
+                registry.registryPassword = account.password.encrypted
+                return registry.save().map { id -> Registry in
+                    registry.registryId = id as! Int
+                    return registry
+                }
+            }
+        }
+    }
+    
     func getSettings() -> EventLoopFuture<Setting> {
         let item = Company()
         return item.select().map { () -> Setting in
