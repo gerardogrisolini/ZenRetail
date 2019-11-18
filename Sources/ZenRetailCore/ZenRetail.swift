@@ -17,8 +17,6 @@ import Logging
 public class ZenRetail {
     static var config: Configuration!
     static var zenNIO: ZenNIO!
-    var zenPostgres: ZenPostgres!
-    var zenSMTP: ZenSMTP!
     
     public init() {
         setup()
@@ -30,11 +28,11 @@ public class ZenRetail {
 
     public func start() throws {
         var logger = Logger(label: "ZenRetail")
-        logger.logLevel = .debug
-        ZenRetail.zenNIO = ZenNIO(host: "0.0.0.0", port: ZenRetail.config.serverPort, logger: logger)
-        ZenRetail.zenNIO.addCORS()
-        ZenRetail.zenNIO.addWebroot(path: ZenRetail.config.documentRoot)
-        ZenRetail.zenNIO.addAuthentication(handler: { (username, password) -> EventLoopFuture<String> in
+        logger.logLevel = ZenRetail.config.logLevel
+        let zenNIO = ZenNIO(host: "0.0.0.0", port: ZenRetail.config.serverPort, logger: logger)
+        zenNIO.addCORS()
+        zenNIO.addWebroot(path: ZenRetail.config.documentRoot)
+        zenNIO.addAuthentication(handler: { (username, password) -> EventLoopFuture<String> in
             let user = User()
             return user.get(usr: username, pwd: password).map { () -> String in
                 return user.uniqueID
@@ -45,30 +43,33 @@ public class ZenRetail {
                 }
             }
         })
-
+        
+        ZenRetail.zenNIO = zenNIO
+        
         try setupDatabase()
         try createTables()
         try createFolders()
         try setupSmtp()
-        
+
         addIoC()
         routesAndHandlers()
         addFilters()
         addErrorHandler()
         
         if ZenRetail.config.sslCert.isEmpty {
-            try ZenRetail.zenNIO.start()
+            try zenNIO.start()
         } else {
-            try ZenRetail.zenNIO.startSecure(
+            try zenNIO.startSecure(
                 certFile: ZenRetail.config.sslCert,
                 keyFile: ZenRetail.config.sslKey,
                 http: ZenRetail.config.httpVersion == 1 ? .v1 : .v2
             )
         }
     }
-
+    
     public func stop() {
-        try? zenSMTP?.close()
+        ZenPostgres.pool.close()
+        ZenRetail.zenNIO.stop()
     }
     
     private func setup() {
@@ -111,7 +112,7 @@ public class ZenRetail {
             cert: nil,
             key: nil
         )
-        zenSMTP = try ZenSMTP(config: config, eventLoopGroup: ZenRetail.zenNIO.eventLoopGroup)
+        _ = try ZenSMTP(config: config, eventLoopGroup: ZenRetail.zenNIO.eventLoopGroup)
     }
     
     private func parseConnectionString(databaseUrl: String) {
@@ -149,7 +150,7 @@ public class ZenRetail {
             logger: ZenIoC.shared.resolve() as Logger
         )
 
-        zenPostgres = ZenPostgres(config: config, eventLoopGroup: ZenRetail.zenNIO.eventLoopGroup)
+        _ = ZenPostgres(config: config, eventLoopGroup: ZenRetail.zenNIO.eventLoopGroup)
     }
  
     private func createTables() throws {

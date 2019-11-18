@@ -80,15 +80,17 @@ class PdfController {
                     ]
                 )
                 
-                ZenSMTP.shared.send(email: email) { error in
-                    if let error = error {
-                        response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
-                    } else {
+                ZenSMTP.shared.send(email: email).whenComplete { result in
+                    switch result {
+                    case .success(_):
                         item.content = "Email successfully sent"
                         try? response.send(json: item)
                         response.completed(.accepted)
+                    case .failure(let err):
+                        response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
                     }
                 }
+
             } catch {
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
             }

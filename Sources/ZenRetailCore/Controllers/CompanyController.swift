@@ -205,12 +205,13 @@ class CompanyController {
                     attachments: []
                 )
                 
-                ZenSMTP.shared.send(email: email) { error in
-                    if let error = error {
-                        print(error)
-                        response.completed(.internalServerError)
-                    } else {
+                ZenSMTP.shared.send(email: email).whenComplete { result in
+                    switch result {
+                    case .success(_):
                         response.completed(.noContent)
+                    case .failure(let err):
+                        print(err)
+                        response.completed(.internalServerError)
                     }
                 }
             }

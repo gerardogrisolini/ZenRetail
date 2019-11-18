@@ -11,6 +11,7 @@ import ZenNIO
 import CryptoSwift
 import ZenPostgres
 //import ZenMWS
+import Logging
 
 extension Int {
     static func now() -> Int {
@@ -164,12 +165,16 @@ extension HttpResponse {
         let error: String
     }
     public func badRequest(error: String) {
-        print(error)
+        let logger = ZenIoC.shared.resolve() as Logger
+        logger.error(Logger.Message(stringLiteral: error))
+
         try? self.send(json: JsonError(status: 400, error: error))
         self.completed(.badRequest)
     }
     public func systemError(error: String) {
-        print(error)
+        let logger = ZenIoC.shared.resolve() as Logger
+        logger.error(Logger.Message(stringLiteral: error))
+
         try? self.send(json: JsonError(status: 500, error: error))
         self.completed(.internalServerError)
     }

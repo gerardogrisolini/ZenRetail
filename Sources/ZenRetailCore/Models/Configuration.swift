@@ -7,6 +7,7 @@
 
 import Foundation
 import ZenNIO
+import Logging
 
 class Configuration: Codable {
     var serverHost: String
@@ -15,6 +16,7 @@ class Configuration: Codable {
     let sslKey: String
     let httpVersion: Int
     let documentRoot: String
+    let logLevel: Logger.Level
     
     var postgresHost: String
     var postgresDatabase: String
@@ -31,6 +33,7 @@ class Configuration: Codable {
         sslKey = "" //key.pem
         httpVersion = 1
         documentRoot = "webroot"
+        logLevel = .info
         
         postgresHost = "localhost"
         postgresDatabase = "zenretail"
