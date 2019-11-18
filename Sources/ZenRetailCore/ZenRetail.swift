@@ -6,20 +6,19 @@
 //
 
 import Foundation
+import NIO
 import NIOHTTP1
 import ZenNIO
 import ZenNIOSSL
-import ZenSMTP
 import ZenPostgres
-import PostgresNIO
-
+import ZenSMTP
+import Logging
 
 public class ZenRetail {
     static var config: Configuration!
     static var zenNIO: ZenNIO!
     var zenPostgres: ZenPostgres!
     var zenSMTP: ZenSMTP!
-    let router = Router()
     
     public init() {
         setup()
@@ -30,7 +29,9 @@ public class ZenRetail {
     }
 
     public func start() throws {
-        ZenRetail.zenNIO = ZenNIO(host: "0.0.0.0", port: ZenRetail.config.serverPort, router: router)
+        var logger = Logger(label: "ZenRetail")
+        logger.logLevel = .debug
+        ZenRetail.zenNIO = ZenNIO(host: "0.0.0.0", port: ZenRetail.config.serverPort, logger: logger)
         ZenRetail.zenNIO.addCORS()
         ZenRetail.zenNIO.addWebroot(path: ZenRetail.config.documentRoot)
         ZenRetail.zenNIO.addAuthentication(handler: { (username, password) -> EventLoopFuture<String> in
@@ -144,10 +145,11 @@ public class ZenRetail {
             username: ZenRetail.config.postgresUsername,
             password: ZenRetail.config.postgresPassword,
             database: ZenRetail.config.postgresDatabase,
-            maximumConnections: ZenRetail.config.postgresMaxConn
+            maximumConnections: ZenRetail.config.postgresMaxConn,
+            logger: ZenIoC.shared.resolve() as Logger
         )
 
-        zenPostgres = try ZenPostgres(config: config, eventLoopGroup: ZenRetail.zenNIO.eventLoopGroup)
+        zenPostgres = ZenPostgres(config: config, eventLoopGroup: ZenRetail.zenNIO.eventLoopGroup)
     }
  
     private func createTables() throws {
@@ -242,6 +244,8 @@ public class ZenRetail {
     }
     
     private func routesAndHandlers() {
+        let router = ZenIoC.shared.resolve() as Router
+        
         // Register Angular routes and handlers
         _ = AngularController(router: router)
         
