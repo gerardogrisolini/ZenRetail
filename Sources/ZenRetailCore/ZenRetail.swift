@@ -110,9 +110,11 @@ public class ZenRetail {
             username: company.smtpUsername,
             password: company.smtpPassword,
             cert: nil,
-            key: nil
+            key: nil,
+            logger: ZenIoC.shared.resolve() as Logger
         )
-        _ = try ZenSMTP(config: config, eventLoopGroup: ZenRetail.zenNIO.eventLoopGroup)
+        
+        ZenSMTP.mail.setup(config: config, eventLoopGroup: ZenRetail.zenNIO.eventLoopGroup)
     }
     
     private func parseConnectionString(databaseUrl: String) {
@@ -150,7 +152,7 @@ public class ZenRetail {
             logger: ZenIoC.shared.resolve() as Logger
         )
 
-        _ = ZenPostgres(config: config, eventLoopGroup: ZenRetail.zenNIO.eventLoopGroup)
+        ZenPostgres.pool.setup(config: config, eventLoopGroup: ZenRetail.zenNIO.eventLoopGroup)
     }
  
     private func createTables() throws {

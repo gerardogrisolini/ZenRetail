@@ -205,7 +205,7 @@ class CompanyController {
                     attachments: []
                 )
                 
-                ZenSMTP.shared.send(email: email).whenComplete { result in
+                ZenSMTP.mail.send(email: email).whenComplete { result in
                     switch result {
                     case .success(_):
                         response.completed(.noContent)

@@ -80,7 +80,7 @@ class PdfController {
                     ]
                 )
                 
-                ZenSMTP.shared.send(email: email).whenComplete { result in
+                ZenSMTP.mail.send(email: email).whenComplete { result in
                     switch result {
                     case .success(_):
                         item.content = "Email successfully sent"
