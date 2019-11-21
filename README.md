@@ -1,5 +1,5 @@
 
-<img src="https://github.com/gerardogrisolini/ZenRetail/blob/master/webroot/media/logo.png?raw=true" width="80" alt="ZenRetail - RMS" />
+<img src="https://github.com/gerardogrisolini/ZenRetail/blob/master/Assets/logo.png?raw=true" width="80" alt="ZenRetail - RMS" />
 
 # ZenRetail - RMS
 
