@@ -27,9 +27,12 @@ public class ZenRetail {
     }
 
     public func start() throws {
+        let zenNIO = ZenNIO(host: "0.0.0.0", port: ZenRetail.config.serverPort)
+
         var logger = Logger(label: "ZenRetail")
         logger.logLevel = ZenRetail.config.logLevel
-        let zenNIO = ZenNIO(host: "0.0.0.0", port: ZenRetail.config.serverPort, logger: logger)
+        zenNIO.logger = logger
+        
         zenNIO.addCORS()
         zenNIO.addWebroot(path: ZenRetail.config.documentRoot)
         zenNIO.addAuthentication(handler: { (username, password) -> EventLoopFuture<String> in
