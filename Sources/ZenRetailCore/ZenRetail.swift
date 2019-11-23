@@ -339,6 +339,10 @@ public class ZenRetail {
     
     private func addErrorHandler() {
         ZenRetail.zenNIO.addError { (ctx, request, error) -> EventLoopFuture<HttpResponse> in
+            let log = Logger.Message(stringLiteral: "⚠️ \(request.method) \(request.uri) || \(error)")
+            //(ZenIoC.shared.resolve() as Logger).error(log)
+            ZenRetail.zenNIO.logger.error(log)
+            
             var html = ""
             var status: HTTPResponseStatus
 
