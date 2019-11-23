@@ -41,7 +41,7 @@ class ArticleController {
                 switch result {
                 case .success(let item):
                     try response.send(json: item)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -62,7 +62,7 @@ class ArticleController {
                 switch result {
                 case .success(let items):
                     try response.send(json: items)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -83,7 +83,7 @@ class ArticleController {
                 switch result {
                 case .success(let item):
                     try response.send(json: item)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -106,7 +106,7 @@ class ArticleController {
                 switch result {
                 case .success(let item):
                     try response.send(json: item)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -127,7 +127,7 @@ class ArticleController {
                 switch result {
                 case .success(let item):
                     try response.send(json: item)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -149,7 +149,7 @@ class ArticleController {
                 switch result {
                 case .success(let item):
                     try response.send(json: item)
-                    response.completed(.created)
+                    response.success(.created)
                 case .failure(let err):
                     throw err
                 }
@@ -171,7 +171,7 @@ class ArticleController {
                 switch result {
                 case .success(let item):
                     try response.send(json: item)
-                    response.completed(.accepted)
+                    response.success(.accepted)
                 case .failure(let err):
                     throw err
                 }
@@ -190,7 +190,7 @@ class ArticleController {
         self.repository.delete(id: id).whenComplete { result in
             switch result {
             case .success(let deleted):
-                response.completed(deleted ? .noContent : .expectationFailed)
+                response.success(deleted ? .noContent : .expectationFailed)
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -209,7 +209,7 @@ class ArticleController {
                 switch result {
                 case .success(let item):
                     try response.send(json: item)
-                    response.completed(.created)
+                    response.success(.created)
                 case .failure(let err):
                     throw err
                 }
@@ -228,7 +228,7 @@ class ArticleController {
         self.repository.removeAttributeValue(id: id).whenComplete { result in
             switch result {
             case .success(let deleted):
-                response.completed(deleted ? .noContent : .expectationFailed)
+                response.success(deleted ? .noContent : .expectationFailed)
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }

@@ -32,7 +32,7 @@ class ProductController {
     func productTypesHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
             try response.send(json: self.repository.getProductTypes())
-            response.completed()
+            response.success()
         } catch {
             response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
@@ -41,7 +41,7 @@ class ProductController {
     func productTaxesHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
             try response.send(json: self.repository.getTaxes())
-            response.completed()
+            response.success()
         } catch {
             response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
@@ -55,7 +55,7 @@ class ProductController {
                 switch result {
                 case .success(let items):
                     try response.send(json: items)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -76,7 +76,7 @@ class ProductController {
                 switch result {
                 case .success(let item):
                     try response.send(json: item)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -95,7 +95,7 @@ class ProductController {
         self.repository.reset(id: id).whenComplete { result in
             switch result {
             case .success(_):
-                response.completed(.noContent)
+                response.success(.noContent)
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -113,7 +113,7 @@ class ProductController {
                 switch result {
                 case .success(let item):
                     try response.send(json: item)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -139,7 +139,7 @@ class ProductController {
                         switch res {
                         case .success(let data):
                             try response.send(json: data)
-                            response.completed(.created)
+                            response.success(.created)
                         case .failure(let err):
                             throw err
                         }
@@ -169,7 +169,7 @@ class ProductController {
                         case .success(let i):
                             try? self.repository.syncImport(item: i).whenSuccess { result in
                                 try? response.send(json: result)
-                                response.completed( .created)
+                                response.success( .created)
                             }
                         case .failure(let err):
                             response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
@@ -197,7 +197,7 @@ class ProductController {
                         switch res {
                         case .success(let i):
                             try response.send(json: i)
-                            response.completed(.accepted)
+                            response.success(.accepted)
                         case .failure(let err):
                             throw err
                         }
@@ -220,7 +220,7 @@ class ProductController {
         self.repository.delete(id: id).whenComplete { result in
             switch result {
             case .success(_):
-                response.completed(.noContent)
+                response.success(.noContent)
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }

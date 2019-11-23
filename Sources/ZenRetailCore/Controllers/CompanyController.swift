@@ -46,9 +46,9 @@ class CompanyController {
                     response.addHeader(.contentType, value: file.fileContentType)
                     response.body.reserveCapacity(file.fileData.count)
                     response.body.writeBytes(file.fileData)
-                    response.completed()
+                    response.success()
                 case .failure(_):
-                    response.completed(.notFound)
+                    response.success(.notFound)
                 }
             }
         } else {
@@ -94,7 +94,7 @@ class CompanyController {
                 switch result {
                 case .success(_):
                     try response.send(json: item)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -116,7 +116,7 @@ class CompanyController {
                 switch result {
                 case .success(_):
                     try response.send(json: item)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -139,7 +139,7 @@ class CompanyController {
             case .success(let media):
                 print("Uploaded file \(fileName) => \(media.name)")
                 try response.send(json: media)
-                response.completed( .created)
+                response.success( .created)
             case .failure(let err):
                 throw err
             }
@@ -171,7 +171,7 @@ class CompanyController {
                     
                     if medias.count == files.count {
                         try? response.send(json: medias)
-                        response.completed(.created)
+                        response.success(.created)
                     }
                 }
             }
@@ -179,44 +179,41 @@ class CompanyController {
     }
 
     func emailHandlerPOST(request: HttpRequest, response: HttpResponse) {
-        do {
-            guard let data = request.bodyData else {
-                throw HttpError.badRequest
-            }
-            let item = try JSONDecoder().decode(PdfDocument.self, from: data)
-            if item.address.isEmpty {
-                throw HttpError.systemError(0, "email address to is empty")
+        guard let data = request.bodyData else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): body data")
+            return
+        }
+        
+        guard let item = try? JSONDecoder().decode(PdfDocument.self, from: data), !item.address.isEmpty else {
+            response.badRequest(error: "\(request.head.uri) \(request.head.method): email address to is empty")
+            return
+        }
+        
+        let company = Company()
+        company.select().whenComplete { result in
+            if company.companyEmailInfo.isEmpty {
+                response.badRequest(error: "\(request.head.uri) \(request.head.method): email address from is empty")
+                return
             }
             
-            let company = Company()
-            company.select().whenComplete { result in
-                if company.companyEmailInfo.isEmpty {
-                    response.badRequest(error: "\(request.head.uri) \(request.head.method): email address from is empty")
-                    return
-                }
-                
-                let email = Email(
-                    fromName: company.companyName,
-                    fromEmail: company.companyEmailSupport,
-                    toName: nil,
-                    toEmail: item.address,
-                    subject: item.subject,
-                    body: item.content,
-                    attachments: []
-                )
-                
-                ZenSMTP.mail.send(email: email).whenComplete { result in
-                    switch result {
-                    case .success(_):
-                        response.completed(.noContent)
-                    case .failure(let err):
-                        print(err)
-                        response.completed(.internalServerError)
-                    }
+            let email = Email(
+                fromName: company.companyName,
+                fromEmail: company.companyEmailSupport,
+                toName: nil,
+                toEmail: item.address,
+                subject: item.subject,
+                body: item.content,
+                attachments: []
+            )
+            
+            ZenSMTP.mail.send(email: email).whenComplete { result in
+                switch result {
+                case .success(_):
+                    response.success(.noContent)
+                case .failure(let err):
+                    response.systemError(error: "\(request.head.uri) \(request.head.method): \(err.localizedDescription)")
                 }
             }
-        } catch {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
     }
 }

@@ -164,19 +164,13 @@ extension HttpResponse {
         let status: Int
         let error: String
     }
+
     public func badRequest(error: String) {
-        let logger = ZenIoC.shared.resolve() as Logger
-        logger.error(Logger.Message(stringLiteral: error))
-
-        try? self.send(json: JsonError(status: 400, error: error))
-        self.completed(.badRequest)
+        self.failure(.badRequest(error))
     }
-    public func systemError(error: String) {
-        let logger = ZenIoC.shared.resolve() as Logger
-        logger.error(Logger.Message(stringLiteral: error))
 
-        try? self.send(json: JsonError(status: 500, error: error))
-        self.completed(.internalServerError)
+    public func systemError(error: String) {
+        self.failure(.internalError(error))
     }
 }
 

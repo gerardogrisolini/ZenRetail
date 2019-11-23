@@ -39,7 +39,7 @@ class MovementArticleController {
                         switch result {
                         case .success(let items):
                             try response.send(json: items)
-                            response.completed()
+                            response.success()
                         case .failure(let err):
                             throw err
                         }
@@ -72,7 +72,7 @@ class MovementArticleController {
                         case .success(let id):
                             item.movementId = id
                             try response.send(json: item)
-                            response.completed(.created)
+                            response.success(.created)
                         case .failure(let err):
                             throw err
                         }
@@ -104,7 +104,7 @@ class MovementArticleController {
                         switch result {
                         case .success(_):
                             try response.send(json: item)
-                            response.completed(.accepted)
+                            response.success(.accepted)
                         case .failure(let err):
                             throw err
                         }
@@ -132,7 +132,7 @@ class MovementArticleController {
                 self.repository.delete(id: id, connection: conn).whenComplete { result in
                     switch result {
                     case .success(let deleted):
-                        response.completed(deleted ? .noContent : .expectationFailed)
+                        response.success(deleted ? .noContent : .expectationFailed)
                     case .failure(let err):
                         response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
                     }

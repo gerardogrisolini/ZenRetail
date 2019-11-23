@@ -82,15 +82,15 @@ public class AngularController {
 //           }
 //
 //           guard let content = data else {
-//               resp.completed( .notFound)
+//               resp.success( .notFound)
 //               return
 //           }
 //           resp.addHeader(.contentType, value: "text/html")
 //           resp.send(data: content)
-//           resp.completed()
+//           resp.success()
             
             resp.addHeader(HttpHeader.location, value: webapi ? "/admin/index.html" : "/index.html")
-            resp.completed(.found)
+            resp.success(.found)
         }
     }
     

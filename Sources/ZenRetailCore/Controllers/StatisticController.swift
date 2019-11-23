@@ -28,7 +28,7 @@ class StatisticController {
                 switch result {
                 case .success(let items):
                     try response.send(json: items)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -49,7 +49,7 @@ class StatisticController {
                 switch result {
                 case .success(let item):
                     try response.send(json: item)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -70,7 +70,7 @@ class StatisticController {
                 switch result {
                 case .success(let item):
                     try response.send(json: item)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -91,7 +91,7 @@ class StatisticController {
                 switch result {
                 case .success(let item):
                     try response.send(json: item)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -112,7 +112,7 @@ class StatisticController {
                 switch result {
                 case .success(let item):
                     try response.send(json: item)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }

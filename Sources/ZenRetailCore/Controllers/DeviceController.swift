@@ -26,7 +26,7 @@ class DeviceController {
 	
     func devicesHandlerGET(request: HttpRequest, response: HttpResponse) {
 //        if !request.isAuthenticated() {
-//            response.completed(.unauthorized)
+//            response.success(.unauthorized)
 //            return
 //        }
 
@@ -36,7 +36,7 @@ class DeviceController {
                 switch result {
                 case .success(let items):
                     try response.send(json: items)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -57,7 +57,7 @@ class DeviceController {
                 switch result {
                 case .success(let item):
                     try response.send(json: item)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -80,7 +80,7 @@ class DeviceController {
                 case .success(let id):
                     item.deviceId = id
                     try response.send(json: item)
-                    response.completed(.created)
+                    response.success(.created)
                 case .failure(let err):
                     throw err
                 }
@@ -104,7 +104,7 @@ class DeviceController {
                 switch result {
                 case .success(_):
                     try response.send(json: item)
-                    response.completed(.accepted)
+                    response.success(.accepted)
                 case .failure(let err):
                     throw err
                 }
@@ -123,7 +123,7 @@ class DeviceController {
         self.repository.delete(id: id).whenComplete { result in
             switch result {
             case .success(let deleted):
-                response.completed(deleted ? .noContent : .expectationFailed)
+                response.success(deleted ? .noContent : .expectationFailed)
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }

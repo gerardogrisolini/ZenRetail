@@ -30,7 +30,7 @@ class AttributeController {
                 switch result {
                 case .success(let items):
                     try response.send(json: items)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -51,7 +51,7 @@ class AttributeController {
                 switch result {
                 case .success(let items):
                     try response.send(json: items)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -72,7 +72,7 @@ class AttributeController {
                 switch result {
                 case .success(let items):
                     try response.send(json: items)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -95,7 +95,7 @@ class AttributeController {
                 case .success(let id):
                     item.attributeId = id
                     try response.send(json: item)
-                    response.completed(.created)
+                    response.success(.created)
                 case .failure(let err):
                     throw err
                 }
@@ -118,7 +118,7 @@ class AttributeController {
                 switch result {
                 case .success(_):
                     try response.send(json: item)
-                    response.completed(.accepted)
+                    response.success(.accepted)
                 case .failure(let err):
                     throw err
                 }
@@ -137,7 +137,7 @@ class AttributeController {
         self.repository.delete(id: id).whenComplete { result in
             switch result {
             case .success(let deleted):
-                response.completed(deleted ? .noContent : .expectationFailed)
+                response.success(deleted ? .noContent : .expectationFailed)
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }

@@ -26,7 +26,7 @@ Disallow:
 Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
 """
             res.send(text: robots)
-            res.completed()
+            res.success()
         }
         
         router.get("/sitemap.xml") { request, response in
@@ -36,7 +36,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                 response.addHeader(.contentType, value: "application/xml; charset=utf-8")
                 let data = Sitemap(items: siteMapItems).xmlString.data(using: .utf8)!
                 response.send(data: data)
-                response.completed()
+                response.success()
             }
 
             /// PAGES
@@ -147,7 +147,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
         router.post("/api/register") { request, response in
             guard let data = request.bodyData,
                 let account = try? JSONDecoder().decode(Account.self, from: data) else {
-                response.completed(.badRequest)
+                response.success(.badRequest)
                 return
             }
 
@@ -158,7 +158,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
 
                 response.addHeader(.setCookie, value: "token=\(session.token!.bearer); expires=Sat, 01 Jan 2050 00:00:00 UTC; path=/;")
                 try? response.send(json: session.token)
-                response.completed()
+                response.success()
             }
             promise.whenFailure { err in
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
@@ -173,7 +173,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch result {
             case .success(let items):
                 try! response.send(json: items)
-                response.completed()
+                response.success()
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -187,7 +187,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch result {
             case .success(let items):
                 try! response.send(json: items)
-                response.completed()
+                response.success()
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -199,7 +199,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch result {
             case .success(let items):
                 try! response.send(json: items)
-                response.completed()
+                response.success()
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -211,7 +211,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch result {
             case .success(let items):
                 try! response.send(json: items)
-                response.completed()
+                response.success()
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -223,7 +223,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch result {
             case .success(let items):
                 try! response.send(json: items)
-                response.completed()
+                response.success()
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -235,7 +235,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch result {
             case .success(let items):
                 try! response.send(json: items)
-                response.completed()
+                response.success()
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -252,7 +252,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch result {
             case .success(let items):
                 try! response.send(json: items)
-                response.completed()
+                response.success()
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -269,7 +269,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch result {
             case .success(let items):
                 try! response.send(json: items)
-                response.completed()
+                response.success()
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -286,7 +286,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch result {
             case .success(let item):
                 try! response.send(json: item)
-                response.completed()
+                response.success()
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -303,7 +303,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch result {
             case .success(let items):
                 try! response.send(json: items)
-                response.completed()
+                response.success()
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -319,7 +319,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch result {
             case .success(let registry):
                 try! response.send(json: registry)
-                response.completed()
+                response.success()
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -339,7 +339,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                 switch result {
                 case .success(_):
                     try response.send(json: registry)
-                    response.completed(.accepted)
+                    response.success(.accepted)
                 case .failure(let err):
                     throw err
                 }
@@ -358,7 +358,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
         self.registryRepository.delete(id: uniqueID).whenComplete { result in
             switch result {
             case .success(let deleted):
-                response.completed(deleted ? .noContent : .expectationFailed)
+                response.success(deleted ? .noContent : .expectationFailed)
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -372,7 +372,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch result {
             case .success(let items):
                 try! response.send(json: items)
-                response.completed()
+                response.success()
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -381,7 +381,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
 
     func ecommerceBasketHandlerGET(request: HttpRequest, response: HttpResponse) {
         guard let uniqueID = request.session?.uniqueID as? String , let id = Int(uniqueID) else {
-            response.completed( .unauthorized)
+            response.success(.unauthorized)
             return
         }
 
@@ -389,7 +389,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch result {
             case .success(let items):
                 try! response.send(json: items)
-                response.completed()
+                response.success()
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -398,7 +398,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
     
     func ecommerceBasketHandlerPOST(request: HttpRequest, response: HttpResponse) {
         guard let uniqueID = request.session?.uniqueID as? String , let id = Int(uniqueID) else {
-            response.completed( .unauthorized)
+            response.success(.unauthorized)
             return
         }
 
@@ -415,7 +415,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch result {
             case .success(_):
                 if product.productId == 0 {
-                    response.completed( .notFound)
+                    response.success(.notFound)
                     return
                 }
                 basket.basketProduct = product
@@ -426,7 +426,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                     switch res {
                     case .success(let item):
                         try! response.send(json: item)
-                        response.completed(.created)
+                        response.success(.created)
                     case .failure(let err):
                         response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
                     }
@@ -449,7 +449,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
            switch res {
            case .success(let result):
                try! response.send(json: basket)
-               response.completed(result ? .accepted : .notModified)
+               response.success(result ? .accepted : .notModified)
            case .failure(let err):
                response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
            }
@@ -465,7 +465,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
         self.repository.deleteBasket(id: id).whenComplete { res in
             switch res {
             case .success(let result):
-                response.completed(result ? .noContent : .notModified)
+                response.success(result ? .noContent : .notModified)
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -478,7 +478,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
         do {
             let items = self.repository.getPayments()
             try response.send(json:items)
-            response.completed()
+            response.success()
         } catch {
             response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
@@ -490,7 +490,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
         do {
             let items = self.repository.getShippings()
             try response.send(json:items)
-            response.completed()
+            response.success()
         } catch {
             response.systemError(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
@@ -510,7 +510,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
                    switch res {
                    case .success(let cost):
                        try? response.send(json: cost)
-                       response.completed()
+                       response.success()
                    case .failure(let err):
                        response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
                    }
@@ -529,7 +529,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch res {
             case .success(let items):
                 try! response.send(json: items)
-                response.completed()
+                response.success()
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -547,7 +547,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch res {
             case .success(let item):
                 try! response.send(json: item)
-                response.completed()
+                response.success()
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -565,7 +565,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch res {
             case .success(let items):
                 try! response.send(json: items)
-                response.completed()
+                response.success()
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -584,7 +584,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
             switch res {
             case .success(let item):
                 try! response.send(json: item)
-                response.completed()
+                response.success()
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }

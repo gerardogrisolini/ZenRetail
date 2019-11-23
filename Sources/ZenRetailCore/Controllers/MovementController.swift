@@ -42,7 +42,7 @@ class MovementController {
         do {
             let status = self.repository.getPayments()
             try response.send(json:status)
-            response.completed()
+            response.success()
         } catch {
             response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
@@ -52,7 +52,7 @@ class MovementController {
         do {
             let status = self.repository.getShippings()
             try response.send(json:status)
-            response.completed()
+            response.success()
         } catch {
             response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
@@ -77,7 +77,7 @@ class MovementController {
                             switch res {
                             case .success(let cost):
                                 try! response.send(json: cost)
-                                response.completed()
+                                response.success()
                             case .failure(let err):
                                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
                             }
@@ -96,7 +96,7 @@ class MovementController {
         do {
             let status = self.repository.getStatus()
             try response.send(json:status)
-            response.completed()
+            response.success()
         } catch {
             response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
@@ -108,7 +108,7 @@ class MovementController {
                 switch result {
                 case .success(let items):
                     try response.send(json: items)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -130,7 +130,7 @@ class MovementController {
                 switch result {
                 case .success(let item):
                     try response.send(json: item)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -152,7 +152,7 @@ class MovementController {
                 switch result {
                 case .success(let articles):
                     try response.send(json: articles)
-                    response.completed(.created)
+                    response.success(.created)
                 case .failure(let err):
                     throw err
                 }
@@ -174,7 +174,7 @@ class MovementController {
                 switch result {
                 case .success(let items):
                     try response.send(json: items)
-                    response.completed(.created)
+                    response.success(.created)
                 case .failure(let err):
                     throw err
                 }
@@ -200,7 +200,7 @@ class MovementController {
                         switch result {
                         case .success(let items):
                             try response.send(json: items)
-                            response.completed()
+                            response.success()
                         case .failure(let err):
                             throw err
                         }
@@ -225,7 +225,7 @@ class MovementController {
                 switch result {
                 case .success(let item):
                     try response.send(json: item)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
@@ -258,7 +258,7 @@ class MovementController {
                                 switch res {
                                 case .success(_):
                                    try response.send(json: item)
-                                   response.completed(.created)
+                                   response.success(.created)
                                 case .failure(let err):
                                    throw err
                                 }
@@ -354,7 +354,7 @@ class MovementController {
                                 switch r {
                                 case .success(_):
                                     try response.send(json: item)
-                                    response.completed(.created)
+                                    response.success(.created)
                                 case .failure(let err):
                                     throw err
                                 }
@@ -385,7 +385,7 @@ class MovementController {
                 switch result {
                 case .success(_):
                     try response.send(json: item)
-                    response.completed(.accepted)
+                    response.success(.accepted)
                 case .failure(let err):
                     throw err
                 }
@@ -404,7 +404,7 @@ class MovementController {
         self.repository.delete(id: id).whenComplete { result in
             switch result {
             case .success(let deleted):
-                response.completed(deleted ? .noContent : .expectationFailed)
+                response.success(deleted ? .noContent : .expectationFailed)
             case .failure(let err):
                 response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
             }
@@ -428,13 +428,13 @@ class MovementController {
                 switch result {
                 case .success(let items):
                     try? response.send(json: items)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
                 }
             }
         } else {
-            response.completed(.unauthorized)
+            response.success(.unauthorized)
         }
     }
 }

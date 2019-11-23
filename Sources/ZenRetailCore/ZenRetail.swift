@@ -332,7 +332,7 @@ public class ZenRetail {
            response.addHeader(.contentType, value: f.fileContentType)
            //response.body.reserveCapacity(f.fileSize)
            response.body.writeBytes(f.fileData)
-           response.completed()
+           response.success()
            return response
         }
     }
@@ -349,19 +349,19 @@ public class ZenRetail {
 <head><title>ZenRetail</title></head>
 <body>
     <h1>ZenRetail</h1>
-    \(html)
+    <h3>\(status.code) - \(status.reasonPhrase)</h3>
+    <h4>\(html)</h4>
 </body>
 </html>
 """
                 let response = HttpResponse(body: ctx.channel.allocator.buffer(capacity: 0))
                 response.send(html: html)
-                response.completed(status)
+                response.success(status)
                 return ctx.eventLoop.future(response)
             }
             
             switch error {
             case let e as IOError where e.errnoCode == ENOENT:
-                html += "<h3>IOError (not found)</h3>"
                 status = .notFound
 
                 // syncronize from database
@@ -376,17 +376,30 @@ public class ZenRetail {
                 }
 
             case let e as IOError:
-                html += "<h3>IOError (other)</h3><h4>\(e.description)</h4>"
+                html = e.localizedDescription
                 status = .expectationFailed
+            case let e as HttpError:
+                switch e {
+                case .badRequest(let reason):
+                    status = .badRequest
+                    html = reason
+                case .internalError(let reason):
+                    status = .internalServerError
+                    html = reason
+                case .notFound:
+                    status = .notFound
+                case .custom(let code, let reason):
+                    status = .custom(code: code, reasonPhrase: reason)
+                }
             default:
-                html += "<h3>\(type(of: error)) error</h3>"
+                html = error.localizedDescription
                 status = .internalServerError
             }
             
             return responseComplete()
         }
     }
-
+    
     private func loadConfiguration() -> Configuration {
         let fileUrl = URL(fileURLWithPath: "\(FileManager.default.currentDirectoryPath)/zenretail.json")
         print("Config: " + fileUrl.absoluteString)

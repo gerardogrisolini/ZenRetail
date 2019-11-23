@@ -34,7 +34,7 @@ public class AmazonController: NSObject {
     func mwsConfigHandlerGET(request: HttpRequest, response: HttpResponse) {
         do {
             try response.send(json: config)
-            response.completed()
+            response.success()
         } catch {
             response.badRequest(error: "\(request.head.uri) \(request.head.method): \(error)")
         }
@@ -63,7 +63,7 @@ public class AmazonController: NSObject {
                     switch res {
                     case .success(_):
                         try? response.send(json: self.config)
-                        response.completed()
+                        response.success()
                     case .failure(let err):
                         response.systemError(error: "\(request.head.uri) \(request.head.method): \(err)")
                     }
@@ -87,7 +87,7 @@ public class AmazonController: NSObject {
                 switch result {
                 case .success(let data):
                     try response.send(json: data)
-                    response.completed()
+                    response.success()
                 case .failure(let err):
                     throw err
                 }
