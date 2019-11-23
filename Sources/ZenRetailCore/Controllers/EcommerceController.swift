@@ -381,8 +381,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
 
     func ecommerceBasketHandlerGET(request: HttpRequest, response: HttpResponse) {
         guard let uniqueID = request.session?.uniqueID as? String , let id = Int(uniqueID) else {
-            response.success(.unauthorized)
-            return
+            return response.failure(.unauthorized)
         }
 
         self.repository.getBasket(registryId: id).whenComplete { result in
@@ -398,8 +397,7 @@ Sitemap: \(ZenRetail.config.serverUrl)/sitemap.xml
     
     func ecommerceBasketHandlerPOST(request: HttpRequest, response: HttpResponse) {
         guard let uniqueID = request.session?.uniqueID as? String , let id = Int(uniqueID) else {
-            response.success(.unauthorized)
-            return
+            return response.failure(.unauthorized)
         }
 
         guard let data = request.bodyData,

@@ -413,8 +413,7 @@ class MovementController {
 
     func movementFromHandlerGET(request: HttpRequest, response: HttpResponse) {
         guard let date: Int = request.getParam("date") else {
-            response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter date")
-            return
+            return response.badRequest(error: "\(request.head.uri) \(request.head.method): parameter date")
         }
 
         let basic = request.authorization.replacingOccurrences(of: "Basic ", with: "")
@@ -434,7 +433,7 @@ class MovementController {
                 }
             }
         } else {
-            response.success(.unauthorized)
+            response.failure(.unauthorized)
         }
     }
 }

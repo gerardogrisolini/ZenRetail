@@ -25,10 +25,9 @@ class DeviceController {
 	}
 	
     func devicesHandlerGET(request: HttpRequest, response: HttpResponse) {
-//        if !request.isAuthenticated() {
-//            response.success(.unauthorized)
-//            return
-//        }
+        if !request.isAuthenticated {
+            return response.failure(.unauthorized)
+        }
 
         let date: Int = request.getParam("date") ?? 0
         self.repository.getAll(date: date).whenComplete { result in
