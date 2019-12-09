@@ -27,14 +27,14 @@ public class ZenRetail {
     }
 
     public func start() throws {
-        let zenNIO = ZenNIO(host: "0.0.0.0", port: ZenRetail.config.serverPort)
+        let zenNIO = ZenNIO(host: "0.0.0.0", port: ZenRetail.config.serverPort, logs: [.console, .file])
 
         var logger = Logger(label: "ZenRetail")
         logger.logLevel = ZenRetail.config.logLevel
         zenNIO.logger = logger
         
         zenNIO.addCORS()
-        zenNIO.addWebroot(path: ZenRetail.config.documentRoot)
+        zenNIO.addDocs(ZenRetail.config.documentRoot)
         zenNIO.addAuthentication(handler: { (username, password) -> EventLoopFuture<String> in
             let user = User()
             return user.get(usr: username, pwd: password).map { () -> String in
@@ -340,7 +340,7 @@ public class ZenRetail {
     private func addErrorHandler() {
         ZenRetail.zenNIO.addError { (ctx, request, error) -> EventLoopFuture<HttpResponse> in
             let log = Logger.Message(stringLiteral: "⚠️ \(request.method) \(request.uri) || \(error)")
-            //(ZenIoC.shared.resolve() as Logger).error(log)
+            (ZenIoC.shared.resolve() as Logger).error(log)
             ZenRetail.zenNIO.logger.error(log)
             
             var html = ""
