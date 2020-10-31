@@ -10,7 +10,7 @@ import Foundation
 import NIO
 import ZenPostgres
 import ZenNIO
-import SwiftGD
+import SwiftImage
 
 struct ProductRepository : ProductProtocol {
 
@@ -450,7 +450,8 @@ struct ProductRepository : ProductProtocol {
         big.setData(data: data)
         _ = try big.save().wait()
         
-        if let thumb = try Image(data: data).resizedTo(width: 380) {
+        if let thumb = Image<RGBA<UInt8>>(data: data),
+           let export = thumb.resizedTo(width: 380, height: 380).data(using: .png) {
 //            let url = URL(fileURLWithPath: "\(ZenNIO.htdocsPath)/thumb/\(media.name)")
 //            if !thumb.write(to: url, quality: 75, allowOverwrite: true) {
 //                throw HttpError.systemError(0, "file thumb not saved")
@@ -459,7 +460,7 @@ struct ProductRepository : ProductProtocol {
             small.fileName = media.name
             small.fileType = MediaType.thumb.rawValue
             small.fileContentType = media.contentType
-            small.setData(data: try thumb.export())
+            small.setData(data: export)
             _ = try small.save().wait()
         }
     }

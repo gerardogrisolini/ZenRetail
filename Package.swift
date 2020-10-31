@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "ZenRetail",
     platforms: [
-        .macOS(.v10_14)
+        .macOS(.v10_15)
     ],
     products: [
         .library(name: "ZenRetailCore", targets: ["ZenRetailCore"]),
@@ -20,7 +20,7 @@ let package = Package(
 //        .package(url: "https://github.com/gerardogrisolini/ZenMWS.git", .branch("master")),
 //        .package(url: "https://github.com/gerardogrisolini/ZenEBAY.git", .branch("master")),
         .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .branch("master")),
-        .package(url: "https://github.com/twostraws/SwiftGD.git", .branch("master")),
+	.package(url: "https://github.com/koher/swift-image.git", from: "0.7.1")
     ],
     targets: [
         .target(
@@ -34,7 +34,7 @@ let package = Package(
                 "CryptoSwift",
 //                "ZenMWS",
 //                "ZenEBAY",
-                "SwiftGD"
+                "SwiftImage"
             ]
         ),
         .target(

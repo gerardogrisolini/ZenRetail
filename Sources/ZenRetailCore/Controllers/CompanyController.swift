@@ -11,7 +11,7 @@ import NIO
 import ZenNIO
 import ZenPostgres
 import ZenSMTP
-import SwiftGD
+import SwiftImage
 
 
 class CompanyController {
@@ -71,8 +71,8 @@ class CompanyController {
             big.setData(data: data)
             return big.save().flatMap { id -> EventLoopFuture<Media> in
                 if fileName.contentType.hasPrefix("image/"),
-                    let thumb = try? Image(data: data).resizedTo(width: 380),
-                    let export = try? thumb.export() {
+                    let thumb = Image<RGBA<UInt8>>(data: data),
+                    let export = thumb.resizedTo(width: 380, height: 380).data(using: .png) {
                     let small = File(connection: connection)
                     small.fileName = media.name
                     small.fileType = MediaType.thumb.rawValue
