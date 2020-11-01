@@ -8,7 +8,7 @@
 import Foundation
 import NIO
 import ZenNIO
-import CryptoSwift
+import Crypto
 import ZenPostgres
 //import ZenMWS
 import Logging
@@ -125,10 +125,11 @@ extension String {
 //    #endif
 
     var encrypted: String {
-        let password: Array<UInt8> = Array(self.utf8)
-        let salt: Array<UInt8> = Array("ZenRetail".utf8)
-        let key = try! PKCS5.PBKDF2(password: password, salt: salt, iterations: 4096, variant: .sha256).calculate()
-        return key.toBase64()!
+//        let key = SymmetricKey(size: .bits256)
+//        let sealedBox = try! AES.GCM.seal(self.data(using: .utf8)!, using: key)
+//        return sealedBox.combined!.base64EncodedString()
+        let receivedDataDigest = SHA256.hash(data: self.data(using: .utf8)!)
+        return String(describing: receivedDataDigest).replacingOccurrences(of: "SHA256 digest: ", with: "")
     }
 }
 

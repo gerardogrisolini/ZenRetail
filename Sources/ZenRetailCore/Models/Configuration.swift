@@ -33,7 +33,7 @@ class Configuration: Codable {
         sslKey = "" //key.pem
         httpVersion = 1
         documentRoot = "webroot"
-        logLevel = .info
+        logLevel = .trace
         
         postgresHost = "localhost"
         postgresDatabase = "zenretail"

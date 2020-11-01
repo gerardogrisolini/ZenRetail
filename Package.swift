@@ -16,10 +16,10 @@ let package = Package(
         .package(url: "https://github.com/gerardogrisolini/ZenNIO.git", .branch("master")),
         .package(url: "https://github.com/gerardogrisolini/ZenPostgres.git", .branch("master")),
         .package(url: "https://github.com/gerardogrisolini/ZenSMTP.git", .branch("master")),
-        .package(url: "https://github.com/tadija/AEXML.git", .branch("master")),
 //        .package(url: "https://github.com/gerardogrisolini/ZenMWS.git", .branch("master")),
 //        .package(url: "https://github.com/gerardogrisolini/ZenEBAY.git", .branch("master")),
-        .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .branch("master")),
+//        .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", from: "1.3.2"),
+        .package(url: "https://github.com/tadija/AEXML.git", .branch("master")),
 	.package(url: "https://github.com/koher/swift-image.git", from: "0.7.1")
     ],
     targets: [
@@ -30,10 +30,10 @@ let package = Package(
                 "ZenNIOSSL",
                 "ZenPostgres",
                 "ZenSMTP",
-                "AEXML",
-                "CryptoSwift",
 //                "ZenMWS",
 //                "ZenEBAY",
+//                "CryptoSwift",
+                "AEXML",
                 "SwiftImage"
             ]
         ),
