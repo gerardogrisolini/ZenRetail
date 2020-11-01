@@ -22,7 +22,7 @@ class File: PostgresTable, Codable {
     public var fileName : String = ""
     public var fileContentType : String = ""
     public var fileType : String = "media"
-    public var fileData : [UInt8] = [UInt8]()
+    public var fileData : Data = Data()
     public var fileSize : Int = 0
     public var fileCreated : Int = Int.now()
 
@@ -31,20 +31,22 @@ class File: PostgresTable, Codable {
         fileName = row.column("fileName")?.string ?? ""
         fileContentType = row.column("fileContentType")?.string ?? ""
         fileType = row.column("fileType")?.string ?? fileType
-        fileData = row.column("fileData")?.bytes ?? fileData
+        if let d = row.column("fileData") {
+            fileData = Data(d.bytes!)
+        }
         fileSize = row.column("fileSize")?.int ?? 0
         fileCreated = row.column("fileCreated")?.int ?? 0
     }
 
     func setData(data: Data) {
-        fileData = [UInt8](data)
+        fileData = data
         fileSize = data.count
     }
     
     override func save() -> EventLoopFuture<Any> {
         let sql = """
 INSERT INTO "File" ("fileName", "fileContentType", "fileType", "fileData", "fileSize", "fileCreated")
-VALUES ($1, $2, $3, $4, $5, $6)
+VALUES ($1, $2, $3, $4, $5, $6) RETURNING "fileId"
 """
         let postgresData = [
             PostgresData(string: fileName),
