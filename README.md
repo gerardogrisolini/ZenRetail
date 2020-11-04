@@ -11,7 +11,7 @@ developed with Swift, Angular and PostgreSQL .
 
 ## Build Notes
 
-Ensure you have installed Xcode 11.0 or later.
+Ensure you have installed Xcode 12.0 or later.
 
 
 ### macOS
@@ -19,7 +19,7 @@ Ensure you have installed Xcode 11.0 or later.
 To install nodejs. libgd and phantomjs:
 
 ```
-brew install node gd
+brew install node
 brew cask install phantomjs
 ```
 
