@@ -3,4 +3,3 @@ libicu-dev
 libcurl4-nss-dev
 libssl-dev
 uuid-dev
-gd
